@@ -174,7 +174,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #For plotting Energy distriution
   if engplot:
     engname=savename+"_EnergyPlot" #same for each plot
-    titl = "Energy Distribution after "+mat+" Target"
+    titl = "Energy Distribution after "+mat+" PBW"
 
     if baseSimSetup["MAT"] == "G4_Galactic":
       print("Vacuum Energy Plot not working now, plots empty histogram. *Shrugs*")

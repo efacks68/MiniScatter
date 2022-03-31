@@ -15,14 +15,16 @@ from simulation import simulation
 #simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy(float),zoff(float))
 materials = ["G4_AIR","G4_Al","G4_Au"] #"G4_Galactic"
 N=5e4 #number of particles
-n=input("How many particles would you like to run?")
+n=input("How many particles would you like to run? ")
 N=float(n)
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
 ifplot=True #for plotting the 3 graphs per material
-
+engplot = False
+if ifplot:
+  engplot=True
 #Create the fig before the loop with 2 plots side by side
-fig = plt.figure(figsize=(15,5))
+fig = plt.figure(figsize=(15,6))
 plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
 s1 = fig.add_subplot(1,2,1)
 s2 = fig.add_subplot(1,2,2)
@@ -41,7 +43,7 @@ sigmatexty = r"$\sigma_y$:"
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
   #savename,xexit,yexit= simulation(  N,material,epsx ,epsy ,alpx,alpy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xexit,yexit = simulation( N,material,0.113,0.121, -50,  -7, 1000,  200,2000.0,-10.0, 0.95,   True)
+  savename,xexit,yexit = simulation( N,material,0.113,0.121, -50,  -7, 1000,  200,2000.0,-10.0, 0.95, engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -57,8 +59,8 @@ for material in materials:
         #xlim==0 => -30,30; other=> [-xlim*sigma,xlim*sigma] 
         #ylim==0 => with plot; !=0 => [0,ylim] (0.00005 is for halo)
         plotFit(xexit,yexit,savename,bins,cutx,cuty,  30,      0,material) #standard core
-        plotFit(xexit,yexit,savename,bins,cutx,cuty, 400,5/(10**(mag+1)),material) #full range halo, with dynamic halo zoom
-        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,5/(10**(mag+1)),material) #10 sigma range halo
+        plotFit(xexit,yexit,savename,bins,cutx,cuty, 400,5/(10**(mag+0)),material) #full range halo, with dynamic halo zoom
+        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,5/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Al":
       bins = 1000 #wider range requires more bins
       cutx = 27 #Distribution isn't Gaussian. This range seems to be best fit the spread
@@ -67,18 +69,18 @@ for material in materials:
         print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
         #plotFit(xs,    ys, savename,bins,cutx,cuty,xlim,   ylim,material)
         plotFit(xexit,yexit,savename,bins,cutx,cuty,  30,      0,material) #standard core
-        plotFit(xexit,yexit,savename,bins,cutx,cuty, 500,5/(10**(mag+1)),material) #full range halo
-        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,10/(10**(mag+1)),material) #10 sigma range halo
+        plotFit(xexit,yexit,savename,bins,cutx,cuty, 500,5/(10**(mag+0)),material) #full range halo
+        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,10/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Au":
       bins = 1000 
       cutx = 50 #Distribution isn't Gaussian. This range seems to be best fit the spread
-      cuty = 40
+      cuty = 45
       if ifplot:
         print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
         #plotFit(xs,    ys, savename,bins,cutx,cuty,xlim,   ylim,material) 
         plotFit(xexit,yexit,savename,bins,cutx,cuty,  75,      0,material) #standard core
-        plotFit(xexit,yexit,savename,bins,cutx,cuty, 520,15/(10**(mag+1)),material) #full range halo
-        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,15/(10**(mag+1)),material) #10 sigma range halo
+        plotFit(xexit,yexit,savename,bins,cutx,cuty, 520,15/(10**(mag+0)),material) #full range halo
+        plotFit(xexit,yexit,savename,bins,cutx,cuty,  10,15/(10**(mag+0)),material) #10 sigma range halo
   
   #Multi-Material Plot section, continues the material loop to plot data.
   #For creating the fit to histogram of particle distribution
@@ -164,6 +166,9 @@ s2.legend()
 ylim2=s2.get_ylim() #dynamically get the ylimits
 s2.text(-xlim+2,ylim2[1]*3/4,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
 s2.text(-xlim+2,ylim2[1]/2,percenttexty) #x position is fixed
+fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
+        " Through Various Material PBWs",fontsize=18,fontweight="bold",y=0.99)
+#suptitle 2 sets of {{}} fix from "linuxtut.com" blog post
 
 #Can date stamp the multi plot for easier tracking of changes, if necessary
 from datetime import datetime
@@ -173,4 +178,4 @@ print(name) #show so it is easy to find the file
 fig.savefig(name)
 #plt.show()
 plt.close() #be sure to close the plot
-
+print("\n")
