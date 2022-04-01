@@ -13,18 +13,27 @@ from simulation import simulation
 
 # Simulation setup
 #simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy(float),zoff(float))
-materials = ["G4_AIR","G4_Al","G4_Au"] #"G4_Galactic"
+#materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
+materials = ["G4_Al","G4_Au"] 
 N=5e4 #number of particles
+
+epsx = 1e-3 #[um-mrad] #ESS beam at PBW: 0.113
+betax = 1 #[m] 1000
+alphx = 0#[mrad] -50
+epsy = 1e-3#[um] 0.121
+betay = 1 #[m] 200
+alphy = 0 #[mrad] -7
+
 n=input("How many particles would you like to run? ")
 N=float(n)
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
-ifplot=True #for plotting the 3 graphs per material
+ifplot=False #for plotting the 3 graphs per material
 engplot = False
 if ifplot:
   engplot=True
 #Create the fig before the loop with 2 plots side by side
-fig = plt.figure(figsize=(15,6))
+fig = plt.figure(figsize=(15,))
 plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
 s1 = fig.add_subplot(1,2,1)
 s2 = fig.add_subplot(1,2,2)
@@ -42,8 +51,8 @@ sigmatextx = r"$\sigma_x$:"
 sigmatexty = r"$\sigma_y$:"
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xexit,yexit= simulation(  N,material,epsx ,epsy ,alpx,alpy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xexit,yexit = simulation( N,material,0.113,0.121, -50,  -7, 1000,  200,2000.0,-10.0, 0.95, engplot)
+  #savename,xexit,yexit= simulation( N,material,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  savename,xexit,yexit = simulation( N,material,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95, engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -86,6 +95,28 @@ for material in materials:
   #For creating the fit to histogram of particle distribution
   from scipy.stats import norm
   
+  #Define plotting characteristics depending on material
+  if material == "G4_Galactic":
+    mat = "Vacuum"
+    color = 'magenta'
+    dash = 'm--'
+    tsp = 0.2 #transparency
+  elif material == "G4_Al":
+    mat ="Al"
+    color = 'blue'
+    dash = 'b--'
+    tsp = 0.5
+  elif material == "G4_AIR":
+    mat ="Air"
+    color = 'green'
+    tsp = 0.2
+    dash = 'g--'
+  elif material == "G4_Au":
+    mat = "Au"
+    color = 'gold'
+    tsp = 0.5
+    dash = 'r--'
+
   #Based on the range that fits for the material, mask those particles
   maskx=np.abs(xexit)<cutx
   masky=np.abs(yexit)<cuty
@@ -106,31 +137,10 @@ for material in materials:
   #print(material," gives ",pOut3sigy[material],"% outisde 3 sigma in Y")
 
   #Update the texts to include this materials % outside 3 sigma
-  percenttextx +="\n"+material+" = "+"{:.2f}".format(pOut3sigx[material])+"%"
-  percenttexty +="\n"+material+" = "+"{:.2f}".format(pOut3sigy[material])+"%"
-  sigmatextx +="\n"+material+" = "+"{:.2f}".format(sigmax)+"mm"
-  sigmatexty +="\n"+material+" = "+"{:.2f}".format(sigmay)+"mm"
-
-  #Define parameters for plotting multiplot depending on material
-  if material == "G4_Galactic":
-    mat = "Vacuum"
-    color = 'black'
-    tsp = 0.2 #transparency
-  elif material == "G4_Al":
-    mat ="Al"
-    color = 'blue'
-    dash = 'b--'
-    tsp = 0.5
-  elif material == "G4_AIR":
-    mat ="Air"
-    color = 'green'
-    tsp = 0.2
-    dash = 'g--'
-  elif material == "G4_Au":
-    mat = "Au"
-    color = 'gold'
-    tsp = 0.5
-    dash = 'r--'
+  percenttextx +="\n"+mat+" = "+"{:.2f}".format(pOut3sigx[material])+"%"
+  percenttexty +="\n"+mat+" = "+"{:.2f}".format(pOut3sigy[material])+"%"
+  sigmatextx +="\n"+mat+" = "+"{:.2f}".format(sigmax)+"mm"
+  sigmatexty +="\n"+mat+" = "+"{:.2f}".format(sigmay)+"mm"
 
   #Make the histogram of the full energy distrubtion for X
   nx, binsx, patchesx = s1.hist(xexit, bins, density=True, facecolor=color, alpha=tsp,label=mat)
@@ -148,15 +158,17 @@ for material in materials:
   l2 = s2.plot(binsy, y2, dash, linewidth=1,label=mat) #labeled by material short-name
 
 #Set Plot characterists
-xlim = 40 #makes it easier to change range
+xlim = 5 #makes it easier to change range
 s1.set_xlim([-xlim,xlim]) #seems to show all distributions, 30.3.22
 s1.set_title("Fitted X Distributions",fontsize=fs)
 s1.set_xlabel("X Position [mm]",fontsize=fs)
 s1.set_ylabel("Probability Density",fontsize=fs)
 s1.legend()
 ylim1=s1.get_ylim() #dynamically get the ylimits
-s1.text(-xlim+2,ylim1[1]*3/4,sigmatextx) #set the texts at 3/4 and 1/2 of ylim
-s1.text(-xlim+2,ylim1[1]/2,percenttextx) #xlim is fixed
+s1.text(-xlim*0.95,ylim1[1]*0.75,sigmatextx) #set the texts at 3/4 and 1/2 of ylim
+s1.text(-xlim*0.95,ylim1[1]*0.5,percenttextx) #xlim is fixed
+#s1.text(-xlim*0.95,ylim1[1]*0.99,)
+#s1.text("Add Twiss Parameters! and have in savename as well!")
 
 s2.set_xlim([-xlim,xlim])
 s2.set_title("Fitted Y Distributions",fontsize=fs)
@@ -164,10 +176,12 @@ s2.set_xlabel("Y Position [mm]",fontsize=fs)
 s2.set_ylabel("Probability Density",fontsize=fs)
 s2.legend()
 ylim2=s2.get_ylim() #dynamically get the ylimits
-s2.text(-xlim+2,ylim2[1]*3/4,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
-s2.text(-xlim+2,ylim2[1]/2,percenttexty) #x position is fixed
-fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
-        " Through Various Material PBWs",fontsize=18,fontweight="bold",y=0.99)
+s2.text(-xlim*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
+s2.text(-xlim*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
+fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
+        rf"Initial beam of $\epsilon_x={{:.1f}} \beta_x={{:.1f}} \alpha_x={{:.1f}}$ ".format(epsx,betax,alphx) +
+    +rf" $\epsilon_y={{:.1f}} \beta_y={{:.1f}} \alpha_y={{:.1f}}$ ".format(epsy,betay,alphy),
+    fontsize=18,y=0.99) #fontweight="bold",
 #suptitle 2 sets of {{}} fix from "linuxtut.com" blog post
 
 #Can date stamp the multi plot for easier tracking of changes, if necessary

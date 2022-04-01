@@ -107,7 +107,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
     mat = "Au"
 
   #Give the .root file a name
-  outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0e}_DistribTest".format(baseSimSetup["N"])
+  outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0f},a{:.0f},e{:.1e}".format(baseSimSetup["N"],betax,alphax,epsx)
   print(outname)
   simSetup_simple1["OUTNAME"] = outname #set the disctionary value as the outname.
     #Variables for automation
@@ -173,8 +173,10 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
 
   #For plotting Energy distriution
   if engplot:
+    import math
+    mag=math.floor(math.log10(N)) #for dynamic title name
     engname=savename+"_EnergyPlot" #same for each plot
-    titl = "Energy Distribution after "+mat+" PBW"
+    titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For All Particle Species"
 
     if baseSimSetup["MAT"] == "G4_Galactic":
       print("Vacuum Energy Plot not working now, plots empty histogram. *Shrugs*")
@@ -185,7 +187,8 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
       plt.xlabel("Energy [MeV]")
       plt.ylabel("Counts")
       plt.xlim([0,2005.0])
-      plt.title(titl)
+      plt.title(rf"Energy Distribution at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
+        "\nThrough PBW of "+mat+" For All Particle Species")
       print(titl,engname)
       plt.savefig(engname)
       plt.close()
