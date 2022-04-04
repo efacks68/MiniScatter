@@ -2,11 +2,12 @@
 #Eric Fackelman
 #29 March 2022
 
-#This is to plot the histograms with fits based on scipy.optimize.curve_fit found parameters
+#This is to plot the histograms with fits based on scipy.optimize.curve_fit parameters
 
 def plotFit(xs,ys,savename,xlim,ylim,material): 
   #1.4.22 - removed cuts since using the findfit
   #For creating the fit to histogram of particle distribution
+  from scipy.stats import norm
   import numpy as np
   import matplotlib.pyplot as plt
   from plotFit import findFit
