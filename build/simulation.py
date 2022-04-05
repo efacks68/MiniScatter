@@ -1,8 +1,10 @@
 #simulation.py
 #Eric Fackelman
-#29 March 2022
+#29 March - 5 April 2022
 
-#This is to produce the simulation for beam through PBW and output the arrays at Target location
+#This is to run the simulation of a beam through a PBW of input material 
+# and output the position X and Y arrays at ESS Target location.
+# Also can plot the Energy Distribution if requested.
 
 def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut,engplot):
   import numpy as np
@@ -23,7 +25,6 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #import miniScatterPlots
 
   ### Basic simulation parameters ###
-
   QUIET   = True #Reduced output, doesn't show events
   TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
   NUM_THREADS = 8 #Number of parallel threads to use for scans
@@ -42,12 +43,12 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
 
   #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
   # 3 variables = symmetric, 6 variables = asymetric
-  EPSX   = epsx#0.113#e3 #[um]
-  BETAX  = betax#1000 #[m]
-  ALPHAX = alphax#-50
-  EPSY   = epsy#0.121#e3 #[um]
-  BETAY  = betay#200 #[m]
-  ALPHAY = alphay#-7
+  EPSX   = epsx #[um]
+  BETAX  = betax #[m]
+  ALPHAX = alphax #[um-mrad]
+  EPSY   = epsy #[um]
+  BETAY  = betay #[m]
+  ALPHAY = alphay #[um-mrad]
   baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY) 
 
   #Use a flat distribution or cut the tails of the Gaussian?
@@ -61,24 +62,24 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #Beam particle type
   baseSimSetup["BEAM"]    = "proton"
 
-  baseSimSetup["WORLDSIZE"] = 1000.0 #Make the world wider
+  baseSimSetup["WORLDSIZE"] = 1000.0 #Make the world wider for seeing where particles go
 
   #Target is 1 mm of aluminium
   baseSimSetup["THICK"] = 1
+
   baseSimSetup["MAT"] = material
   #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
   #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
   #Detector distance from target center [mm] Default is 50mm behind Target
-  #baseSimSetup["DIST"] = 500.0 
-  #For multiple detector locations, make a list
-  baseSimSetup["DIST"] = [5000] #only at ESS Target location #[-5,5,5000]
+  #For multiple detector locations, make a list, e.g. [-5,5,5000]
+  baseSimSetup["DIST"] = [5000] #only at ESS Target location 
 
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
 
-  baseSimSetup["EDEP_DZ"]   = 1.0 
+  baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
   baseSimSetup["CUTOFF_RADIUS"] = 100.0 #Larger radial cutoff
 
   #Store the .root files in a subfolder from where this script is running,
@@ -92,7 +93,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #print(baseSimSetup)
 
   #Run the simulation
-  #copy so it is not messed up(?)
+  #copy so it is if running multiple scans in a Jupyter notebook
   simSetup_simple1 = baseSimSetup.copy()
 
   #Define material nickname
@@ -105,18 +106,19 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   elif material == "G4_Au":
     mat = "Au"
 
-  #Give the .root file a name
+  #Give the .root file a dynamic name
   outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0e},a{:.0f},e{:.0e}".format(baseSimSetup["N"],betax,alphax,epsx)
   print(outname)
-  simSetup_simple1["OUTNAME"] = outname #set the disctionary value as the outname.
-    #Variables for automation
+  simSetup_simple1["OUTNAME"] = outname
+
+  #Variables for automation
   savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
   savename=savepath+outname #base savename for plots downstream, brings directly to my directory
   #print(savename)
-  print("before run",os.getcwd())
+  #print("before run",os.getcwd())
 
-  #29.3 - not doing runs, just opening files for now
-  #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't trying to load old runs...
+  #Run simulation or load old simulation root file!
+  #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
   
   #If one wants to use the initial spread for some reason, as I did initially xD
@@ -145,6 +147,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   myTree= myFile.Get('TrackerHits') #TrackerHits has all trackers, be sure to only have 1!
   #print(myTree)
 
+  #Now get the "exit" distributions that you actually want to plot.
   #print(myTree.GetEntries())
   xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
   pxexit = np.zeros(myTree.GetEntries())
@@ -163,14 +166,14 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
       pxexit[i] = myTree.px
       yexit[i] = myTree.y
       pyexit[i] = myTree.py
-      #zexit[i] = myTree.z
+      #zexit[i] = myTree.z #not used, but available.
       #pzexit[i] = myTree.pz
       Eexit[i] = myTree.E
       #PDGexit[i] = myTree.PDG
       #break
   myFile.Close() 
 
-  #For plotting Energy distriution
+  #For plotting Energy distriution of all species
   if engplot:
     import math
     mag=math.floor(math.log10(N)) #for dynamic title name
@@ -183,6 +186,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
       import matplotlib.pyplot as plt
       plt.close()
       plt.hist(Eexit,100,log=True)
+      #future addition - make other PDG entries be another color?
       plt.xlabel("Energy [MeV]")
       plt.ylabel("Counts")
       plt.xlim([0,2005.0])

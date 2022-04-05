@@ -1,16 +1,17 @@
 #plotFit.py
 #Eric Fackelman
-#29 March 2022
+#29 March- 5 April 2022
 
-#This is to plot the histograms with fits based on scipy.optimize.curve_fit parameters
+#This is to plot the SimpledemoPBWscript histograms 
+# Fits are made in findFit function using scipy.optimize.curve_fit found parameters
+# And passed back into plotFit.
 
 def plotFit(xs,ys,savename,xlim,ylim,material): 
-  #1.4.22 - removed cuts since using the findfit
-  #For creating the fit to histogram of particle distribution
-  from scipy.stats import norm
   import numpy as np
   import matplotlib.pyplot as plt
   from plotFit import findFit
+  #For creating the PDF of particle distribution from findFit function optimized mu and sigma.
+  from scipy.stats import norm 
 
   fs = 14 #set the axis label font size early
 
@@ -45,17 +46,17 @@ def plotFit(xs,ys,savename,xlim,ylim,material):
   elif material == "G4_Au":
     mat = "Au"
 
-  #Make the histogram of the full energy distrubtion for X
+  #Make the histogram of the full energy distrubtion for X with findFit intervals
   nx, binsx, patchesx = s1.hist(xs, xinterval, density=True, facecolor='green', alpha=0.75)
   
-  #Add the 'best fit' line using the earlier norm.fit mus and sigmas for X
+  #Add the 'best fit' line using the earlier findFit mus and sigmas for X
   y1 = norm.pdf(binsx, mux, sigmax)
   l1 = s1.plot(binsx, y1, 'r--', linewidth=2) #important to keep it as l# or it won't work
 
-  #Make the histogram of the full energy distrubtion for Y
+  #Make the histogram of the full energy distrubtion for Y with findFit intervals
   ny, binsy, patchesy = s2.hist(ys, yinterval, density=True, facecolor='green', alpha=0.75)
 
-  #Add the 'best fit' line using the earlier norm.fit mus and sigmas for Y
+  #Add the 'best fit' line using the earlier findFit mus and sigmas for Y
   y2 = norm.pdf(binsy, muy, sigmay)
   l2 = s2.plot(binsy, y2, 'r--', linewidth=2)
 
@@ -112,14 +113,14 @@ def findFit(data):
 
   plt.close()
   bin_heights, bin_borders, _ = plt.hist(data,bins='auto',label='histogram')
-  print(len(bin_borders))
+  #print(len(bin_borders))
   bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
   popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=[0.1,1.,1.]) #p0 should be good start, though not what is recommended
   x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
   #plt.plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label='fit')
   #plt.legend()
-  #plt.xlim([-30,30])
+  #plt.xlim([bin_borders[0],bin_borders[-1]])
   #plt.show()
-  plt.close()
+  plt.close() #be sure to close this or else these show up in the multi plots!
   #print(popt)
   return(popt[0],abs(popt[2]),x_interval_for_fit) #for Vac and Air sigma sometimes give - number...

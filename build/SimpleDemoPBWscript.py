@@ -13,45 +13,61 @@ from simulation import simulation
 
 # Simulation setup
 #simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy(float),zoff(float))
-materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
-#materials = ["G4_Al","G4_Au"] 
 
 #Define something preliminarily
+materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
+#materials = ["G4_Al","G4_Au"] 
 N=1e5 #number of particles
-epsx = 1e-3 #[um-mrad] #ESS beam at PBW: 0.113
-betax = 1 #[m] 1000
-alphx = 0#[mrad] -50
-epsy = 1e-3#[um] 0.121
-betay = 1 #[m] 200
-alphy = 0 #[mrad] -7
+epsx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
+betax = 1000 #[m] 1000
+alphx = -50 #[mrad] -50
+epsy = 0.121 #[um-mrad] 0.121
+betay = 200 #[m] 200
+alphy = -7 #[mrad] -7
 ifplot=False #for plotting the 3 graphs per material
 engplot = False
 
-if sys.argv[1] == 'ESS':
+if len(sys.argv) < 2: #if no extra inputs, ask for them
+  N = float(input("How many particles would you like to run? "))
+  epsx = float(input("What is the Emittance in X? "))
+  betax = float(input("What is the Beta in X? "))
+  alphx = float(input("What is the Alpha in X? "))
+  epsy = float(input("What is the Emittance in Y? "))
+  betay = float(input("What is the Beta in Y? "))
+  alphy = float(input("What is the Alpha in Y? "))
+  if input("Would you like to graph everything? Yes=y, No=Enter "):
+    ifplot=True
+elif sys.argv[1] == 'ESS': #auto profiles
   materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Au"]
   N=1e5 #number of particles
-  epsx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
-  betax = 1000 #[m] 1000
-  alphx = -50 #[mrad] -50
-  epsy = 0.121 #[um] 0.121
-  betay = 200 #[m] 200
-  alphy = -7 #[mrad] -7
-  ifplot=True #for plotting the 3 graphs per material
-elif sys.argv[1] == 'pencil':
-  #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"]
-  materials = ["G4_Al","G4_Au"]
+  epsx = 0.113 #[um-mrad]
+  betax = 1000 #[m]
+  alphx = -50 #[mrad]
+  epsy = 0.121 #[um-mrad]
+  betay = 200 #[m]
+  alphy = -7 #[mrad]
+  ifplot=False #for plotting the 3 graphs per material
+elif sys.argv[1] == 'pencil': #for a reasonable pencil beam
+  materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
   N=1e5 #number of particles
-  epsx = 1e-4 #[um-mrad] #ESS beam at PBW: 0.113
-  betax = 1e-2 #[m] 1000
-  alphx = 0 #[mrad] -50
-  epsy = 1e-4 #[um] 0.121
-  betay = 1e-2 #[m] 200
-  alphy = 0 #[mrad] -7
-  ifplot=True #for plotting the 3 graphs per material
-else:
-  n=input("How many particles would you like to run? ")
-  N=float(n)
+  epsx = 1e-4 #[um-mrad] 
+  betax = 1e-2 #[m] 
+  alphx = 0 #[mrad] 
+  epsy = 1e-4 #[um-mrad] 
+  betay = 1e-2 #[m] 
+  alphy = 0 #[mrad] 
+  ifplot=False 
+elif isfloat(sys.argv[1]) and isfloat(sys.argv[7]): #input variables are inputs
+  N = sys.argv[1]
+  epsx = sys.argv[2] #[um-mrad] 
+  betax = sys.argv[3] #[m] 
+  alphx = sys.argv[4] #[mrad] 
+  epsy = sys.argv[5] #[um-mrad] 
+  betay = sys.argv[6] #[m] 
+  alphy = sys.argv[7] #[mrad] 
+  if sys.arg[8]:
+    ifplot = True #remember, sys.argv[8] anything produces plotting!
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
@@ -60,7 +76,6 @@ if ifplot:
   engplot=True
 
 #Create the fig before the loop with 2 plots side by side
-plt.close()
 fig = plt.figure(figsize=(15,8))
 plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
 s1 = fig.add_subplot(1,2,1)
@@ -79,6 +94,7 @@ percenttextx = r"% outside 3$\sigma_x$:"
 percenttexty = r"% outside 3$\sigma_y$:"
 sigmatextx = r"$\sigma_x$:"
 sigmatexty = r"$\sigma_y$:"
+
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
   #savename,xexit,yexit= simulation( N,material,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
@@ -94,49 +110,48 @@ for material in materials:
       xmax = math.ceil(np.max(xexit)/100)*100
       #For plotting x,y plots for core view and halo zoom-ins
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
-      #xlim==0 => -30,30; other=> [-xlim*sigma,xlim*sigma] 
-      #ylim==0 => with plot; !=0 => [0,ylim] (0.00005 is for halo)
-      plotFit(xexit,yexit,savename,  3,      0,material) #standard core
+      #xlim<=10 => [-xlim*sigma,xlim*sigma]; xlim>10 => [-xlim,xlim]
+      #ylim==0 => with plot; ylim!=0 => [0,ylim] (5 particles /(mag of N) is for halo)
+      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
       plotFit(xexit,yexit,savename, xmax,5/(10**(mag+0)),material) #full range halo, with dynamic halo zoom
-      #plotFit(xexit,yexit,savename,  10,5/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Al":
     if ifplot:
       print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
       xmax = math.ceil(np.max(xexit)/100)*100
       print(xmax)
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
-      plotFit(xexit,yexit,savename,  3,      0,material) #standard core
+      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
       plotFit(xexit,yexit,savename, xmax,5/(10**(mag+0)),material) #full range halo
       plotFit(xexit,yexit,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Au":
-      if ifplot:
-        print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
-        xmax = math.ceil(np.max(xexit)/100)*100
-        #plotFit(xs,    ys, savename,xlim,   ylim,material) 
-        plotFit(xexit,yexit,savename,  3,      0,material) #standard core
-        plotFit(xexit,yexit,savename, xmax,15/(10**(mag+0)),material) #full range halo
-        plotFit(xexit,yexit,savename,  10,15/(10**(mag+0)),material) #10 sigma range halo
+    if ifplot:
+      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
+      xmax = math.ceil(np.max(xexit)/100)*100
+      #plotFit(xs,    ys, savename,xlim,   ylim,material) 
+      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
+      plotFit(xexit,yexit,savename, xmax,15/(10**(mag+0)),material) #full range halo
+      plotFit(xexit,yexit,savename,  10,15/(10**(mag+0)),material) #10 sigma range halo
   
   #Multi-Material Plot section, continues the material loop to plot data.
-  #For creating the fit to histogram of particle distribution
-  from scipy.stats import norm
+  #For creating the PDF of particle distribution from findFit function optimized mu and sigma.
+  from scipy.stats import norm 
   
   #Define plotting characteristics depending on material
   if material == "G4_Galactic":
     mat = "Vacuum"
     color = 'magenta'
-    dash = 'y--'
+    dash = 'm--'
     tsp = 0.2 #transparency
   elif material == "G4_Al":
     mat ="Al"
-    color = 'green'
-    dash = 'g--'
+    color = 'blue'
+    dash = 'b--'
     tsp = 0.5
   elif material == "G4_AIR":
     mat ="Air"
-    color = 'blue'
+    color = 'cyan'
     tsp = 0.2
-    dash = 'b--'
+    dash = 'c--'
   elif material == "G4_Au":
     mat = "Au"
     color = 'gold'
