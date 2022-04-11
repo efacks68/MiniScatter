@@ -25,7 +25,7 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   #import miniScatterPlots
 
   ### Basic simulation parameters ###
-  QUIET   = True #Reduced output, doesn't show events
+  QUIET   = False #Reduced output, doesn't show events
   TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
   NUM_THREADS = 8 #Number of parallel threads to use for scans
   #Where to store temporary data for scans (a fast file system, NOT EOS/AFS)
@@ -78,7 +78,7 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
-  baseSimSetup["anaScatterTest"] = False #don't do Analytical Scatter Angle Test
+  baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
 
   baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
   baseSimSetup["CUTOFF_RADIUS"] = 100.0 #Larger radial cutoff
@@ -107,7 +107,7 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
     z = 1 #not real
   elif baseSimSetup["MAT"] == "G4_Al":
     mat = "Al"
-    radLen = 88.97 #[mm] 
+    radLen = 88.97 #[mm] #0.2401 #[g/mm^2] # #24.01 [g/cm^2]
   elif baseSimSetup["MAT"] == "G4_AIR":
     mat = "Air"
     radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
@@ -244,17 +244,37 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
     z=1
   gamma = (energy - partmass)/partmass 
   beta = np.sqrt(1 - 1/(gamma*gamma))
-  p=2000
-  thetasq = 13.6 * z / (energy*p) * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen))
-  thetasq = 1.4e-4
+  p=partmass*partmass/energy
+  thetasq = 13.6 * z / (energy-p) * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-p/energy)))) #from MiniScatter
+  #thetasq = thetasq / 4
   
-  print("gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e}".format(gamma,beta,thetasq))
+  print("gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(gamma,beta,thetasq))
 
-  delepsx = 0.5 * betax * thetasq * thetasq
+  delepsx = 0.5 * betax * thetasq * thetasq #[m*rad^2]
   delepsy = 0.5 * betay * thetasq * thetasq
-
+  delalpx = epsx * alphax / (epsx + delepsx)
+  delalpy = epsy * alphay / (epsy + delepsy)
+  delbetx = epsx * betax / (epsx + delepsx)
+  delbety = epsy * betay / (epsy + delepsy)
   print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
-  print("The expected changes in emittances from CERN paper: {:.3e}, {:.3e}m".format(delepsx,delepsy))
+  print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx*1e6,delepsy*1e6))
+  print("The expected changes in beta from CERN paper Eq 8: {:.3f}, {:.3f}m".format(delbetx,delbety))
+  print("The expected changes in alpha from CERN paper Eq 8: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+
+  print("\n")
+  gammax = 1 + alphax * alphax / betax
+  gammay = 1 + alphay * alphay / betay
+  delepsx = 0.5 * thetasq * thetasq * (betax + thick * alphax + thick*thick/3 * gammax) #[m*rad^2]
+  delepsy = 0.5 * thetasq * thetasq * (betay + thick * alphay + thick*thick/3 * gammay) #[m*rad^2]
+  delalpx = (epsx * alphax - thick * 0.5 * thetasq) / (epsx + delepsx)
+  delalpy = (epsy * alphay - thick * 0.5 * thetasq) / (epsy + delepsy)
+  delbetx = (epsx * betax + thick * thick / 3 * thetasq) / (epsx + delepsx)
+  delbety = (epsy * betay + thick * thick / 3 * thetasq) / (epsy + delepsy)
+  print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
+  print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(delepsx*1e6,delepsy*1e6))
+  print("The expected changes in beta from CERN paper Eq 16: {:.3f}, {:.3f}m".format(delbetx,delbety))
+  print("The expected changes in alpha from CERN paper Eq 16: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+
 
   #want to add Analytical Scatter Angle Options to MiniScatterDriver. Making New branch 11.4.22
   return savename, xexit, yexit

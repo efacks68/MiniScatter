@@ -30,12 +30,12 @@ def runScatter(simSetup, quiet=False,allOutput=False, logName=None, onlyCommand=
         raise AssertionError("Setting both 'quiet' and 'alloutput' makes no sense")
 
     for key in simSetup.keys():
-        if not key in ("THICK", "MAT", "PRESS", "DIST", "ANG", "TARG_ANG", "WORLDSIZE", "PHYS", "PHYS_CUTDIST",\
-                       "BGMAT", "N", "ENERGY", "ENERGY_FLAT",\
+        if not key in ("THICK", "MAT", "PRESS", "DIST", "ANG", "TARG_ANG", "WORLDSIZE", \
+                       "BGMAT", "N", "ENERGY", "ENERGY_FLAT", "PHYS", "PHYS_CUTDIST",\
                        "BEAM", "XOFFSET", "ZOFFSET", "ZOFFSET_BACKTRACK",\
-                       "BEAMANGLE", "COVAR", "BEAM_RCUT", "SEED", \
-                       "OUTNAME", "OUTFOLDER", "QUICKMODE", "MINIROOT",\
-                       "CUTOFF_ENERGYFRACTION", "CUTOFF_RADIUS", "POSLIM", "EDEP_DZ", "ENG_NBINS"):
+                       "BEAMANGLE", "COVAR", "BEAM_RCUT", "SEED", "ANASCATTER",\
+                       "OUTNAME", "OUTFOLDER", "QUICKMODE", "MINIROOT", "POSLIM",\
+                       "CUTOFF_ENERGYFRACTION", "CUTOFF_RADIUS", "EDEP_DZ", "ENG_NBINS"):
             if key.startswith("MAGNET"):
                 continue
             raise KeyError("Did not expect key {} in the simSetup".format(key))
@@ -147,6 +147,12 @@ def runScatter(simSetup, quiet=False,allOutput=False, logName=None, onlyCommand=
             cmd += ["--miniroot"]
         else:
             assert simSetup["MINIROOT"] == False
+
+    if "ANASCATTER" in simSetup:
+        if simSetup["ANASCATTER"] == True:
+            cmd += ["--anaScatterTest"]
+        else:
+            assert simSetup["ANASCATTER"] == False
 
     if "CUTOFF_ENERGYFRACTION" in simSetup:
         cmd += ["--cutoffEnergyFraction", str(simSetup["CUTOFF_ENERGYFRACTION"])]
