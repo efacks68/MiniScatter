@@ -6,7 +6,7 @@
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut,engplot):
+def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut,engplot):
   import numpy as np
   import ROOT
   import os
@@ -60,12 +60,12 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #anything behind Target is NEGATIVE!
 
   #Beam particle type
-  baseSimSetup["BEAM"]    = "proton"
+  baseSimSetup["BEAM"]    = beam
 
   baseSimSetup["WORLDSIZE"] = 1000.0 #Make the world wider for seeing where particles go
 
   #Target is 1 mm of aluminium
-  baseSimSetup["THICK"] = 1
+  baseSimSetup["THICK"] = thick
 
   baseSimSetup["MAT"] = material
   #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
@@ -78,9 +78,12 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
+  baseSimSetup["anaScatterTest"] = False #don't do Analytical Scatter Angle Test
 
   baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
   baseSimSetup["CUTOFF_RADIUS"] = 100.0 #Larger radial cutoff
+  baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
+  #0.95 is default, but let's be explicit
 
   #Store the .root files in a subfolder from where this script is running,
   # normally MiniScatter/examples, in order to keep things together
@@ -97,14 +100,20 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   simSetup_simple1 = baseSimSetup.copy()
 
   #Define material nickname
+  #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
   if baseSimSetup["MAT"] == "G4_Galactic":
     mat = "Vac"
+    radLen = 1e9 #[mm] basically infinity
+    z = 1 #not real
   elif baseSimSetup["MAT"] == "G4_Al":
     mat = "Al"
+    radLen = 88.97 #[mm] 
   elif baseSimSetup["MAT"] == "G4_AIR":
     mat = "Air"
+    radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
   elif material == "G4_Au":
     mat = "Au"
+    radLen = 3.344
 
   #Give the .root file a dynamic name
   outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0e},a{:.0f},e{:.0e}".format(baseSimSetup["N"],betax,alphax,epsx)
@@ -114,7 +123,8 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #Variables for automation
   savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
   savename=savepath+outname #base savename for plots downstream, brings directly to my directory
-  #print(savename)
+  savedfile=os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
+  #print(savename,'\n',savedfile)
   #print("before run",os.getcwd())
 
   #Run simulation or load old simulation root file!
@@ -173,7 +183,7 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
       #break
   myFile.Close() 
 
-  #For plotting Energy distriution of all species
+  #For plotting Energy distribution of all species
   if engplot:
     import math
     mag=math.floor(math.log10(N)) #for dynamic title name
@@ -210,5 +220,41 @@ def simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy,zoff,Engcut
   #Display Full Energy distribution results
   print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit)),
       mat," PBW")
- 
+
+  twiss, numPart,objects = miniScatterDriver.getData(savedfile)
+  Pepsx = twiss['tracker_cutoffPDG2212']['x']['eps']
+  Pbetax = twiss['tracker_cutoffPDG2212']['x']['beta']
+  Palphx = twiss['tracker_cutoffPDG2212']['x']['alpha']
+  Pepsy = twiss['tracker_cutoffPDG2212']['y']['eps']
+  Pbetay = twiss['tracker_cutoffPDG2212']['y']['beta']
+  Palphy = twiss['tracker_cutoffPDG2212']['y']['alpha']
+
+
+  #print("And use Energy cutoff!!! as per Kyrre morning of 7 April") #already using that by default, but passed it explicitly too
+  print("The initial Twiss are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(epsx,betax,alphax,epsy,betay,alphay))
+  print("The Twiss at Target are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(Pepsx,Pbetax,Palphx,Pepsy,Pbetay,Palphy))
+
+  depsx = Pepsx - epsx
+  depsy = Pepsy - epsy
+  if beam == "proton":
+    partmass = 938.27209 #[MeV]
+    z=1
+  elif beam == "electron":
+    partmass = 0.511 #[MeV]
+    z=1
+  gamma = (energy - partmass)/partmass 
+  beta = np.sqrt(1 - 1/(gamma*gamma))
+  p=2000
+  thetasq = 13.6 * z / (energy*p) * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen))
+  thetasq = 1.4e-4
+  
+  print("gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e}".format(gamma,beta,thetasq))
+
+  delepsx = 0.5 * betax * thetasq * thetasq
+  delepsy = 0.5 * betay * thetasq * thetasq
+
+  print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
+  print("The expected changes in emittances from CERN paper: {:.3e}, {:.3e}m".format(delepsx,delepsy))
+
+  #want to add Analytical Scatter Angle Options to MiniScatterDriver. Making New branch 11.4.22
   return savename, xexit, yexit

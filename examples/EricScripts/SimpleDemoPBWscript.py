@@ -99,8 +99,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xexit,yexit= simulation( N,material,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xexit,yexit = simulation( N,material,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95, engplot)
+  #savename,xexit,yexit= simulation( N,material,beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  savename,xexit,yexit = simulation( N,material,"proton",    1,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
