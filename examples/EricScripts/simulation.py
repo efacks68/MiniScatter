@@ -221,6 +221,8 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit)),
       mat," PBW")
 
+  #Analytical Twiss Parameter Calculations from https://cds.cern.ch/record/499590
+  #get Twiss parameters from tracker at ESS Target location:
   twiss, numPart,objects = miniScatterDriver.getData(savedfile)
   Pepsx = twiss['tracker_cutoffPDG2212']['x']['eps']
   Pbetax = twiss['tracker_cutoffPDG2212']['x']['beta']
@@ -228,53 +230,66 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   Pepsy = twiss['tracker_cutoffPDG2212']['y']['eps']
   Pbetay = twiss['tracker_cutoffPDG2212']['y']['beta']
   Palphy = twiss['tracker_cutoffPDG2212']['y']['alpha']
-
+  depsx = Pepsx - epsx #easy access to the actual change!
+  depsy = Pepsy - epsy
 
   #print("And use Energy cutoff!!! as per Kyrre morning of 7 April") #already using that by default, but passed it explicitly too
   print("The initial Twiss are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(epsx,betax,alphax,epsy,betay,alphay))
   print("The Twiss at Target are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(Pepsx,Pbetax,Palphx,Pepsy,Pbetay,Palphy))
 
-  depsx = Pepsx - epsx
-  depsy = Pepsy - epsy
+  #particle characteristic values
   if beam == "proton":
     partmass = 938.27209 #[MeV]
     z=1
   elif beam == "electron":
     partmass = 0.511 #[MeV]
     z=1
-  gamma = (energy - partmass)/partmass 
-  beta = np.sqrt(1 - 1/(gamma*gamma))
-  p=partmass*partmass/energy
-  thetasq = 13.6 * z / (energy-p) * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-p/energy)))) #from MiniScatter
-  #thetasq = thetasq / 4
-  
-  print("gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(gamma,beta,thetasq))
 
+  #constants for below use
+  c = 2.99792e8 #[m/s]
+  MeV = 1e6*1.602e-19 
+  um = 1e-6 #[m] #need to convert to real units as the equations use real units.
+  m = 1 #[m]
+  mm = 1e-3 #[m]
+  ummrad = um*1e-3
+
+  #calculations
+  gamma = (energy + partmass)/partmass 
+  beta = np.sqrt(1 - 1/(gamma*gamma))
+  q=partmass*partmass/energy
+  p = np.sqrt((energy*MeV*energy*MeV-partmass*MeV*partmass*MeV)/ (c*c))/(MeV/c)
+  #betap = beta*p
+  betap = energy-q
+  #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
+  thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
+  print("E: {:.0f}MeV, betap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(energy,betap,gamma,beta,radLen,thetasq))
+  #using beta*q or energy-q produces similar #s (within 7%)
+
+  #Calculations from Eq 7 and 8
   delepsx = 0.5 * betax * thetasq * thetasq #[m*rad^2]
   delepsy = 0.5 * betay * thetasq * thetasq
-  delalpx = epsx * alphax / (epsx + delepsx)
-  delalpy = epsy * alphay / (epsy + delepsy)
-  delbetx = epsx * betax / (epsx + delepsx)
-  delbety = epsy * betay / (epsy + delepsy)
+  delalpx = epsx*um * alphax / (epsx*um + delepsx)
+  delalpy = epsy*um * alphay / (epsy*um + delepsy)
+  delbetx = epsx*um * betax / (epsx*um + delepsx)
+  delbety = epsy*um * betay / (epsy*um + delepsy)
   print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
-  print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx*1e6,delepsy*1e6))
-  print("The expected changes in beta from CERN paper Eq 8: {:.3f}, {:.3f}m".format(delbetx,delbety))
-  print("The expected changes in alpha from CERN paper Eq 8: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+  print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
+  print("The expected final beta from CERN paper Eq 8: {:.3f}, {:.3f}m".format(delbetx,delbety))
+  print("The expected final alpha from CERN paper Eq 8: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
 
+  #Calculations from Eq 15 and 16
   print("\n")
   gammax = 1 + alphax * alphax / betax
   gammay = 1 + alphay * alphay / betay
-  delepsx = 0.5 * thetasq * thetasq * (betax + thick * alphax + thick*thick/3 * gammax) #[m*rad^2]
-  delepsy = 0.5 * thetasq * thetasq * (betay + thick * alphay + thick*thick/3 * gammay) #[m*rad^2]
-  delalpx = (epsx * alphax - thick * 0.5 * thetasq) / (epsx + delepsx)
-  delalpy = (epsy * alphay - thick * 0.5 * thetasq) / (epsy + delepsy)
-  delbetx = (epsx * betax + thick * thick / 3 * thetasq) / (epsx + delepsx)
-  delbety = (epsy * betay + thick * thick / 3 * thetasq) / (epsy + delepsy)
+  delepsx = 0.5 * thetasq * thetasq * (betax + thick*mm * alphax + thick*mm*thick*mm/3 * gammax) #[m*rad^2]
+  delepsy = 0.5 * thetasq * thetasq * (betay + thick*mm * alphay + thick*mm*thick*mm/3 * gammay) #[m*rad^2]
+  delalpx = (epsx*um * alphax - thick*mm * 0.5 * thetasq) / (epsx*um + delepsx)
+  delalpy = (epsy*um * alphay - thick*mm * 0.5 * thetasq) / (epsy*um + delepsy)
+  delbetx = (epsx*um * betax + thick * thick*mm / 3 * thetasq) / (epsx*um + delepsx)
+  delbety = (epsy*um * betay + thick * thick*mm / 3 * thetasq) / (epsy*um + delepsy)
   print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
-  print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(delepsx*1e6,delepsy*1e6))
-  print("The expected changes in beta from CERN paper Eq 16: {:.3f}, {:.3f}m".format(delbetx,delbety))
-  print("The expected changes in alpha from CERN paper Eq 16: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+  print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
+  print("The expected final beta from CERN paper Eq 16: {:.3f}, {:.3f}m".format(delbetx,delbety))
+  print("The expected final alpha from CERN paper Eq 16: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
 
-
-  #want to add Analytical Scatter Angle Options to MiniScatterDriver. Making New branch 11.4.22
   return savename, xexit, yexit
