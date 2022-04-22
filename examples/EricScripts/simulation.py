@@ -258,8 +258,8 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   beta = np.sqrt(1 - 1/(gamma*gamma))
   q=partmass*partmass/energy
   p = np.sqrt((energy*MeV*energy*MeV-partmass*MeV*partmass*MeV)/ (c*c))/(MeV/c)
-  #betap = beta*p
-  betap = energy-q
+  betap = beta*p
+  #betap = energy-q
   #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
   thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
   print("E: {:.0f}MeV, betap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(energy,betap,gamma,beta,radLen,thetasq))

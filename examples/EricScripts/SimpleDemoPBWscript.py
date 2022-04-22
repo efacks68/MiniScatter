@@ -229,7 +229,7 @@ from datetime import datetime
 dt = datetime.now()
 name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
 print(name) #show so it is easy to find the file
-fig.savefig(name)
+#fig.savefig(name)
 #plt.show()
 plt.close() #be sure to close the plot
 print("\n")
