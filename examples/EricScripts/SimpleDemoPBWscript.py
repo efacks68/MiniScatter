@@ -39,7 +39,7 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
     ifplot=True
 elif sys.argv[1] == 'ESS': #auto profiles
   #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"]
-  materials = ["G4_Al","G4_Au"]
+  materials = ["G4_Al"]#,"G4_Au"]
   N=1e5 #number of particles
   epsx = 0.113 #[um-mrad]
   betax = 1000 #[m]
@@ -99,8 +99,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xexit,yexit= simulation( N,material,beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xexit,yexit = simulation( N,material,"proton",    1,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
+  #savename,xtarg,ytarg= simulation( N,material,beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  savename,xtarg,ytarg = simulation( N,material,"proton",    1,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -108,31 +108,31 @@ for material in materials:
   #Now plot the distributions with various views depending on the material
   if material == "G4_Galactic" or material == "G4_AIR":
     if ifplot:
-      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
-      xmax = math.ceil(np.max(xexit)/100)*100
+      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
+      xmax = math.ceil(np.max(xtarg)/100)*100
       #For plotting x,y plots for core view and halo zoom-ins
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
       #xlim<=10 => [-xlim*sigma,xlim*sigma]; xlim>10 => [-xlim,xlim]
       #ylim==0 => with plot; ylim!=0 => [0,ylim] (5 particles /(mag of N) is for halo)
-      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
-      plotFit(xexit,yexit,savename, xmax,5/(10**(mag+0)),material) #full range halo, with dynamic halo zoom
+      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo, with dynamic halo zoom
   elif material == "G4_Al":
     if ifplot:
-      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
-      xmax = math.ceil(np.max(xexit)/100)*100
+      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
+      xmax = math.ceil(np.max(xtarg)/100)*100
       print(xmax)
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
-      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
-      plotFit(xexit,yexit,savename, xmax,5/(10**(mag+0)),material) #full range halo
-      plotFit(xexit,yexit,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
+      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo
+      plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Au":
     if ifplot:
-      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xexit),np.max(yexit)))
-      xmax = math.ceil(np.max(xexit)/100)*100
+      print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
+      xmax = math.ceil(np.max(xtarg)/100)*100
       #plotFit(xs,    ys, savename,xlim,   ylim,material) 
-      plotFit(xexit,yexit,savename,  3,      0,material) #3 sigma core
-      plotFit(xexit,yexit,savename, xmax,15/(10**(mag+0)),material) #full range halo
-      plotFit(xexit,yexit,savename,  10,15/(10**(mag+0)),material) #10 sigma range halo
+      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material) #full range halo
+      plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material) #10 sigma range halo
   
   #Multi-Material Plot section, continues the material loop to plot data.
   #For creating the PDF of particle distribution from findFit function optimized mu and sigma.
@@ -161,16 +161,16 @@ for material in materials:
     dash = 'r--'
 
   #Use Scipy.optimize.curve_fit in my findFit function to get mus and sigmas:
-  mux, sigmax[material], xinterval = findFit(xexit) #dynamically gets parameters AND histogram intervals!
-  muy, sigmay[material], yinterval = findFit(yexit)
+  mux, sigmax[material], xinterval = findFit(xtarg) #dynamically gets parameters AND histogram intervals!
+  muy, sigmay[material], yinterval = findFit(ytarg)
 
   #Find range of particles that are within 3 sigma for each material
-  sigx=np.abs(xexit)>3*sigmax[material]# and np.abs(xexit)<10*sigma)
-  sigy=np.abs(yexit)>3*sigmay[material]
+  sigx=np.abs(xtarg)>3*sigmax[material]# and np.abs(xtarg)<10*sigma)
+  sigy=np.abs(ytarg)>3*sigmay[material]
 
   #Utilize dictionary to find % of particles within 3 sigma 
-  pOut3sigx[material] = len(xexit[sigx])/len(xexit)*100 
-  pOut3sigy[material] = len(yexit[sigy])/len(yexit)*100
+  pOut3sigx[material] = len(xtarg[sigx])/len(xtarg)*100 
+  pOut3sigy[material] = len(ytarg[sigy])/len(ytarg)*100
   #print(material," gives ",pOut3sigx[material],"% outisde 3 sigma in X")
   #print(material," gives ",pOut3sigy[material],"% outisde 3 sigma in Y")
 
@@ -181,14 +181,14 @@ for material in materials:
   sigmatexty +="\n"+mat+" = "+"{:.2f}".format(sigmay[material])+"mm"
 
   #Make the histogram of the full energy distrubtion for X
-  nx, binsx, patchesx = s1.hist(xexit, xinterval, density=True, facecolor=color, alpha=tsp,label=mat)
+  nx, binsx, patchesx = s1.hist(xtarg, xinterval, density=True, facecolor=color, alpha=tsp,label=mat)
   
   #Add the 'best fit' line using the earlier norm.fit mus and sigmas for X
   y1 = norm.pdf(binsx, mux, sigmax[material])
   l1 = s1.plot(binsx, y1, dash, linewidth=1,label=mat) #important to keep it as l# or it won't work
 
   #Make the histogram of the full energy distrubtion for Y
-  ny, binsy, patchesy = s2.hist(yexit, yinterval, density=True, facecolor=color, alpha=tsp,label=mat)
+  ny, binsy, patchesy = s2.hist(ytarg, yinterval, density=True, facecolor=color, alpha=tsp,label=mat)
   
   #Add the 'best fit' line using the earlier norm.fit mus and sigmas for Y
   y2 = norm.pdf(binsy, muy, sigmay[material])

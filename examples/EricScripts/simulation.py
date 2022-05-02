@@ -132,32 +132,33 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
   
   #If one wants to use the initial spread for some reason, as I did initially xD
-  #myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  #myTree= myFile.Get('InitParts') #because the name is capitalized!
+  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+  myTree= myFile.Get('InitParts') #because the name is capitalized!
   #print(myTree)
   #print(myTree.())
-  #xinit = np.zeros(myTree.GetEntries())
-  #pxinit = np.zeros(myTree.GetEntries())
-  #yinit = np.zeros(myTree.GetEntries())
-  #pyinit = np.zeros(myTree.GetEntries())
+  xinit = np.zeros(myTree.GetEntries())
+  pxinit = np.zeros(myTree.GetEntries())
+  yinit = np.zeros(myTree.GetEntries())
+  pyinit = np.zeros(myTree.GetEntries())
   #Einit = np.zeros(myTree.GetEntries())
   #print(len(xinit))
-  #for i in range(myTree.GetEntries()):
-  #    myTree.GetEntry(i)
-  #    #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
-  #    xinit[i] = myTree.x
-  #    pxinit[i] = myTree.px
-  #    yinit[i] = myTree.y
-  #    pyinit[i] = myTree.py
-  #    Einit[i] = myTree.E
-  #myFile.Close()
+  for i in range(myTree.GetEntries()):
+      myTree.GetEntry(i)
+      #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
+      xinit[i] = myTree.x
+      pxinit[i] = myTree.px
+      yinit[i] = myTree.y
+      pyinit[i] = myTree.py
+      #Einit[i] = myTree.E
+  myFile.Close()
 
-  #For creating arrays with particle data
+  #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
+  #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
+  #These are not at the ESS Target location, but are at the far side of the PBW
   myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  myTree= myFile.Get('TrackerHits') #TrackerHits has all trackers, be sure to only have 1!
+  myTree= myFile.Get('TargetExit') #TrackerHits has all trackers, be sure to only have 1!
   #print(myTree)
 
-  #Now get the "exit" distributions that you actually want to plot.
   #print(myTree.GetEntries())
   xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
   pxexit = np.zeros(myTree.GetEntries())
@@ -183,6 +184,37 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
       #break
   myFile.Close() 
 
+  #Below are the distributions taken from the ESS Target location (the detector located 5m from PBW)
+  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+  myTree= myFile.Get('TrackerHits') #TrackerHits has all trackers, be sure to only have 1!
+  #print(myTree)
+
+  #Now get the "targ" distributions that you actually want to plot.
+  #print(myTree.GetEntries())
+  xtarg = np.zeros(myTree.GetEntries()) #dynamic length arrays
+  pxtarg = np.zeros(myTree.GetEntries())
+  ytarg = np.zeros(myTree.GetEntries())
+  pytarg = np.zeros(myTree.GetEntries())
+  #ztarg = np.zeros(myTree.GetEntries())
+  #pztarg = np.zeros(myTree.GetEntries())
+  Etarg = np.zeros(myTree.GetEntries())
+  #PDGtarg = np.zeros(myTree.GetEntries())
+  #print("The length of the arrays are ",len(xtarg))
+
+  for i in range(myTree.GetEntries()): #put data in arrays
+      #print(myTree.E)
+      myTree.GetEntry(i)
+      xtarg[i] = myTree.x
+      pxtarg[i] = myTree.px
+      ytarg[i] = myTree.y
+      pytarg[i] = myTree.py
+      #ztarg[i] = myTree.z #not used, but available.
+      #pztarg[i] = myTree.pz
+      Etarg[i] = myTree.E
+      #PDGtarg[i] = myTree.PDG
+      #break
+  myFile.Close() 
+
   #For plotting Energy distribution of all species
   if engplot:
     import math
@@ -195,7 +227,7 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
     else: #simple histogram plot
       import matplotlib.pyplot as plt
       plt.close()
-      plt.hist(Eexit,100,log=True)
+      plt.hist(Etarg,100,log=True)
       #future addition - make other PDG entries be another color?
       plt.xlabel("Energy [MeV]")
       plt.ylabel("Counts")
@@ -207,35 +239,57 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
       plt.close()
 
   #Make Energy cut after plotting Energy distribution
+  #Be sure this Energy cutting is for the ESS TARGet arrays 
   Ecut = 2000 * Engcut #[MeV]
-  #print(np.min(Eexit))
-  mask = np.abs(Eexit) > Ecut #mask to exclude low energy particles
-  Eexit = Eexit[mask]
-  xexit = xexit[mask]
-  pxexit = pxexit[mask]
-  yexit = yexit[mask]
-  pyexit = pyexit[mask]
-  #print('g',len(Eexit))
+  #print(np.min(Etarg))
+  mask = np.abs(Etarg) > Ecut #mask to exclude low energy particles
+  Etarg = Etarg[mask]
+  xtarg = xtarg[mask]
+  pxtarg = pxtarg[mask]
+  ytarg = ytarg[mask]
+  pytarg = pytarg[mask]
+  #print('g',len(Etarg))
 
   #Display Full Energy distribution results
-  print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit)),
+  print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Etarg),np.min(Etarg)),
       mat," PBW")
 
-  #Analytical Twiss Parameter Calculations from https://cds.cern.ch/record/499590
+  #Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
+  #constants for below use
+  c = 2.99792e8 #[m/s]
+  MeV = 1e6*1.602e-19 
+  um = 1e-6 #[m] #need to convert to real units as the equations use real units.
+  m = 1 #[m]
+  mm = 1e-3 #[m]
+  ummrad = um*1e-3
+
   #get Twiss parameters from tracker at ESS Target location:
   twiss, numPart,objects = miniScatterDriver.getData(savedfile)
-  Pepsx = twiss['tracker_cutoffPDG2212']['x']['eps']
-  Pbetax = twiss['tracker_cutoffPDG2212']['x']['beta']
-  Palphx = twiss['tracker_cutoffPDG2212']['x']['alpha']
-  Pepsy = twiss['tracker_cutoffPDG2212']['y']['eps']
-  Pbetay = twiss['tracker_cutoffPDG2212']['y']['beta']
-  Palphy = twiss['tracker_cutoffPDG2212']['y']['alpha']
-  depsx = Pepsx - epsx #easy access to the actual change!
-  depsy = Pepsy - epsy
+  Tepsx = twiss['tracker_cutoffPDG2212']['x']['eps'] *um #[um]
+  Tbetax = twiss['tracker_cutoffPDG2212']['x']['beta'] *m #[m]
+  Talphx = twiss['tracker_cutoffPDG2212']['x']['alpha'] #[um-mrad]
+  Tepsy = twiss['tracker_cutoffPDG2212']['y']['eps'] *um #[um]
+  Tbetay = twiss['tracker_cutoffPDG2212']['y']['beta'] *m
+  Talphy = twiss['tracker_cutoffPDG2212']['y']['alpha'] #[um-mrad]
 
-  #print("And use Energy cutoff!!! as per Kyrre morning of 7 April") #already using that by default, but passed it explicitly too
-  print("The initial Twiss are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(epsx,betax,alphax,epsy,betay,alphay))
-  print("The Twiss at Target are: \nX: {:.3f}um, {:.3f}m, {:.3f}um-mrad\nY: {:.3f}um, {:.3f}m, {:.3f}um-mrad".format(Pepsx,Pbetax,Palphx,Pepsy,Pbetay,Palphy))
+  # Get Twiss for Target Exit
+  Eepsx = twiss['target_exit_cutoff']['x']['eps'] *um #[um]
+  Ebetax = twiss['target_exit_cutoff']['x']['beta'] *m #[m]
+  Ealphx = twiss['target_exit_cutoff']['x']['alpha'] #[um-mrad]
+  Eepsy = twiss['target_exit_cutoff']['y']['eps'] *um #[um]
+  Ebetay = twiss['target_exit_cutoff']['y']['beta'] *m
+  Ealphy = twiss['target_exit_cutoff']['y']['alpha'] #[um-mrad]
+  # and Variances for Geometric Emittance calculation... or not (28.4)
+  #EposVarx = twiss['target_exit_cutoff']['x']['posVar'] 
+  #EposVary = twiss['target_exit_cutoff']['y']['posVar'] 
+  #EangVarx = twiss['target_exit_cutoff']['x']['angVar'] 
+  #EangVary = twiss['target_exit_cutoff']['y']['angVar'] 
+  #EcoVarx = twiss['target_exit_cutoff']['x']['coVar'] 
+  #EcoVary = twiss['target_exit_cutoff']['y']['coVar'] 
+  #EepsGx = np.sqrt(EposVarx*EangVarx - EcoVarx*EcoVarx) #incorrect! 28.4
+  #EepsGy = np.sqrt(EposVary*EangVary - EcoVary*EcoVary)
+  depsx = Eepsx - epsx*um #[um] #passed #s aren't in units system
+  depsy = Eepsy - epsy*um #[um]
 
   #particle characteristic values
   if beam == "proton":
@@ -245,51 +299,98 @@ def simulation(N,material,beam,thick,epsx,epsy,alphax,alphay,betax,betay,energy,
     partmass = 0.511 #[MeV]
     z=1
 
-  #constants for below use
-  c = 2.99792e8 #[m/s]
-  MeV = 1e6*1.602e-19 
-  um = 1e-6 #[m] #need to convert to real units as the equations use real units.
-  m = 1 #[m]
-  mm = 1e-3 #[m]
-  ummrad = um*1e-3
+  #calculations from MiniScatter
+  #  G4RunManager*           run    = G4RunManager::GetRunManager();
+  #  PrimaryGeneratorAction* genAct = (PrimaryGeneratorAction*)run->GetUserPrimaryGeneratorAction();
+  #  double gamma_rel = 1 + ( genAct->get_beam_energy() * MeV / genAct->get_beam_particlemass() );
+  #  double beta_rel = sqrt(gamma_rel*gamma_rel - 1.0) / gamma_rel;
 
-  #calculations
-  gamma = (energy + partmass)/partmass 
-  beta = np.sqrt(1 - 1/(gamma*gamma))
+  #  double det = posVar*angVar - coVar*coVar; // [mm^2 * rad^2]
+  #  double epsG = sqrt(det);                  // [mm*rad]
+  #  double epsN = epsG*beta_rel*gamma_rel;    // [mm*rad]
+  #  double beta = posVar/epsG;                // [mm]
+  #  double alpha = -coVar/epsG;               // [-]
+  #gamma = (energy + partmass)/partmass 
+  #beta = np.sqrt(1 - 1/(gamma*gamma))
+  gamma = 1 + energy/partmass #from PrintTwissParameters. Gives same answers.
+  beta = np.sqrt(gamma*gamma -1 )/gamma
+  Gepsx = epsx*um/(beta*gamma) #correct!
+  Gepsy = epsy*um/(beta*gamma)
+  #Nepsx = EepsGx*beta*gamma #incorrect!
+  #Nepsy = EepsGy*beta*gamma
+  #print("correct: Gepsx: {:.2e}, Gepsy: {:.2e}, incorrect: EpsGx: {:.2e}m, EpsGy: {:.2e}m, Nepsx: {:.2e}, Nepsy: {:.2e}".format(Gepsx,Gepsy,EepsGx,EepsGy,Nepsx,Nepsy))
+
   q=partmass*partmass/energy
   p = np.sqrt((energy*MeV*energy*MeV-partmass*MeV*partmass*MeV)/ (c*c))/(MeV/c)
   betap = beta*p
   #betap = energy-q
   #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
   thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
-  print("E: {:.0f}MeV, betap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(energy,betap,gamma,beta,radLen,thetasq))
+  print("\nbetap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(betap,gamma,beta,radLen,thetasq))
   #using beta*q or energy-q produces similar #s (within 7%)
 
   #Calculations from Eq 7 and 8
-  delepsx = 0.5 * betax * thetasq * thetasq #[m*rad^2]
-  delepsy = 0.5 * betay * thetasq * thetasq
+  delepsx = 0.5 * betax*m * thetasq * thetasq #[m*rad^2]
+  delepsy = 0.5 * betay*m * thetasq * thetasq
   delalpx = epsx*um * alphax / (epsx*um + delepsx)
   delalpy = epsy*um * alphay / (epsy*um + delepsy)
-  delbetx = epsx*um * betax / (epsx*um + delepsx)
-  delbety = epsy*um * betay / (epsy*um + delepsy)
-  print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
-  print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
-  print("The expected final beta from CERN paper Eq 8: {:.3f}, {:.3f}m".format(delbetx,delbety))
-  print("The expected final alpha from CERN paper Eq 8: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+  delbetx = epsx*um * betax*m / (epsx*um + delepsx)
+  delbety = epsy*um * betay*m / (epsy*um + delepsy)
+  #print("\nThe change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx/um,depsy/um))
+  #print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
+  #print("The expected final beta from CERN paper Eq 8: {:.3f}, {:.3f}m".format(delbetx/m,delbety/m))
+  #print("The expected final alpha from CERN paper Eq 8: {:.3f}, {:.3f}um-mrad".format(delalpx/ummrad,delalpy/ummrad))
+  #print("Expected sigmas and covariances in X, Y from Eq 8: {:.3f}, {:.3f}mm, and {:.3f}, {:.3f}prad".format(np.sqrt(delbetx*delepsx)*1e3,
+  #              np.sqrt(delbety*delepsy)*1e3,delalpx/delbetx/ummrad/mm,delalpy/delbetx/ummrad/mm))
+  #print('Norm. Emittance, Beta, Alpha')
+  #print("And use Energy cutoff!!! as per Kyrre morning of 7 April") #already using that by default, but passed it explicitly too
+  #print("The initial Twiss are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(epsx,betax,alphax,epsy,betay,alphay)) #passed #s aren't in system
+  #print("The Twiss at PBW Exit are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(Eepsx/um,Ebetax,Ealphx,Eepsy/um,Ebetay,Ealphy))
+  #print("The calculated Twiss at PBW Exit are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format((epsx*um+delepsx)/um,delbetx,delalpx,(epsy*um+delepsy)/um,delbety,delalpy))
+  #print("The Twiss at Target are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(Tepsx/um,Tbetax,Talphx,Tepsy/um,Tbetay,Talphy))
+
 
   #Calculations from Eq 15 and 16
-  print("\n")
-  gammax = 1 + alphax * alphax / betax
-  gammay = 1 + alphay * alphay / betay
-  delepsx = 0.5 * thetasq * thetasq * (betax + thick*mm * alphax + thick*mm*thick*mm/3 * gammax) #[m*rad^2]
-  delepsy = 0.5 * thetasq * thetasq * (betay + thick*mm * alphay + thick*mm*thick*mm/3 * gammay) #[m*rad^2]
-  delalpx = (epsx*um * alphax - thick*mm * 0.5 * thetasq) / (epsx*um + delepsx)
-  delalpy = (epsy*um * alphay - thick*mm * 0.5 * thetasq) / (epsy*um + delepsy)
-  delbetx = (epsx*um * betax + thick * thick*mm / 3 * thetasq) / (epsx*um + delepsx)
-  delbety = (epsy*um * betay + thick * thick*mm / 3 * thetasq) / (epsy*um + delepsy)
-  print("The change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx,depsy))
-  print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
-  print("The expected final beta from CERN paper Eq 16: {:.3f}, {:.3f}m".format(delbetx,delbety))
-  print("The expected final alpha from CERN paper Eq 16: {:.3f}, {:.3f}um-mrad".format(delalpx,delalpy))
+  gammax = (1 + alphax * alphax ) / betax*m #[pm-mrad-mrad]??
+  gammay = (1 + alphay * alphay ) / betay*m
+  deleps2x = 0.5 * thetasq * thetasq * (betax*m + thick*mm * alphax + thick*mm*thick*mm/3 * gammax) #[m*rad^2]
+  deleps2y = 0.5 * thetasq * thetasq * (betay*m + thick*mm * alphay + thick*mm*thick*mm/3 * gammay) #[m*rad^2]
+  delalp2x = (epsx*um * alphax - thick*mm * 0.5 * thetasq) / (epsx*um + delepsx)
+  delalp2y = (epsy*um * alphay - thick*mm * 0.5 * thetasq) / (epsy*um + delepsy)
+  delbet2x = (epsx*um * betax*m + thick*mm * thick*mm / 3 * thetasq) / (epsx*um + delepsx)
+  delbet2y = (epsy*um * betay*m + thick*mm * thick*mm / 3 * thetasq) / (epsy*um + delepsy)
+  print("\nThe change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(depsx/um,depsy/um))
+  print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delepsx/um,delepsy/um))
+  print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(deleps2x/um,deleps2y/um))
+  #print("The expected final beta from CERN paper Eq 16: {:.3f}, {:.3f}m".format(delbet2x/m,delbet2y/m))
+  #print("The expected final alpha from CERN paper Eq 16: {:.3f}, {:.3f}um-mrad".format(delalp2x/ummrad,delalp2y/ummrad))
+  #print("Expected sigmas and covariances in X, Y from Eq 16: {:.3f}, {:.3f}mm, and {:.3f}, {:.3f}prad".format(np.sqrt(delbetx*delepsx)*1e3,
+  #              np.sqrt(delbety*delepsy)*1e3,delalpx/delbetx/ummrad/mm,delalpy/delbetx/ummrad/mm))
 
-  return savename, xexit, yexit
+  #Plotting PBW Exit distribution vs the pdf produced from the Formalism Equations
+  #be sure to send the exit arrays, NOT Target arrays! 
+  from plotFit import plotTwissFit
+  from plotFit import plotFit 
+  #plotFit(xs,    ys, savename,xlim,   ylim,material)
+  #plotFit(xinit,yinit,savename+'init',  3,      0,material)
+  #plotFit(xexit,yexit,savename+'texit',  3,      0,material)
+
+  Twissix = [betax,alphax,epsx*um,Gepsx] #initial Twiss
+  Twissiy = [betay,alphay,epsy*um,Gepsy]
+  Twisstex = [Ebetax,Ealphx,Eepsx,Eepsx/(beta*gamma)]#target exit Twiss
+  Twisstey = [Ebetay,Ealphy,Eepsy,Eepsy/(beta*gamma)]
+  Twisscx = [delbetx,delalpx,epsx*um+delepsx,(epsx*um+delepsx)/(beta*gamma)] #calculated target exit Twiss
+  Twisscy = [delbety,delalpy,epsy*um+delepsy,(epsy*um+delepsy)/(beta*gamma)]
+  Twissc2x = [delbet2x,delalp2x,epsx*um+deleps2x,(epsx*um+deleps2x)/(beta*gamma)] #calculated 2 target exit Twiss
+  Twissc2y = [delbet2y,delalp2y,epsy*um+deleps2y,(epsy*um+deleps2y)/(beta*gamma)]
+  
+  print('\nInitialTwiss')
+  plotTwissFit(Twissix,Twissiy,xinit,yinit,savename+'init',material,'MiniScatter Initial',Twisstex,Twisstey,'')
+  #print('\nPBW Exit Twiss')
+  #plotTwissFit(Twisstex,Twisstey,xexit,yexit,savename+'texit',material,'MiniScatter',Twisstex,Twisstey,'PBW Exit')
+  print('\nEq8 PBW Exit Twiss')
+  plotTwissFit(Twisscx,Twisscy,xexit,yexit,savename+'texitEq8',material,'Formalism Eq 8',Twisstex,Twisstey,'PBW Exit')
+  print('\nEq16 PBW Exit Twiss')
+  plotTwissFit(Twissc2x,Twissc2y,xexit,yexit,savename+'texitEq16',material,'Formalism Eq 16',Twisstex,Twisstey,'PBW Exit')
+
+  return savename, xtarg, ytarg
