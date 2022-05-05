@@ -127,7 +127,7 @@ def findFit(data):
   return(popt[0],abs(popt[2]),x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
 def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,titledescr):
-  #For plotting particle Distribution at Target Exit with PDF from Formalism Twiss parameters.
+  #For plotting particle Distribution at Target Exit with PDF from Twiss parameters.
   import numpy as np
   import matplotlib.pyplot as plt
   from plotFit import findFit
@@ -149,8 +149,8 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   sigmatexty = r"$\sigma_{Fy}$:"
   mutextx = r"$\mu_{Fx}$:"
   mutexty = r"$\mu_{Fy}$:"
-  #Twiss1x = [betax,alphax,epsx,EepsGx]
 
+  #Twiss1x = [betax,alphax,epsx,EepsGx]
   sigmaTwx = np.sqrt(Twissx[0]*Twissx[2]) /mm #sigma rms = beam size = sqrt(beta*epsN)
   muTwx = Twissx[0]*Twissx[3] /mm            #posVar = beta/epsG 
   sigmaTwy = np.sqrt(Twissy[0]*Twissy[2]) /mm
@@ -159,6 +159,7 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   print('Betay:{:.2f}m, alphay: {:.2f}, Norm Emitt y: {:.3e}m, Geo Emitt y: {:.3e}m'.format(Twissy[0],Twissy[1],Twissy[2],Twissy[3]))
   print('muTwx: {:.2e}mm, muTwy: {:.2e}mm, sigmaTwx; {:.2f}mm, sigmaTwy: {:.2f}mm'.format(muTwx,muTwy,sigmaTwx,sigmaTwy))
 
+  #Get intervals and info about distribution
   mux,sigmax,xinterval = findFit(xs)
   muy,sigmay,yinterval = findFit(ys)
   #print(mux,muy,sigmax,sigmay)
@@ -172,7 +173,7 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   #Make the histogram of the full energy distrubtion for X with findFit intervals
   nx, binsx, patchesx = s1.hist(xs, xinterval, density=True, facecolor='green', alpha=0.75,label='MiniScatter Distribution')
 
-  #Add the 'best fit' line using the earlier findFit mus and sigmas for X
+  #Add the 'best fit' line using the findFit mu and sigma for X and display mu and sigma
   y1 = norm.pdf(binsx, muTwx, sigmaTwx)
   l1 = s1.plot(binsx, y1, 'r--', linewidth=2,label=PDFlabel+' Twiss PDF') #important to keep it as l# or it won't work
   mutextx +="\n"+PDFlabel+" = "+"{:.2f}".format(muTwx)+"mm"
@@ -181,7 +182,7 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   #Make the histogram of the full energy distrubtion for Y with findFit intervals
   ny, binsy, patchesy = s2.hist(ys, yinterval, density=True, facecolor='green', alpha=0.75,label='MiniScatter Distribution')
 
-  #Add the 'best fit' line using the earlier findFit mus and sigmas for Y
+  #Add the 'best fit' line using the findFit mu and sigma for Y and display mu and sigma
   y2 = norm.pdf(binsy, muTwy, sigmaTwy)
   l2 = s2.plot(binsy, y2, 'r--', linewidth=2,label=PDFlabel+' Twiss PDF')
   mutexty +="\n"+PDFlabel+" = "+"{:.2f}".format(muTwy)+"mm"
@@ -193,7 +194,6 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
     muTw2x = Twiss2x[0]*Twiss2x[3] /mm            #posVar = beta/epsG 
     sigmaTw2y = np.sqrt(Twiss2y[0]*Twiss2y[2]) /mm
     muTw2y = Twiss2y[0]*Twiss2y[3] /mm
-
 
     y12 = norm.pdf(binsx,muTw2x,sigmaTw2x)
     l12 = s1.plot(binsx, y12, 'b--', linewidth=1,label='MiniScatter Twiss PDF')
@@ -219,6 +219,7 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   s2.text(xlim2[0]*0.97,ylim2[1]*0.85,mutexty)
   s2.text(xlim2[0]*0.97,ylim2[1]*0.70,sigmatexty,fontsize=10) #set the texts at 3/4 and 1/2 of ylim
 
+  #If this is the instance before PBW, change title and display Twiss of PBW Exit
   import re
   x = re.search('init',savename)
   if x:
@@ -229,6 +230,8 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
     print('muTwx: {:.2e}mm, muTwy: {:.2e}mm, sigmaTwx; {:.2f}mm, sigmaTwy: {:.2f}mm'.format(muTw2x,muTw2y,sigmaTw2x,sigmaTw2y))
   else:
     titlestart = 'At '+ mat + ' ' + titledescr
+
+  #finish setting plot characteristics
   s1.set_title(titlestart+" Twiss Fit X Distribution \n"+rf'$\mu_{{}}= {{:.0e}}$mm, $\sigma_{{}}= {{:.4f}}$mm'.format('D',mux,'D',sigmax),fontsize=fs)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
@@ -239,6 +242,7 @@ def plotTwissFit(Twissx,Twissy,xs,ys,savename,mat,PDFlabel,Twiss2x,Twiss2y,title
   s2.set_ylabel("Probability Density",fontsize=fs)
   s2.legend(fontsize=9)
 
+  #Display formulas for mu and sigma calculations
   twisstext = r"$\mu_F =  \epsilon_G \beta$"+'\n'+r"$\sigma_F = \sqrt{\epsilon_N \beta}$"#+"\n from Eq 8"
   ylim1=s1.get_ylim() #dynamically get the ylimits
   xlim1=s1.get_xlim()

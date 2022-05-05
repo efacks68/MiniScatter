@@ -99,12 +99,11 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
   savename,xtarg,ytarg = simulation( N,material,"proton",    1,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
-  #try to get rid of this:
   #Now plot the distributions with various views depending on the material
   if material == "G4_Galactic" or material == "G4_AIR":
     if ifplot:
@@ -222,7 +221,7 @@ s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
 fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
         rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(epsx,betax,alphx) +
     rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(epsy,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
-#suptitle 2 sets of {{}} fix from "linuxtut.com" blog post
+#suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
 #Can date stamp the multi plot for easier tracking of changes, if necessary
 from datetime import datetime
