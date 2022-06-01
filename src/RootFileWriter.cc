@@ -312,14 +312,14 @@ void RootFileWriter::initializeRootFile(){
 
         target_exit_phasespaceXY        = new TH2D("target_exit_xy",
 						   "Target exit phase space (x,y)",
-						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
+						   1000, -RootFileWriter::histPosLim/mm,RootFileWriter::histPosLim/mm,
+						   1000, -RootFileWriter::histPosLim/mm,RootFileWriter::histPosLim/mm);
         target_exit_phasespaceXY->GetXaxis()->SetTitle("Position x [mm]");
         target_exit_phasespaceXY->GetYaxis()->SetTitle("Position y [mm]");
         target_exit_phasespaceXY_cutoff = new TH2D("target_exit_cutoff_xy",
 						   "Target exit phase space (x,y) (charged, energy > Ecut, r < Rcut)",
-						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
+						   1000, -RootFileWriter::histPosLim/mm,RootFileWriter::histPosLim/mm,
+						   1000, -RootFileWriter::histPosLim/mm,RootFileWriter::histPosLim/mm);
         target_exit_phasespaceXY_cutoff->GetXaxis()->SetTitle("Position x [mm]");
         target_exit_phasespaceXY_cutoff->GetYaxis()->SetTitle("Position y [mm]");
 

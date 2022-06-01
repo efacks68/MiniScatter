@@ -37,9 +37,10 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
   alphy = float(input("What is the Alpha in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
-elif sys.argv[1] == 'ESS': #auto profiles
+elif sys.argv[1] == "ESS": #auto profiles
   #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"]
-  materials = ["G4_Al"]#,"G4_Au"]
+  #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
+  materials = ["G4_Al"]
   N=1e5 #number of particles
   epsx = 0.113 #[um-mrad]
   betax = 1000 #[m]
@@ -50,7 +51,7 @@ elif sys.argv[1] == 'ESS': #auto profiles
   ifplot=False #for plotting the 3 graphs per material
   if len(sys.argv) == 3 :
     N = float(sys.argv[2])
-elif sys.argv[1] == 'pencil': #for a reasonable pencil beam
+elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
   N=1e5 #number of particles
   epsx = 1e-4 #[um-mrad] 
@@ -122,8 +123,8 @@ for material in materials:
       print(xmax)
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
       plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
-      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo
-      plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
+      #plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo
+      #plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
   elif material == "G4_Au":
     if ifplot:
       print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
@@ -140,24 +141,24 @@ for material in materials:
   #Define plotting characteristics depending on material
   if material == "G4_Galactic":
     mat = "Vacuum"
-    color = 'magenta'
-    dash = 'm--'
+    color = "magenta"
+    dash = "m--"
     tsp = 0.2 #transparency
   elif material == "G4_Al":
     mat ="Al"
-    color = 'blue'
-    dash = 'b--'
+    color = "blue"
+    dash = "b--"
     tsp = 0.5
   elif material == "G4_AIR":
     mat ="Air"
-    color = 'cyan'
+    color = "cyan"
     tsp = 0.2
-    dash = 'c--'
+    dash = "c--"
   elif material == "G4_Au":
     mat = "Au"
-    color = 'gold'
+    color = "gold"
     tsp = 0.5
-    dash = 'r--'
+    dash = "r--"
 
   #Use Scipy.optimize.curve_fit in my findFit function to get mus and sigmas:
   mux, sigmax[material], xinterval = findFit(xtarg) #dynamically gets parameters AND histogram intervals!
@@ -182,14 +183,14 @@ for material in materials:
   #Make the histogram of the full energy distrubtion for X
   nx, binsx, patchesx = s1.hist(xtarg, xinterval, density=True, facecolor=color, alpha=tsp,label=mat)
   
-  #Add the 'best fit' line using the earlier norm.fit mus and sigmas for X
+  #Add the "best fit" line using the earlier norm.fit mus and sigmas for X
   y1 = norm.pdf(binsx, mux, sigmax[material])
   l1 = s1.plot(binsx, y1, dash, linewidth=1,label=mat) #important to keep it as l# or it won't work
 
   #Make the histogram of the full energy distrubtion for Y
   ny, binsy, patchesy = s2.hist(ytarg, yinterval, density=True, facecolor=color, alpha=tsp,label=mat)
   
-  #Add the 'best fit' line using the earlier norm.fit mus and sigmas for Y
+  #Add the "best fit" line using the earlier norm.fit mus and sigmas for Y
   y2 = norm.pdf(binsy, muy, sigmay[material])
   l2 = s2.plot(binsy, y2, dash, linewidth=1,label=mat) #labeled by material short-name
 
@@ -231,4 +232,4 @@ print(name) #show so it is easy to find the file
 #fig.savefig(name)
 #plt.show()
 plt.close() #be sure to close the plot
-print("\n")
+print(dt.strftime("%H-%M-%S"),"\n")
