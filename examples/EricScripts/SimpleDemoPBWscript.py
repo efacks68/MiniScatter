@@ -17,6 +17,7 @@ from simulation import simulation
 #Define something preliminarily
 #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
 materials = ["G4_Al","G4_Au"] 
+thick=4.25
 N=1e5 #number of particles
 epsx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
 betax = 1000 #[m] 1000
@@ -38,9 +39,9 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
 elif sys.argv[1] == "ESS": #auto profiles
-  #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"]
-  #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
-  materials = ["G4_Al"]
+  #materials = ["G4_Galactic","G4_Al","G4_Au"]
+  materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
+  #materials = ["G4_Al"]
   N=1e5 #number of particles
   epsx = 0.113 #[um-mrad]
   betax = 1000 #[m]
@@ -52,7 +53,9 @@ elif sys.argv[1] == "ESS": #auto profiles
   if len(sys.argv) == 3 :
     N = float(sys.argv[2])
 elif sys.argv[1] == "pencil": #for a reasonable pencil beam
-  materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
+  #materials = ["G4_Galactic","G4_Al","G4_Au"]
+  #materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
+  materials = ["G4_Al"]
   N=1e5 #number of particles
   epsx = 1e-4 #[um-mrad] 
   betax = 1e-2 #[m] 
@@ -60,7 +63,7 @@ elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   epsy = 1e-4 #[um-mrad] 
   betay = 1e-2 #[m] 
   alphy = 0 #[mrad] 
-  ifplot=False 
+  ifplot=True
 elif isfloat(sys.argv[1]) and isfloat(sys.argv[7]): #input variables are inputs
   N = sys.argv[1]
   epsx = sys.argv[2] #[um-mrad] 
@@ -100,8 +103,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xtarg,ytarg = simulation( N,material,"proton",    1,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,obj):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot,1)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -114,25 +117,25 @@ for material in materials:
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
       #xlim<=10 => [-xlim*sigma,xlim*sigma]; xlim>10 => [-xlim,xlim]
       #ylim==0 => with plot; ylim!=0 => [0,ylim] (5 particles /(mag of N) is for halo)
-      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
-      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo, with dynamic halo zoom
+      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo, with dynamic halo zoom
   elif material == "G4_Al":
     if ifplot:
       print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
       xmax = math.ceil(np.max(xtarg)/100)*100
       print(xmax)
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
-      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
-      #plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material) #full range halo
-      #plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material) #10 sigma range halo
+      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo
+      plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material,thick) #10 sigma range halo
   elif material == "G4_Au":
     if ifplot:
       print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
       xmax = math.ceil(np.max(xtarg)/100)*100
       #plotFit(xs,    ys, savename,xlim,   ylim,material) 
-      plotFit(xtarg,ytarg,savename,  3,      0,material) #3 sigma core
-      plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material) #full range halo
-      plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material) #10 sigma range halo
+      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material,thick) #full range halo
+      plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material,thick) #10 sigma range halo
   
   #Multi-Material Plot section, continues the material loop to plot data.
   #For creating the PDF of particle distribution from findFit function optimized mu and sigma.

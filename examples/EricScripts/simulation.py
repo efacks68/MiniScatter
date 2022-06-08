@@ -1,17 +1,38 @@
 #simulation.py
 #Eric Fackelman
-#29 March - 5 April 2022
+#29 March - 1 June 2022
 
 #This is to run the simulation of a beam through a PBW of input material 
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot):
+def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot,obj):
   import numpy as np
   import ROOT
   import os
   import sys
   from plotFit import calcTwiss
+
+  #constants for below use
+  #particle characteristic values
+  if beam == "proton":
+    partmass = 938.27209 #[MeV]
+    z=1
+  elif beam == "electron":
+    partmass = 0.511 #[MeV]
+    z=1
+  c = 2.99792e8 #[m/s]
+  MeV = 1e6*1.602e-19 
+  um = 1e-6 #[m] #need to convert to real units as the equations use real units.
+  m = 1 #[m]
+  mm = 1e-3 #[m]
+  ummrad = um*1e-3
+  gamma_rel = 1 + energy/partmass #from PrintTwissParameters
+  beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
+
+  #Get rid of Normalized Emittance!
+  Igemx = Inemx/(beta_rel*gamma_rel)
+  Igemy = Inemy/(beta_rel*gamma_rel)
 
   #Setup MiniScatter -- modify the path to where you built MiniScatter!
   MiniScatter_path="../../MiniScatter/build/."
@@ -61,18 +82,59 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
 
   #Beam particle type
   baseSimSetup["BEAM"]    = beam
-  baseSimSetup["WORLDSIZE"] = 1000.0 #Make the world wider for seeing where particles go
+  baseSimSetup["WORLDSIZE"] = 500.0 #Make the world wider for seeing where particles go
 
-  #Target is 1 mm of aluminium
-  baseSimSetup["THICK"] = thick
-  baseSimSetup["MAT"] = material
-  #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
-  #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
+  if obj==0:
+    #Target is 1 mm of aluminium
+    baseSimSetup["THICK"] = thick
+    baseSimSetup["MAT"] = material
+    #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
+    #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
-  #Detector distance from target center [mm] Default is 50mm behind Target
-  #For multiple detector locations, make a list, e.g. [-5,5,5000]
-  baseSimSetup["DIST"] = [5000] #only at ESS Target location 
+    #Detector distance from target center [mm] Default is 50mm behind Target
+    #For multiple detector locations, make a list, e.g. [-5,5,5000]
+    baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location 
+  else:
+    baseSimSetup["THICK"] = 0.0
+    baseSimSetup["DIST"] = [4.25] #Detector locations. At PBW Exit and ESS Target location 
+    baseSimSetup["MAGNET"] = []
+    #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
+    #Al first piece
+    m1 = {}
+    m1["pos"]      = 0.6250
+    m1["type"]     = "TARGET"
+    m1["length"]   = 1.2500 #[mm]
+    m1["gradient"] = 0.0
+    m1["keyval"] = {}
+    m1["keyval"]["material"] = "G4_Al"
+    m1["keyval"]["width"]    = 200.0 #[mm]
+    m1["keyval"]["height"]   = 100.0 #[mm]
+    baseSimSetup["MAGNET"].append(m1)
+    #Water
+    m2 = {}
+    m2["pos"]      = 2.2501
+    m2["type"]     = "TARGET"
+    m2["length"]   = 2.0000 #[mm]
+    m2["gradient"] = 0.0
+    m2["keyval"] = {}
+    m2["keyval"]["material"] = "G4_WATER"
+    m2["keyval"]["width"]    = 200.0 #[mm]
+    m2["keyval"]["height"]   = 100.0 #[mm]
+    baseSimSetup["MAGNET"].append(m2)
+    #Al Back
+    m3 = {}
+    m3["pos"]      = 3.7502
+    m3["type"]     = "TARGET"
+    m3["length"]   = 1.000 #[mm]
+    m3["gradient"] = 0.0
+    m3["keyval"] = {}
+    m3["keyval"]["material"] = "G4_Al"
+    m3["keyval"]["width"]    = 200.0 #[mm]
+    m3["keyval"]["height"]   = 100.0 #[mm]
+    baseSimSetup["MAGNET"].append(m3)
 
+    mat = "Real"
+    radLen = 64.08 #mm average of 2.25mm Al and 2.0mm Light Water
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
@@ -95,14 +157,13 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
 
   #Define material nickname
   #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
-  if baseSimSetup["MAT"] == "G4_Galactic":
+  if material == "G4_Galactic":
     mat = "Vac"
     radLen = 1e9 #[mm] basically infinity
-    z = 1 #not real
-  elif baseSimSetup["MAT"] == "G4_Al":
+  elif material == "G4_Al":
     mat = "Al"
     radLen = 88.97 #[mm] #0.2401 #[g/mm^2] # #24.01 [g/cm^2]
-  elif baseSimSetup["MAT"] == "G4_AIR":
+  elif material == "G4_AIR":
     mat = "Air"
     radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
   elif material == "G4_Au":
@@ -114,7 +175,9 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   simSetup_simple1 = baseSimSetup.copy()
 
   #Give the .root file a dynamic name
-  outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0e},a{:.0f},e{:.0e}_{:.2f}Rcut".format(baseSimSetup["N"],Ibetax,Ialphx,Inemx,Rcut)
+  #outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0e},a{:.0f},e{:.0e}_{:.2f}Rcut".format(baseSimSetup["N"],Ibetax,Ialphx,Inemx,Rcut)
+  outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_ESSbeam_real".format(baseSimSetup["N"])
+  #outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_Pencilbeam".format(baseSimSetup["N"])
   print(outname)
   simSetup_simple1["OUTNAME"] = outname
 
@@ -128,23 +191,6 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   #Run simulation or load old simulation root file!
   #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
-
-  #particle characteristic values
-  if beam == "proton":
-    partmass = 938.27209 #[MeV]
-    z=1
-  elif beam == "electron":
-    partmass = 0.511 #[MeV]
-    z=1
-  #constants for below use
-  c = 2.99792e8 #[m/s]
-  MeV = 1e6*1.602e-19 
-  um = 1e-6 #[m] #need to convert to real units as the equations use real units.
-  m = 1 #[m]
-  mm = 1e-3 #[m]
-  ummrad = um*1e-3
-  gamma_rel = 1 + energy/partmass #from PrintTwissParameters
-  beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
 
   #If one wants to use the initial spread
   myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
@@ -179,12 +225,17 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   initxTwf = calcTwiss("Initial X Filtered","Initial X' Filtered",xinit_filtered,pxinit_filtered)
   inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
 
-  #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
-  #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
-  #These are not at the ESS Target location, but are at the far side of the PBW
-  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
-  #print(myTree)
+  if obj == 0:
+    #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
+    #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
+    #These are not at the ESS Target location, but are at the far side of the PBW
+    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
+    #print(myTree)
+  else:
+    #For now, if using several magnets, just get the TrackerHits 7.6.22
+    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    myTree= myFile.Get("TrackerHits")
 
   xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
   pxexit = np.zeros(myTree.GetEntries())
@@ -216,7 +267,7 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   exityTw = calcTwiss("Exit Y","Exit Y'",yexit,pyexit)
 
   #Filter the relevant distributions
-  posmax=25 #mm (?)
+  posmax=5e-3 #mm (?)
   #print(len(Eexit),len(PDGexit),len(xexit))
   PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
   Eexit_filtered = Eexit[PDGexit_filter]
@@ -233,7 +284,7 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
 
   pxexit_filtered = pxexit[PDGexit_filter]
   pxexit_filtered = pxexit_filtered[Eexit_filter]
-  pxfilterL = np.less(pxexit_filtered,5e-3) #[rad]
+  pxfilterL = np.less(pxexit_filtered,posmax) #[rad]
   pxexit_filtered = pxexit_filtered[pxfilterL]
   xexit_filtered = xexit_filtered[pxfilterL]
   pxfilterG = np.greater(pxexit_filtered,-5e-3)
@@ -246,7 +297,7 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
 
   pyexit_filtered = pyexit[PDGexit_filter]
   pyexit_filtered = pyexit_filtered[Eexit_filter]
-  print(np.mean(pyexit_filtered),np.std(pyexit_filtered))
+  #print(np.mean(pyexit_filtered),np.std(pyexit_filtered))
   lim=5e-3
   pyfilterL = np.less(pyexit_filtered,lim) #[rad]
   pyexit_filtered = pyexit_filtered[pyfilterL]
@@ -295,7 +346,7 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
     engname=savename+"_EnergyPlot.png" #same for each plot
     titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For All Particle Species"
 
-    if baseSimSetup["MAT"] == "G4_Galactic":
+    if material == "G4_Galactic":
       print("Vacuum Energy Plot not working now, plots empty histogram. *Shrugs*")
     else: #simple histogram plot
       import matplotlib.pyplot as plt
@@ -328,29 +379,26 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
   #Display Full Energy distribution results
-  print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),
-      mat," PBW")
-
-  #Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
+  print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
 
   #get Twiss parameters from tracker at ESS Target location:
   twiss, numPart,objects = miniScatterDriver.getData(savedfile)
-  Tnemx = twiss["tracker_cutoffPDG2212"]["x"]["eps"] *um #[um]
-  Tbetax = twiss["tracker_cutoffPDG2212"]["x"]["beta"] *m #[m]
-  Talphx = twiss["tracker_cutoffPDG2212"]["x"]["alpha"] #[um-mrad]
-  Tnemy = twiss["tracker_cutoffPDG2212"]["y"]["eps"] *um #[um]
-  Tbetay = twiss["tracker_cutoffPDG2212"]["y"]["beta"] *m
-  Talphy = twiss["tracker_cutoffPDG2212"]["y"]["alpha"] #[um-mrad]
+  #Tnemx = twiss["tracker_cutoffPDG2212"]["x"]["eps"] *um #[um]
+  #Tbetax = twiss["tracker_cutoffPDG2212"]["x"]["beta"] *m #[m]
+  #Talphx = twiss["tracker_cutoffPDG2212"]["x"]["alpha"] #[um-mrad]
+  #Tnemy = twiss["tracker_cutoffPDG2212"]["y"]["eps"] *um #[um]
+  #Tbetay = twiss["tracker_cutoffPDG2212"]["y"]["beta"] *m
+  #Talphy = twiss["tracker_cutoffPDG2212"]["y"]["alpha"] #[um-mrad]
 
   # Get Twiss for Target Exit
-  Enemtx = twiss["target_exit_cutoff"]["x"]["eps"] *um #[um]
-  Ebetax = twiss["target_exit_cutoff"]["x"]["beta"] *m #[m]
-  Ealphx = twiss["target_exit_cutoff"]["x"]["alpha"] #[um-mrad]
-  Enemty = twiss["target_exit_cutoff"]["y"]["eps"] *um #[um]
-  Ebetay = twiss["target_exit_cutoff"]["y"]["beta"] *m
-  Ealphy = twiss["target_exit_cutoff"]["y"]["alpha"] #[um-mrad]
-  delnemx = Enemtx - Inemx*um #[um] #passed #s aren't in units system
-  delnemy = Enemty - Inemy*um #[um]
+  #Enemtx = twiss["target_exit_cutoff"]["x"]["eps"] *um #[um]
+  #Ebetax = twiss["target_exit_cutoff"]["x"]["beta"] *m #[m]
+  #Ealphx = twiss["target_exit_cutoff"]["x"]["alpha"] #[um-mrad]
+  #Enemty = twiss["target_exit_cutoff"]["y"]["eps"] *um #[um]
+  #Ebetay = twiss["target_exit_cutoff"]["y"]["beta"] *m
+  #Ealphy = twiss["target_exit_cutoff"]["y"]["alpha"] #[um-mrad]
+  #delnemx = Enemtx - Inemx*um #[um] #passed #s aren't in units system
+  #delnemy = Enemty - Inemy*um #[um]
 
   q=partmass*partmass/energy
   p = np.sqrt((energy*MeV*energy*MeV-partmass*MeV*partmass*MeV)/ (c*c))/(MeV/c)
@@ -358,65 +406,35 @@ def simulation(N,material,beam,thick,Inemx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,en
   #betap = energy-q
   #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
   thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
-  #print("\nbetap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(betap,gamma_rel,beta_rel,radLen,thetasq))
+  print("\nbetap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(betap,gamma_rel,beta_rel,radLen,thetasq))
     #using beta*q or energy-q produces similar #s (within 7%)
 
-  #Calculations from Eq 7 and 8
-  e8dnemx = 0.5 * Ibetax*m * thetasq * thetasq #[m*rad^2]
-  e8dnemy = 0.5 * Ibetay*m * thetasq * thetasq
-  e8alphx = Inemx*um * Ialphx / (Inemx*um + e8dnemx)
-  e8alphy = Inemy*um * Ialphy / (Inemy*um + e8dnemy)
-  e8betax = Inemx*um * Ibetax*m / (Inemx*um + e8dnemx)
-  e8betay = Inemy*um * Ibetay*m / (Inemy*um + e8dnemy)
-
-  #print("Norm. Emittance, Beta, Alpha")
-  #print("The initial Twiss are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(Inemx,Ibetax,Ialphx,Inemy,Ibetay,Ialphy)) #passed #s aren't in system
-  #print("The Twiss at PBW Exit are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(Enemtx/um,Ebetax,Ealphx,Enemty/um,Ebetay,Ealphy))
-  #print("The calculated Twiss at PBW Exit are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format((Inemx*um+delnemx)/um,e8betax,e8alphx,(Inemy*um+delnemy)/um,e8betay,e8alphy))
-  #print("The Twiss at Target are: \nX: {:.3f}um, {:.3f}m, {:.3f}\nY: {:.3f}um, {:.3f}m, {:.3f}".format(Tnemx/um,Tbetax,Talphx,Tnemy/um,Tbetay,Talphy))
-
-  #Calculations from Eq 15 and 16
-  Igammax = (1 + Ialphx * Ialphx ) / Ibetax*m #[pm-mrad-mrad]??
-  Igammay = (1 + Ialphy * Ialphy ) / Ibetay*m
-  e16dnemx = 0.5 * thetasq * thetasq * (Ibetax*m + thick*mm * Ialphx + thick*mm*thick*mm/3 * Igammax) #[m*rad^2]
-  e16dnemy = 0.5 * thetasq * thetasq * (Ibetay*m + thick*mm * Ialphy + thick*mm*thick*mm/3 * Igammay) #[m*rad^2]
-  e16alphx = (Inemx*um * Ialphx - thick*mm * 0.5 * thetasq) / (Inemx*um + e16dnemx)
-  e16alphy = (Inemy*um * Ialphy - thick*mm * 0.5 * thetasq) / (Inemy*um + e16dnemy)
-  e16betax = (Inemx*um * Ibetax*m + thick*mm * thick*mm / 3 * thetasq) / (Inemx*um + e16dnemx)
-  e16betay = (Inemy*um * Ibetay*m + thick*mm * thick*mm / 3 * thetasq) / (Inemy*um + e16dnemy)
-  #print("\nThe change in emittances calculated by GEANT4 are: {:.3f}, {:.3f}um.".format(e8dnemx/um,e8dnemy/um))
-  #print("The expected changes in emittances from CERN paper Eq 7: {:.3f}, {:.3f}um".format(delnemx/um,delnemy/um))
-  #print("The expected changes in emittances from CERN paper Eq 15: {:.3f}, {:.3f}um".format(deleps2x/um,deleps2y/um))
-
   #Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
-  from plotFit import plotTwissFit,plotTwissFit2
-  from plotFit import plotFit,calcEq8,calcEq16
+  from plotFit import plotTwissFit,plotFit,calcEq8,calcEq16
   #plotFit(xs,    ys, savename,xlim,   ylim,material)
-  #plotFit(xinit,yinit,savename+"init",  3,      0,material)
+  #plotFit(xinit,yinit,savename+"init",   3,      0,material)
   #plotFit(xexit,yexit,savename+"texit",  3,      0,material)
 
-  #Use list of Twiss values for simple passing of data: [beta,alpha,nemt,gemt]
-  TwissIx   = [Ibetax,  Ialphx,  Inemx*um,         Inemx*um/(beta_rel*gamma_rel)] #Initial Twiss
-  TwissIy   = [Ibetay,  Ialphy,  Inemy*um,         Inemy*um/(beta_rel*gamma_rel)]
-  TwisstEx  = [Ebetax,  Ealphx,  Enemtx,           Enemtx/(beta_rel*gamma_rel)]#target Exit Twiss
-  TwisstEy  = [Ebetay,  Ealphy,  Enemty,           Enemty/(beta_rel*gamma_rel)]
-  Twisse8x  = [e8betax, e8alphx, Inemx*um+e8dnemx, (Inemx*um+e8dnemx)/(beta_rel*gamma_rel)] #calculated target exit Twiss
-  Twisse8y  = [e8betay, e8alphy, Inemy*um+e8dnemy, (Inemy*um+e8dnemy)/(beta_rel*gamma_rel)]
-  Twisse16x = [e16betax,e16alphx,Inemx*um+e16dnemx,(Inemx*um+e16dnemx)/(beta_rel*gamma_rel)] #calculated 2 target exit Twiss
-  Twisse16y = [e16betay,e16alphy,Inemy*um+e16dnemy,(Inemy*um+e16dnemy)/(beta_rel*gamma_rel)]
-  #print("Twiss=[beta,alpha,Inemx,Gemt]")
-  #print("Eq8 Twiss X:",Twisse8x,"\nEq8 Twiss Y:",Twisse8y)
-  #print("Eq16 Twiss X:",Twisse16x,"\nEq16 Twiss Y:",Twisse16y)
-  #print("Func\nEq8 Twiss X:",calcEq8(thetasq,Twissix,thick,beta_rel,gamma_rel),"\nEq8 Twiss Y:",calcEq8(thetasq,Twissiy,thick,beta_rel,gamma_rel))
-  #print("Eq16 Twiss X:",calcEq16(thetasq,Twissix,thick,beta_rel,gamma_rel),"\nEq16 Twiss Y:",calcEq16(thetasq,Twissix,thick,beta_rel,gamma_rel))
+  #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
+  TwissIx   = [Ibetax,Ialphx,Igemx*um] #Initial Twiss
+  TwissIy   = [Ibetay,Ialphy,Igemy*um]
+  ##TwisstEx  = [Ebetax,Ealphx,Enemtx/(beta_rel*gamma_rel)]#target Exit Twiss
+  ##TwisstEy  = [Ebetay,Ealphy,Enemty/(beta_rel*gamma_rel)]
+  #Twisse8x  = calcEq8(thetasq, TwissIx,thick,beta_rel,gamma_rel) #calculated target exit Twiss
+  #Twisse8y  = calcEq8(thetasq, TwissIy,thick,beta_rel,gamma_rel)
+  #Twisse16x = calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel) #calculated 2 target exit Twiss
+  #Twisse16y = calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel)
+  #print("Twiss=[beta,alpha,Igemx]")
+  #print("Func\nEq8 Twiss X:",calcEq8(thetasq,TwissIx,thick,beta_rel,gamma_rel),"\nEq8 Twiss Y:",calcEq8(thetasq,TwissIy,thick,beta_rel,gamma_rel))
+  #print("Eq16 Twiss X:",calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel),"\nEq16 Twiss Y:",calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel))
   
   #Displays Twiss values and calculated mu and sigma
-  #print("\nMiniScatter Initial Twiss")
-  #plotTwissFit(Twissix,Twissiy,xinit_filtered/mm,pxinit_filtered,yinit_filtered/mm,pyinit_filtered,savename+"init",material,"MiniScatter Initial",Twisstex,Twisstey,"")
+  print("\nPre PBW Twiss")
+  plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel)
   
   print("\nPBW Exit Twiss Calculated")
-  plotTwissFit2(Twisse8x,"Formalism Eq8",xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",material,Twisse16x,"Formalism Eq16","PBW Exit","X",thick,thetasq,beta_rel,gamma_rel)
-  #plotTwissFit2(Twisse8y,"Formalism Eq8",yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",material,Twisse16y,"Formalism Eq16","PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel)
+  plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel)
+  plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel)
   
   #plotTwissFit2(Twisstex,Twisstey,xexit_filtered/mm,pxexit_filtered,yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",material,"Filtered",exitxTwf,exityTwf,"PBW Exit")
   #print("\nEq8 PBW Exit Twiss")
