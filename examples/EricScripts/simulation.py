@@ -230,37 +230,45 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
     #These are not at the ESS Target location, but are at the far side of the PBW
     myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
+    myBranch= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
     #print(myTree)
   else:
     #For now, if using several magnets, just get the TrackerHits 7.6.22
     myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree= myFile.Get("TrackerHits")
-
-  xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
-  pxexit = np.zeros(myTree.GetEntries())
-  yexit = np.zeros(myTree.GetEntries())
-  pyexit = np.zeros(myTree.GetEntries())
-  pzexit = np.zeros(myTree.GetEntries())
-  Eexit = np.zeros(myTree.GetEntries())
-  PDGexit = np.zeros(myTree.GetEntries())
+    myTree= myFile.magnetExit 
+    #do in jupyter lab to see how many entries are in magnetExit and then try
+    # with https://root-forum.cern.ch/t/reading-a-ttree-branch-using-pyroot/29019/12
+    myBranch = myTree.GetBranch("magnet_3")
+    #for entry in myTree:
+      #print(entry.branchName)
+    #  if entry.name == "magnet_3":
+    #    print("yay")
+    #    myBranch = entry
+  #GetBranch()
+  xexit = np.zeros(myBranch.GetEntries()) #dynamic length arrays
+  pxexit = np.zeros(myBranch.GetEntries())
+  yexit = np.zeros(myBranch.GetEntries())
+  pyexit = np.zeros(myBranch.GetEntries())
+  pzexit = np.zeros(myBranch.GetEntries())
+  Eexit = np.zeros(myBranch.GetEntries())
+  PDGexit = np.zeros(myBranch.GetEntries())
   #print("The length of the arrays are ",len(xexit))
 
   #import warnings
   #warnings.filterwarnings("error")
 
-  for i in range(myTree.GetEntries()): #put data in arrays
-      #print(myTree.E)
-      myTree.GetEntry(i)
-      #print(i, myTree.pz, myTree.px,myTree.PDG)
-      pzexit[i] = myTree.pz
-      xexit[i] = myTree.x *mm #m
+  for i in range(myBranch.GetEntries()): #put data in arrays
+      #print(myBranch.E)
+      #myBranch.GetEntry(i)
+      #print(i, myBranch.pz, myBranch.px,myBranch.PDG)
+      pzexit[i] = myBranch.GetLeaf("pz").GetValue(i)
+      xexit[i] = myBranch.GetLeaf("x").GetValue(i) *mm #m
       if pzexit[i] == 0.0: continue #11.5.22 recommended by Kyrre
-      pxexit[i] = myTree.px/pzexit[i] #from Kyrre 5.5.22 to make it true angle!
-      yexit[i] = myTree.y *mm #m
-      pyexit[i] = myTree.py/pzexit[i]
-      Eexit[i] = myTree.E
-      PDGexit[i] = myTree.PDG
+      pxexit[i] = myBranch.GetLeaf("px").GetValue(i) / pzexit[i] #from Kyrre 5.5.22 to make it true angle!
+      yexit[i] = myBranch.GetLeaf("y").GetValue(i) *mm #m
+      pyexit[i] = myBranch.GetLeaf("py").GetValue(i)/pzexit[i]
+      Eexit[i] = myBranch.GetLeaf("E").GetValue(i)
+      PDGexit[i] = myBranch.GetLeaf("PDG").GetValue(i)
   myFile.Close() 
 
   exitxTw = calcTwiss("Exit X","Exit X'",xexit,pxexit)
