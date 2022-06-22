@@ -6,7 +6,7 @@
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot,obj):
+def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot):
   import numpy as np
   import ROOT
   import os
@@ -16,10 +16,10 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #constants for below use
   #particle characteristic values
   if beam == "proton":
-    partmass = 938.27209 #[MeV]
+    partmass = 938.27209 #[MeV/c2]
     z=1
   elif beam == "electron":
-    partmass = 0.511 #[MeV]
+    partmass = 0.511 #[MeV/c2]
     z=1
   c = 2.99792e8 #[m/s]
   MeV = 1e6*1.602e-19 
@@ -84,19 +84,38 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   baseSimSetup["BEAM"]    = beam
   baseSimSetup["WORLDSIZE"] = 500.0 #Make the world wider for seeing where particles go
 
-  if obj==0:
-    #Target is 1 mm of aluminium
+  baseSimSetup["N"]     = N #Just a few events here! Remember that thicker targets are slower
+  baseSimSetup["POSLIM"] = 100 #XY histogram Position Limit for a few, check RootFileWriter.cc
+  #print(baseSimSetup)
+
+  #Define material nickname
+  #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
+  if material == "G4_Galactic":
+    mat = "Vac"
+    radLen = 1e12 #[mm] basically infinity
+  elif material == "G4_Al":
+    mat = "Al"
+    radLen = 88.97 #[mm] #0.2401 #[g/mm^2] # #24.01 [g/cm^2]
+  elif material == "G4_AIR":
+    mat = "Air"
+    radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
+  elif material == "G4_Au":
+    mat = "Au"
+    radLen = 3.344
+
+  if thick!=0.0:
     baseSimSetup["THICK"] = thick
     baseSimSetup["MAT"] = material
     #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
     #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
     #Detector distance from target center [mm] Default is 50mm behind Target
-    #For multiple detector locations, make a list, e.g. [-5,5,5000]
-    baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location 
+    #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
+    baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location
+    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_betterESSbeam".format(baseSimSetup["N"])
   else:
     baseSimSetup["THICK"] = 0.0
-    baseSimSetup["DIST"] = [4.25] #Detector locations. At PBW Exit and ESS Target location 
+    baseSimSetup["DIST"] = [5000] #Detector locations. At PBW Exit and ESS Target location 
     baseSimSetup["MAGNET"] = []
     #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
     #Al first piece
@@ -134,13 +153,20 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     baseSimSetup["MAGNET"].append(m3)
 
     mat = "Real"
+    #radLen = 88.97 #modeling all Al contribution
     radLen = 64.08 #mm average of 2.25mm Al and 2.0mm Light Water
+    #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
+    #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
+
+    outname = "simplePBW_"+str(thick)+"mm"+mat+"_N{:.0e}_betterESSbeam_full".format(baseSimSetup["N"])
+    #outname = "simplePBW_N{:.0e}_betterESSbeam_real_".format(baseSimSetup["N"])+str(baseSimSetup["PHYS"])
+
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
   baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
 
-  Rcut = 50.0
+  Rcut = 100.0
   baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
   baseSimSetup["CUTOFF_RADIUS"] = Rcut #Larger radial cutoff #Decreased 10 May
   baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
@@ -151,32 +177,10 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   baseSimSetup["OUTFOLDER"] = os.path.join("/scratch/ericdf/Scratch/PBWScatter/") 
   #put in Scratch of HepLab0# for faster processing, as per Kyrre
 
-  baseSimSetup["N"]     = N #Just a few events here! Remember that thicker targets are slower
-  baseSimSetup["POSLIM"] = 100 #XY histogram Position Limit for a few, check RootFileWriter.cc
-  #print(baseSimSetup)
-
-  #Define material nickname
-  #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
-  if material == "G4_Galactic":
-    mat = "Vac"
-    radLen = 1e9 #[mm] basically infinity
-  elif material == "G4_Al":
-    mat = "Al"
-    radLen = 88.97 #[mm] #0.2401 #[g/mm^2] # #24.01 [g/cm^2]
-  elif material == "G4_AIR":
-    mat = "Air"
-    radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
-  elif material == "G4_Au":
-    mat = "Au"
-    radLen = 3.344
-
-  #Run the simulation
   #copy so it is if running multiple scans in a Jupyter notebook
   simSetup_simple1 = baseSimSetup.copy()
 
-  #Give the .root file a dynamic name
-  #outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_b{:.0e},a{:.0f},e{:.0e}_{:.2f}Rcut".format(baseSimSetup["N"],Ibetax,Ialphx,Inemx,Rcut)
-  outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_ESSbeam_real".format(baseSimSetup["N"])
+  #Give the .root file a dynamic name, DONE IN MAGNET IF !!!
   #outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_Pencilbeam".format(baseSimSetup["N"])
   print(outname)
   simSetup_simple1["OUTNAME"] = outname
@@ -225,92 +229,75 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   initxTwf = calcTwiss("Initial X Filtered","Initial X' Filtered",xinit_filtered,pxinit_filtered)
   inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
 
-  if obj == 0:
+  if thick != 0:
     #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
     #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
     #These are not at the ESS Target location, but are at the far side of the PBW
     myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myBranch= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
-    #print(myTree)
+    myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
   else:
-    #For now, if using several magnets, just get the TrackerHits 7.6.22
     myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree= myFile.magnetExit 
-    #do in jupyter lab to see how many entries are in magnetExit and then try
-    # with https://root-forum.cern.ch/t/reading-a-ttree-branch-using-pyroot/29019/12
-    myBranch = myTree.GetBranch("magnet_3")
-    #for entry in myTree:
-      #print(entry.branchName)
-    #  if entry.name == "magnet_3":
-    #    print("yay")
-    #    myBranch = entry
-  #GetBranch()
-  xexit = np.zeros(myBranch.GetEntries()) #dynamic length arrays
-  pxexit = np.zeros(myBranch.GetEntries())
-  yexit = np.zeros(myBranch.GetEntries())
-  pyexit = np.zeros(myBranch.GetEntries())
-  pzexit = np.zeros(myBranch.GetEntries())
-  Eexit = np.zeros(myBranch.GetEntries())
-  PDGexit = np.zeros(myBranch.GetEntries())
+    myTree = myFile.Get("magnet_3_ExitHits")
+    thick=4.25 #[mm] set here for thickness calculations
+
+  xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
+  pxexit = np.zeros(myTree.GetEntries())
+  yexit = np.zeros(myTree.GetEntries())
+  pyexit = np.zeros(myTree.GetEntries())
+  pzexit = np.zeros(myTree.GetEntries())
+  Eexit = np.zeros(myTree.GetEntries())
+  PDGexit = np.zeros(myTree.GetEntries())
   #print("The length of the arrays are ",len(xexit))
 
   #import warnings
   #warnings.filterwarnings("error")
 
-  for i in range(myBranch.GetEntries()): #put data in arrays
-      #print(myBranch.E)
-      #myBranch.GetEntry(i)
-      #print(i, myBranch.pz, myBranch.px,myBranch.PDG)
-      pzexit[i] = myBranch.GetLeaf("pz").GetValue(i)
-      xexit[i] = myBranch.GetLeaf("x").GetValue(i) *mm #m
-      if pzexit[i] == 0.0: continue #11.5.22 recommended by Kyrre
-      pxexit[i] = myBranch.GetLeaf("px").GetValue(i) / pzexit[i] #from Kyrre 5.5.22 to make it true angle!
-      yexit[i] = myBranch.GetLeaf("y").GetValue(i) *mm #m
-      pyexit[i] = myBranch.GetLeaf("py").GetValue(i)/pzexit[i]
-      Eexit[i] = myBranch.GetLeaf("E").GetValue(i)
-      PDGexit[i] = myBranch.GetLeaf("PDG").GetValue(i)
+  for i in range(myTree.GetEntries()): #put data in arrays
+      myTree.GetEntry(i)
+      pzexit[i] = myTree.pz
+      xexit[i] = myTree.x *mm #m
+      if pzexit[i] == 0.0:
+        print("warning: PZexit[{}]==0".format(i))
+        continue #11.5.22 recommended by Kyrre
+      pxexit[i] = myTree.px / pzexit[i] #from Kyrre 5.5.22 to make it true angle!
+      yexit[i] = myTree.y *mm #m
+      pyexit[i] = myTree.py/pzexit[i]
+      Eexit[i] = myTree.E
+      PDGexit[i] = myTree.PDG
   myFile.Close() 
 
   exitxTw = calcTwiss("Exit X","Exit X'",xexit,pxexit)
   exityTw = calcTwiss("Exit Y","Exit Y'",yexit,pyexit)
 
   #Filter the relevant distributions
-  posmax=5e-3 #mm (?)
   #print(len(Eexit),len(PDGexit),len(xexit))
   PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
   Eexit_filtered = Eexit[PDGexit_filter]
   Eexit_filter = np.greater(Eexit_filtered,energy*Engcut) #then filter Eng with PDG and create Eng_filter that is filtered
   Eexit_filtered = Eexit_filtered[Eexit_filter]
-  #XLfilter = np.less(Eexit_filtered,posmax) #10.May adding to try to match Twiss?
-  #XGfilter = np.less(Eexit_filtered,-posmax)
-  #YLfilter = np.less(Eexit_filtered,posmax)
-  #YGfilter = np.less(Eexit_filtered,-posmax)
 
+  angmax=4e-3 #[rad] one angle filter limit 
   xexit_filtered = xexit[PDGexit_filter]
   xexit_filtered = xexit_filtered[Eexit_filter]
-  #xexit_filtered = xexit_filtered[XLfilter][XGfilter]
 
   pxexit_filtered = pxexit[PDGexit_filter]
   pxexit_filtered = pxexit_filtered[Eexit_filter]
-  pxfilterL = np.less(pxexit_filtered,posmax) #[rad]
+  pxfilterL = np.less(pxexit_filtered,angmax) #[rad]
   pxexit_filtered = pxexit_filtered[pxfilterL]
   xexit_filtered = xexit_filtered[pxfilterL]
-  pxfilterG = np.greater(pxexit_filtered,-5e-3)
+  pxfilterG = np.greater(pxexit_filtered,-angmax)
   pxexit_filtered = pxexit_filtered[pxfilterG]
   xexit_filtered = xexit_filtered[pxfilterG]
 
   yexit_filtered = yexit[PDGexit_filter]
   yexit_filtered = yexit_filtered[Eexit_filter]
-  #yexit_filtered = yexit_filtered[YLfilter][YGfilter]
-
   pyexit_filtered = pyexit[PDGexit_filter]
   pyexit_filtered = pyexit_filtered[Eexit_filter]
   #print(np.mean(pyexit_filtered),np.std(pyexit_filtered))
-  lim=5e-3
-  pyfilterL = np.less(pyexit_filtered,lim) #[rad]
+  pyfilterL = np.less(pyexit_filtered,angmax) #[rad]
   pyexit_filtered = pyexit_filtered[pyfilterL]
   yexit_filtered = yexit_filtered[pyfilterL]
-  pyfilterG = np.greater(pyexit_filtered,-lim) #[rad]
+  pyfilterG = np.greater(pyexit_filtered,-angmax) #[rad]
   pyexit_filtered = pyexit_filtered[pyfilterG]
   yexit_filtered = yexit_filtered[pyfilterG]
 
@@ -374,23 +361,43 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #print(len(Etarg),len(PDGtarg),len(xtarg))
   PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
   Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut) #then filter Eng with PDG and create Eng_filter that is filtered
+  xtarg_filtered_p = xtarg[PDGtarg_filter]
+  pxtarg_filtered_p = pxtarg[PDGtarg_filter]
+  ytarg_filtered_p = ytarg[PDGtarg_filter]
+  pytarg_filtered_p = pytarg[PDGtarg_filter]
+
+  angmax=6e-3 #[rad] one angle filter limit 
   xtarg_filtered = xtarg[PDGtarg_filter]
   xtarg_filtered = xtarg_filtered[Etarg_filter]
   pxtarg_filtered = pxtarg[PDGtarg_filter]
   pxtarg_filtered = pxtarg_filtered[Etarg_filter]
+  pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
+  pxtarg_filtered = pxtarg_filtered[pxfilterL]
+  xtarg_filtered = xtarg_filtered[pxfilterL]
+  pxfilterG = np.greater(pxtarg_filtered,-angmax)
+  pxtarg_filtered = pxtarg_filtered[pxfilterG]
+  xtarg_filtered = xtarg_filtered[pxfilterG]
+
   ytarg_filtered = ytarg[PDGtarg_filter]
   ytarg_filtered = ytarg_filtered[Etarg_filter]
   pytarg_filtered = pytarg[PDGtarg_filter]
   pytarg_filtered = pytarg_filtered[Etarg_filter]
+  #print(np.mean(pytarg_filtered),np.std(pytarg_filtered))
+  pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
+  pytarg_filtered = pytarg_filtered[pyfilterL]
+  ytarg_filtered = ytarg_filtered[pyfilterL]
+  pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
+  pytarg_filtered = pytarg_filtered[pyfilterG]
+  ytarg_filtered = ytarg_filtered[pyfilterG]
 
-  #targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
-  #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
+  targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
+  targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
   #Display Full Energy distribution results
   print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
 
   #get Twiss parameters from tracker at ESS Target location:
-  twiss, numPart,objects = miniScatterDriver.getData(savedfile)
+  #twiss, numPart,objects = miniScatterDriver.getData(savedfile)
   #Tnemx = twiss["tracker_cutoffPDG2212"]["x"]["eps"] *um #[um]
   #Tbetax = twiss["tracker_cutoffPDG2212"]["x"]["beta"] *m #[m]
   #Talphx = twiss["tracker_cutoffPDG2212"]["x"]["alpha"] #[um-mrad]
@@ -398,57 +405,55 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #Tbetay = twiss["tracker_cutoffPDG2212"]["y"]["beta"] *m
   #Talphy = twiss["tracker_cutoffPDG2212"]["y"]["alpha"] #[um-mrad]
 
-  # Get Twiss for Target Exit
-  #Enemtx = twiss["target_exit_cutoff"]["x"]["eps"] *um #[um]
-  #Ebetax = twiss["target_exit_cutoff"]["x"]["beta"] *m #[m]
-  #Ealphx = twiss["target_exit_cutoff"]["x"]["alpha"] #[um-mrad]
-  #Enemty = twiss["target_exit_cutoff"]["y"]["eps"] *um #[um]
-  #Ebetay = twiss["target_exit_cutoff"]["y"]["beta"] *m
-  #Ealphy = twiss["target_exit_cutoff"]["y"]["alpha"] #[um-mrad]
-  #delnemx = Enemtx - Inemx*um #[um] #passed #s aren't in units system
-  #delnemy = Enemty - Inemy*um #[um]
-
-  q=partmass*partmass/energy
-  p = np.sqrt((energy*MeV*energy*MeV-partmass*MeV*partmass*MeV)/ (c*c))/(MeV/c)
-  betap = beta_rel*p
-  #betap = energy-q
-  #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
-  thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
-  print("\nbetap: {:.3e}, gamma: {:.3f}, beta: {:.3f}, radLen: {:.3f}mm, theta^2: {:.3e} radians".format(betap,gamma_rel,beta_rel,radLen,thetasq))
-    #using beta*q or energy-q produces similar #s (within 7%)
+  #Highland Equation Radiation Length Calculation
+  p = np.sqrt((energy+partmass)**2 - (partmass)**2) #[MeV/c] #derived with Kyrre 15.6.22
+  betap = beta_rel*p #Eq 5
+  thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
+  #q=partmass*partmass/energy #used for mimicing AnaScatter's "BeamBeta2" RadLen Calculatons
+  #betap = energy-q 
+  #thetasq = 13.6 * z / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*z*z/(radLen*(1-q/energy)))) #from MiniScatter
+  print("\nradLen: {:.2f}, p: {:.3e}, gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(radLen,p,gamma_rel,beta_rel,thetasq))
+  #using beta*q or energy-q produces similar #s (within 7%)
 
   #Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
-  from plotFit import plotTwissFit,plotFit,calcEq8,calcEq16
-  #plotFit(xs,    ys, savename,xlim,   ylim,material)
-  #plotFit(xinit,yinit,savename+"init",   3,      0,material)
-  #plotFit(xexit,yexit,savename+"texit",  3,      0,material)
+  from plotFit import plotTwissFit,calcEq8,calcEq16
 
   #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-  TwissIx   = [Ibetax,Ialphx,Igemx*um] #Initial Twiss
-  TwissIy   = [Ibetay,Ialphy,Igemy*um]
+  TwissIx   = [Ibetax,Ialphx,Igemx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
+  TwissIy   = [Ibetay,Ialphy,Igemy*um,((1+Ialphy*Ialphy)/Ibetay)]
   ##TwisstEx  = [Ebetax,Ealphx,Enemtx/(beta_rel*gamma_rel)]#target Exit Twiss
   ##TwisstEy  = [Ebetay,Ealphy,Enemty/(beta_rel*gamma_rel)]
-  #Twisse8x  = calcEq8(thetasq, TwissIx,thick,beta_rel,gamma_rel) #calculated target exit Twiss
-  #Twisse8y  = calcEq8(thetasq, TwissIy,thick,beta_rel,gamma_rel)
-  #Twisse16x = calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel) #calculated 2 target exit Twiss
-  #Twisse16y = calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel)
-  #print("Twiss=[beta,alpha,Igemx]")
-  #print("Func\nEq8 Twiss X:",calcEq8(thetasq,TwissIx,thick,beta_rel,gamma_rel),"\nEq8 Twiss Y:",calcEq8(thetasq,TwissIy,thick,beta_rel,gamma_rel))
-  #print("Eq16 Twiss X:",calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel),"\nEq16 Twiss Y:",calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel))
-  
+  Twisse8x  = calcEq8(thetasq, TwissIx,thick,beta_rel,gamma_rel) #calculated target exit Twiss
+  Twisse8y  = calcEq8(thetasq, TwissIy,thick,beta_rel,gamma_rel)
+  Twisse16x = calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel) #calculated 2 target exit Twiss
+  Twisse16y = calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel)
+
   #Displays Twiss values and calculated mu and sigma
-  print("\nPre PBW Twiss")
-  plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel)
+  #print("\nPre PBW Twiss")
+  #plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+  #plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
   
   print("\nPBW Exit Twiss Calculated")
-  plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel)
-  plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel)
-  
-  #plotTwissFit2(Twisstex,Twisstey,xexit_filtered/mm,pxexit_filtered,yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",material,"Filtered",exitxTwf,exityTwf,"PBW Exit")
-  #print("\nEq8 PBW Exit Twiss")
-  #plotTwissFit(Twisse8x,Twisse8y,xexit_filtered/mm,pxexit_filtered,yexit_filtered/mm,pyexit_filtered,savename+"texitEq8",material,"Formalism Eq 8",Twisstex,Twisstey,"PBW Exit")
-  #print("\nEq16 PBW Exit Twiss")
-  #plotTwissFit(Twisse16x,Twisse16y,xexit_filtered/mm,pxexit_filtered,yexit_filtered/mm,pyexit_filtered,savename+"texitEq16",material,"Formalism Eq 16",Twisstex,Twisstey,"PBW Exit")
+  plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+  #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
 
-  #return savename, xtarg/mm, ytarg/mm
-  return savename, xexit/mm, yexit/mm #bc why?
+  #Extension to Target
+  from plotFit import toTarget
+  initTargx = toTarget(TwissIx,"initX")
+  intiTargy = toTarget(TwissIy,"initY")
+  exitTargx = toTarget(exitxTwf,"exitX")
+  exitTargy = toTarget(exityTwf,"exitY")
+  e8Targx = toTarget(Twisse8x,"e8X")
+  e8Targy = toTarget(Twisse8y,"e8Y")
+  e16Targx = toTarget(Twisse16x,"e16X")
+  e16Targy = toTarget(Twisse16y,"e16Y")
+
+  #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
+  from plotFit import compareTargets
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,intiTargy,"Initial",savename,mat)
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targx,"Eq 16",savename,mat)
+  
+  return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm #filter by PDG only
+  #return savename, xexit/mm, yexit/mm #bc why?

@@ -12,17 +12,17 @@ from plotFit import plotFit,findFit
 from simulation import simulation
 
 # Simulation setup
-#simulation(N,material,epsx,epsy,alphax,alphay,betax,betay,energy(float),zoff(float))
+#simulation(N,material,nemx,nemy,alphax,alphay,betax,betay,energy(float),zoff(float))
 
 #Define something preliminarily
 #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
 materials = ["G4_Al","G4_Au"] 
-thick=4.25
+thick=4.25 #default
 N=1e5 #number of particles
-epsx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
+nemx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
 betax = 1000 #[m] 1000
 alphx = -50 #[mrad] -50
-epsy = 0.121 #[um-mrad] 0.121
+nemy = 0.121 #[um-mrad] 0.121
 betay = 200 #[m] 200
 alphy = -7 #[mrad] -7
 ifplot=False #for plotting the 3 graphs per material
@@ -30,46 +30,51 @@ engplot = False
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
-  epsx = float(input("What is the Emittance in X? "))
+  nemx = float(input("What is the Emittance in X? "))
   betax = float(input("What is the Beta in X? "))
   alphx = float(input("What is the Alpha in X? "))
-  epsy = float(input("What is the Emittance in Y? "))
+  nemy = float(input("What is the Emittance in Y? "))
   betay = float(input("What is the Beta in Y? "))
   alphy = float(input("What is the Alpha in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
 elif sys.argv[1] == "ESS": #auto profiles
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
-  materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
+  #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
+  materials = ["G4_Galactic"]
   #materials = ["G4_Al"]
+  ifplot=True #for plotting the 3 graphs per material
+  if len(sys.argv) == 4 :
+    N = float(sys.argv[3])
+  thick = float(sys.argv[2])
+  if thick ==0:
+    materials = ["G4_Al"]
   N=1e5 #number of particles
-  epsx = 0.113 #[um-mrad]
-  betax = 1000 #[m]
-  alphx = -50 #[mrad]
-  epsy = 0.121 #[um-mrad]
-  betay = 200 #[m]
-  alphy = -7 #[mrad]
-  ifplot=False #for plotting the 3 graphs per material
-  if len(sys.argv) == 3 :
-    N = float(sys.argv[2])
+  #updated Twiss on 13 June 2022 from OpenXAL script
+  nemx = 0.11315 #[um-mrad]
+  betax = 941.25 #[m] original:1000m
+  alphx = -58.81 #original: -50
+  nemy = 0.12155 #[um-mrad]
+  betay = 120.03 #[m] original: 200m
+  alphy = -7.46 #original: -7
 elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
   materials = ["G4_Al"]
   N=1e5 #number of particles
-  epsx = 1e-4 #[um-mrad] 
+  nemx = 1e-4 #[um-mrad] 
   betax = 1e-2 #[m] 
   alphx = 0 #[mrad] 
-  epsy = 1e-4 #[um-mrad] 
+  nemy = 1e-4 #[um-mrad] 
   betay = 1e-2 #[m] 
   alphy = 0 #[mrad] 
   ifplot=True
 elif isfloat(sys.argv[1]) and isfloat(sys.argv[7]): #input variables are inputs
   N = sys.argv[1]
-  epsx = sys.argv[2] #[um-mrad] 
+  nemx = sys.argv[2] #[um-mrad] 
   betax = sys.argv[3] #[m] 
   alphx = sys.argv[4] #[mrad] 
-  epsy = sys.argv[5] #[um-mrad] 
+  nemy = sys.argv[5] #[um-mrad] 
   betay = sys.argv[6] #[m] 
   alphy = sys.argv[7] #[mrad] 
   if sys.arg[8]:
@@ -103,8 +108,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,epsx ,epsy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,obj):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,epsx ,epsy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot,1)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemx ,nemy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemx ,nemy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -223,8 +228,8 @@ ylim2=s2.get_ylim() #dynamically get the ylimits
 s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
 s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
 fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
-        rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(epsx,betax,alphx) +
-    rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(epsy,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
+        rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemx,betax,alphx) +
+    rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemy,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
 #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
 #Can date stamp the multi plot for easier tracking of changes, if necessary
@@ -232,7 +237,7 @@ from datetime import datetime
 dt = datetime.now()
 name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
 print(name) #show so it is easy to find the file
-#fig.savefig(name)
+#fig.savefig(name,bbox_inches="tight")
 #plt.show()
 plt.close() #be sure to close the plot
 print(dt.strftime("%H-%M-%S"),"\n")
