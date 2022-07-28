@@ -136,6 +136,16 @@ def findFit(data):
   #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
   return(popt[0],abs(popt[2]),x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
+def filterMe(Filterer,toFilter1,toFilter2,toFilter3,toFilter4,criteria,value):
+  if criteria == ">"
+    gfilt = np.greater(Filterer,value)
+    fltrd1 = toFilter1[gfilt]
+    fltrd2 = toFilter2[gfilt]
+    fltrd3 = toFilter3[gfilt]
+    fltrd4 = toFilter4[gfilt]
+
+  return fltrd1,fltrd2,fltrd3,fltrd4
+
 def calcTwiss(labelx,labely,x,y):
   #use generic x,y but usually x, x' or y,y'!
   import numpy as np
@@ -164,10 +174,11 @@ def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
   e8dgem = 0.5 * Twiss[0]*m * thetasq * thetasq #[m*rad^2]
   e8alph = Twiss[2] * Twiss[1] / (Twiss[2] + e8dgem)
   e8beta = Twiss[2] * Twiss[0]*m / (Twiss[2] + e8dgem) #[m]
-  e8gamma = (Twiss[2] * Twiss[3] + thetasq ) / (Twiss[2] + e8dgem) #[m^-1]
+  e8gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e8dgem) #[m^-1]
   e8gemt = Twiss[2] + e8dgem
   #e8nemt = e8nemt/(beta_rel*gamma_rel)
-  print("e8",e8dgem,e8beta,e8alph,e8gemt,e8gamma)
+  print("e8",thetasq,e8beta,e8alph,e8gemt,e8gamma)
+  #28.7-supposed to have thetasq*thetasq in gamma. Previously did NOT have it! Now numbers are great!
   return [e8beta,e8alph,e8gemt,e8gamma]
 
 def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
@@ -179,18 +190,18 @@ def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
   #Twiss=[beta,alpha,gemt,gamma]
   #Calculations from Eq 15 and 16 from Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
   e16dgem = 0.5 * thetasq * thetasq * (Twiss[0]*m + thick*mm * Twiss[1] + thick*mm*thick*mm/3 * Twiss[3]) #[m*rad^2]
-  e16alph = (Twiss[2] * Twiss[1] - thick*mm * 0.5 * thetasq) / (Twiss[2] + e16dgem)
-  e16beta = (Twiss[2] * Twiss[0]*m + thick*mm * thick*mm / 3 * thetasq) / (Twiss[2] + e16dgem) #[m]
-  e16gamma = (Twiss[2] * Twiss[3] + thetasq ) / (Twiss[2] + e16dgem) #[m^-1]
+  e16alph = (Twiss[2] * Twiss[1] - thick*mm * 0.5 * thetasq* thetasq ) / (Twiss[2] + e16dgem)
+  e16beta = (Twiss[2] * Twiss[0]*m + thick*mm * thick*mm / 3 * thetasq* thetasq ) / (Twiss[2] + e16dgem) #[m]
+  e16gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e16dgem) #[m^-1]
   e16gemt = Twiss[2]*um + e16dgem
-  #e16nemt = e16nemt*(beta_rel*gamma_rel)
+  #28.7-supposed to have thetasq*thetasq in gamma, alph and beta! Previously did NOT have it! Now numbers are great!
   return [e16beta,e16alph,e16gemt,e16gamma]
 
 def getMoments(Twiss):
   from numpy import sqrt
   mm=1e-3
   #[beta,alpha,gemt,gamma]
-  sigma = sqrt(Twiss[0]*Twiss[2]) /mm #sigma x rms = beam size = sqrt(beta*epsG)
+  sigma = sqrt(Twiss[2]*Twiss[0]) /mm #sigma x rms = beam size = sqrt(beta*epsG)
   sigmapx = sqrt(Twiss[2]*Twiss[3]) #mrad actually
   #print(sigma,sigmapx,sigpx)
   return [sigma,sigmapx]
@@ -218,19 +229,18 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   #print(Mcal,Me8,Me16)
 
   print("Recalculated Twiss:","Betax: {:.2f}m, alphax: {:.2f}, Geo Emitt x: {:.3e}m".format(calcTwf[0],calcTwf[1],calcTwf[2]))
-  #print("PDF")
-  print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
-  print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
-  print("Equation 16 sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me16[0],Me16[1]/mm))
 
   #Get intervals and info about distribution
   mux,sigmax,xinterval = findFit(xs)
   mupx,sigmapx,pxinterval = findFit(pxs) #this is a least square fit to Gaussian, so less sensitive to outliers.
   print("Histogram   sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(sigmax,sigmapx/mm))
+  print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
+  print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
+  print("Equation 16 sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me16[0],Me16[1]/mm))
 
   #Create the fig with 2 plots side by side
   plt.clf()
-  fig = plt.figure(figsize=(15,6.0))
+  fig = plt.figure(figsize=(16,6.0))
   plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
   s1 = fig.add_subplot(1,2,1)
   s2 = fig.add_subplot(1,2,2)
@@ -243,12 +253,12 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     y1a = norm.pdf(binsx, mux, sigmax)
     l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Filtered "+axis+" Histogram PDF") #least Square
     y1b = norm.pdf(binsx, mux, Mcal[0])
-    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss PDF") #RMS
+    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss RMS PDF") #RMS
 
     y2a = norm.pdf(binspx, mupx, sigmapx)
     l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label="Filtered "+axis+"' Histogram PDF")
     y2b = norm.pdf(binspx, mupx, Mcal[1])
-    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss PDF")
+    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss RMS PDF")
 
     order = [2,0,1]#for no Eq fits for initial Hist plot
   else:
@@ -256,7 +266,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     y1a = norm.pdf(binsx, mux, sigmax)
     l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Filtered "+axis+" Histogram PDF")
     y1b = norm.pdf(binsx, mux, Mcal[0])
-    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss PDF")
+    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss RMS PDF")
     y1c = norm.pdf(binsx, mux, Me8[0])
     l1c = s1.plot(binsx, y1c, "b.", linewidth=1,label=PDFlabele8+" "+axis+" Twiss PDF")
     y1d = norm.pdf(binsx, mux, Me8[0])
@@ -265,7 +275,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     y2a = norm.pdf(binspx, mupx, sigmapx)
     l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label="Filtered "+axis+"' Histogram PDF")
     y2b = norm.pdf(binspx, mupx, Mcal[1])
-    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss PDF")
+    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss RMS PDF")
     y2c = norm.pdf(binspx, mupx, Me8[1])
     l2c = s2.plot(binspx, y2c, "b.", linewidth=1,label=PDFlabele8+" "+axis+"' Twiss PDF")
     y2d = norm.pdf(binspx, mupx, Me16[1])

@@ -41,11 +41,11 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
 elif sys.argv[1] == "ESS": #auto profiles
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
-  materials = ["G4_Galactic"]
-  #materials = ["G4_Al"]
-  ifplot=True #for plotting the 3 graphs per material
-  if len(sys.argv) == 4 :
-    N = float(sys.argv[3])
+  #materials = ["G4_Galactic"]
+  materials = ["G4_Al"]
+  ifplot=False #for plotting the 3 graphs per material
+  #if len(sys.argv) == 4 :
+  #  N = float(sys.argv[3])
   thick = float(sys.argv[2])
   if thick ==0:
     materials = ["G4_Al"]
