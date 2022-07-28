@@ -136,16 +136,6 @@ def findFit(data):
   #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
   return(popt[0],abs(popt[2]),x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
-def filterMe(Filterer,toFilter1,toFilter2,toFilter3,toFilter4,criteria,value):
-  if criteria == ">"
-    gfilt = np.greater(Filterer,value)
-    fltrd1 = toFilter1[gfilt]
-    fltrd2 = toFilter2[gfilt]
-    fltrd3 = toFilter3[gfilt]
-    fltrd4 = toFilter4[gfilt]
-
-  return fltrd1,fltrd2,fltrd3,fltrd4
-
 def calcTwiss(labelx,labely,x,y):
   #use generic x,y but usually x, x' or y,y'!
   import numpy as np
