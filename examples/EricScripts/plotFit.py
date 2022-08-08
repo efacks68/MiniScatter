@@ -85,14 +85,14 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
   #Set Plot characterists
   #s1.set_title("After "+mat+", Fitted X Distribution \n"+rf"$\mu= {{:.1e}}, \sigma = {{:.3f}}$,".format(mux,sigmax)+
   #        " {:.3f}% outisde".format(pOut3sigx)+r" 3$\sigma$",fontsize=fs)
-  s1.set_title("At {:.2f}mm ".format(thick)+mat+" PBW Exit, Fitted X Distribution \n"+rf"$\sigma = {{:.3f}}$,".format(sigmax)+
+  s1.set_title("At {:.2f}mm ".format(thick)+mat+" PBW Exit, X Distribution \n"+rf"$\sigma = {{:.3f}}$,".format(sigmax)+
           " {:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$",fontsize=fs)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
 
   #s2.set_title("After "+mat+", Fitted Y Distribution \n"+rf"$\mu= {{:.1e}}, \sigma = {{:.3f}}$,".format(muy,sigmay)+
   #        " {:.3f}% outisde".format(pOut3sigy)+r" 3$\sigma$",fontsize=fs)
-  s2.set_title("At {:.2f}mm ".format(thick)+mat+" PBW Exit, Fitted Y Distribution \n"+rf"$\sigma = {{:.3f}}$,".format(sigmay)+
+  s2.set_title("At {:.2f}mm ".format(thick)+mat+" PBW Exit, Y Distribution \n"+rf"$\sigma = {{:.3f}}$,".format(sigmay)+
           " {:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$",fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
@@ -241,35 +241,35 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   if "Pre" in titledescr:
     #only have hist and fit
     y1a = norm.pdf(binsx, mux, sigmax)
-    l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Filtered "+axis+" Histogram PDF") #least Square
+    l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label=axis+" Histogram Least Square") #least Square
     y1b = norm.pdf(binsx, mux, Mcal[0])
-    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss RMS PDF") #RMS
+    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label=axis+" Twiss RMS") #RMS
 
     y2a = norm.pdf(binspx, mupx, sigmapx)
-    l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label="Filtered "+axis+"' Histogram PDF")
+    l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label=axis+"' Histogram Least Square")
     y2b = norm.pdf(binspx, mupx, Mcal[1])
-    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss RMS PDF")
+    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss RMS")
 
     order = [2,0,1]#for no Eq fits for initial Hist plot
   else:
     #Add the "best fit" line using the findFit mu and sigma for x and display sigma
     y1a = norm.pdf(binsx, mux, sigmax)
-    l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Filtered "+axis+" Histogram PDF")
+    l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label=axis+" Histogram Least Square")
     y1b = norm.pdf(binsx, mux, Mcal[0])
-    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Filtered "+axis+" Twiss RMS PDF")
+    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label=axis+" Twiss RMS")
     y1c = norm.pdf(binsx, mux, Me8[0])
-    l1c = s1.plot(binsx, y1c, "b.", linewidth=1,label=PDFlabele8+" "+axis+" Twiss PDF")
+    l1c = s1.plot(binsx, y1c, "b.", linewidth=1,label=PDFlabele8+" "+axis+" Twiss")
     y1d = norm.pdf(binsx, mux, Me8[0])
-    l1d = s1.plot(binsx, y1d, "y--", linewidth=1,label=PDFlabele16+" "+axis+" Twiss PDF")
+    l1d = s1.plot(binsx, y1d, "y--", linewidth=1,label=PDFlabele16+" "+axis+" Twiss")
 
     y2a = norm.pdf(binspx, mupx, sigmapx)
-    l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label="Filtered "+axis+"' Histogram PDF")
+    l2a = s2.plot(binspx, y2a, "k--", linewidth=1,label=axis+"' Histogram Least Square")
     y2b = norm.pdf(binspx, mupx, Mcal[1])
-    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label="Filtered "+axis+"' Twiss RMS PDF")
+    l2b = s2.plot(binspx, y2b, "r--", linewidth=2,label=axis+"' Twiss RMS")
     y2c = norm.pdf(binspx, mupx, Me8[1])
-    l2c = s2.plot(binspx, y2c, "b.", linewidth=1,label=PDFlabele8+" "+axis+"' Twiss PDF")
+    l2c = s2.plot(binspx, y2c, "b.", linewidth=1,label=PDFlabele8+" "+axis+"' Twiss RMS")
     y2d = norm.pdf(binspx, mupx, Me16[1])
-    l2d = s2.plot(binspx, y2d, "y--", linewidth=1,label=PDFlabele16+" "+axis+"' Twiss PDF")
+    l2d = s2.plot(binspx, y2d, "y--", linewidth=1,label=PDFlabele16+" "+axis+"' Twiss RMS")
 
     order=[4,0,1,2,3] #order of labels in legend
 
@@ -290,14 +290,14 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   elif axis=="Y":
     sigmatextx = r"$\sigma_{Y}$:"
     sigmatextpx = r"$\sigma_{Y'}$:"
-  sigmatextx +="\nLeast Squares = "+"{:.2f}".format(sigmax)+"mm"
-  sigmatextx +="\nRMS = "+"{:.2f}".format(Mcal[0])+"mm"
-  sigmatextx +="\n"+PDFlabele8+" = "+"{:.2f}".format(Me8[0])+"mm"
-  sigmatextx +="\n"+PDFlabele16+" = "+"{:.2f}".format(Me16[0])+"mm"
-  sigmatextpx +="\nLeast Squares = "+"{:.2f}".format(sigmapx/mm)+"mrad"
-  sigmatextpx +="\nRMS = "+"{:.2f}".format(Mcal[1]/mm)+"mrad"
-  sigmatextpx +="\n"+PDFlabele8+" = "+"{:.2f}".format(Me8[1]/mm)+"mrad"
-  sigmatextpx +="\n"+PDFlabele16+" = "+"{:.2f}".format(Me16[1]/mm)+"mrad"
+  sigmatextx +="\nLeast Square = "+"{:.2f}".format(sigmax)+"mm"
+  sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mcal[0])+"mm"
+  sigmatextx +="\n"+PDFlabele8+" RMS = "+"{:.2f}".format(Me8[0])+"mm"
+  sigmatextx +="\n"+PDFlabele16+" RMS = "+"{:.2f}".format(Me16[0])+"mm"
+  sigmatextpx +="\nLeast Square = "+"{:.2f}".format(sigmapx/mm)+"mrad"
+  sigmatextpx +="\nTwiss RMS = "+"{:.2f}".format(Mcal[1]/mm)+"mrad"
+  sigmatextpx +="\n"+PDFlabele8+" RMS = "+"{:.2f}".format(Me8[1]/mm)+"mrad"
+  sigmatextpx +="\n"+PDFlabele16+" RMS = "+"{:.2f}".format(Me16[1]/mm)+"mrad"
   s1.text(xlim1[0]*0.97,ylim1[1]*0.7,sigmatextx,fontsize=fs-2)
 
   ylim=5/(10**(5+0)) #change if not N=10^5
@@ -366,31 +366,31 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
   #Add the "best fit" line using the findFit mu and sigma for x and display sigma
   y1a = norm.pdf(binsx, mux, sigmax)
-  l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Fit PDF")
+  l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Least Square")
   y1b = norm.pdf(binsx, mux, Mtx[0])
-  l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss Fit PDF")
+  l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS")
   y1c = norm.pdf(binsx, mux, Mfx[0])
-  l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss Fit PDF")
+  l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
   #Make the histogram of the full energy distrubtion for Y with findFit intervals
   ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
 
   #Add the "best fit" line using the findFit mu and sigma for Y and display sigma
   y2a = norm.pdf(binsy, muy, sigmay)
-  l2a = s2.plot(binsy, y2a, "k--", linewidth=1,label="Histogram Fit PDF")
+  l2a = s2.plot(binsy, y2a, "k--", linewidth=1,label="Histogram Least Square")
   y2b = norm.pdf(binsy, muy, Mty[0])
-  l2b = s2.plot(binsy, y2b, "r--", linewidth=2,label="Target Twiss Fit PDF")
+  l2b = s2.plot(binsy, y2b, "r--", linewidth=2,label="Target Twiss RMS")
   y2c = norm.pdf(binsy, muy, Mfy[0])
-  l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss Fit PDF")
+  l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
   sigmatextx = r"$\sigma_{X}$:"
-  sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
-  sigmatextx +="\nTwiss = "+"{:.2f}".format(Mtx[0])+"mm"
-  sigmatextx +="\n"+fitlabel+" = "+"{:.2f}".format(Mfx[0])+"mm"
+  sigmatextx +="\nLeast Square = "+"{:.2f}".format(sigmax)+"mm"
+  sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mtx[0])+"mm"
+  sigmatextx +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
   sigmatexty = r"$\sigma_{Y}$:"
-  sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
-  sigmatexty +="\nTwiss = "+"{:.2f}".format(Mty[0])+"mm"
-  sigmatexty +="\n"+fitlabel+" = "+"{:.2f}".format(Mfy[0])+"mm"
+  sigmatexty +="\nLeast Square = "+"{:.2f}".format(sigmay)+"mm"
+  sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mty[0])+"mm"
+  sigmatexty +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
 
   s1.set_title(fitlabel+" at Target after "+mat+" PBW, X Distribution",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
