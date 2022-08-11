@@ -128,37 +128,14 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
     #Al first piece
     m1 = {}
-    m1["pos"]      = 0.6250 #pos is at CENTER
-    m1["type"]     = "TARGET"
-    m1["length"]   = 1.2500 #[mm]
+    m1["pos"]      = 0.0 #pos is at CENTER
+    m1["type"]     = "PBW"
+    m1["length"]   = 200 #[mm]
     m1["gradient"] = 0.0
     m1["keyval"] = {}
     m1["keyval"]["material"] = "G4_Al"
-    m1["keyval"]["width"]    = 200.0 #[mm]
-    m1["keyval"]["height"]   = 100.0 #[mm]
+    m1["keyval"]["radius"]    = 88.0 #[mm]
     baseSimSetup["MAGNET"].append(m1)
-    #Water
-    m2 = {}
-    m2["pos"]      = 2.2501 #pos is at CENTER
-    m2["type"]     = "TARGET"
-    m2["length"]   = 2.0000 #[mm]
-    m2["gradient"] = 0.0
-    m2["keyval"] = {}
-    m2["keyval"]["material"] = "G4_WATER"
-    m2["keyval"]["width"]    = 200.0 #[mm]
-    m2["keyval"]["height"]   = 100.0 #[mm]
-    baseSimSetup["MAGNET"].append(m2)
-    #Al Back
-    m3 = {}
-    m3["pos"]      = 3.7502 #pos is at CENTER
-    m3["type"]     = "TARGET"
-    m3["length"]   = 1.000 #[mm]
-    m3["gradient"] = 0.0
-    m3["keyval"] = {}
-    m3["keyval"]["material"] = "G4_Al"
-    m3["keyval"]["width"]    = 200.0 #[mm]
-    m3["keyval"]["height"]   = 100.0 #[mm]
-    baseSimSetup["MAGNET"].append(m3)
 
     mat = "Real"
     radLenAl = 88.97 #Al
