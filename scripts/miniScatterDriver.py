@@ -30,12 +30,12 @@ def runScatter(simSetup, quiet=False,allOutput=False, logName=None, onlyCommand=
         raise AssertionError("Setting both 'quiet' and 'alloutput' makes no sense")
 
     for key in simSetup.keys():
-        if not key in ("THICK", "MAT", "PRESS", "DIST", "ANG", "TARG_ANG", "WORLDSIZE", \
-                       "BGMAT", "N", "ENERGY", "ENERGY_FLAT", "PHYS", "PHYS_CUTDIST",\
+        if not key in ("THICK", "MAT", "PRESS", "DIST", "ANG", "TARG_ANG", "WORLDSIZE", "PHYS",\
+                       "PHYS_CUTDIST", "BGMAT", "N", "ENERGY", "ENERGY_FLAT",\
                        "BEAM", "XOFFSET", "ZOFFSET", "ZOFFSET_BACKTRACK",\
-                       "BEAMANGLE", "COVAR", "BEAM_RCUT", "SEED", "ANASCATTER",\
-                       "OUTNAME", "OUTFOLDER", "QUICKMODE", "MINIROOT", "POSLIM",\
-                       "CUTOFF_ENERGYFRACTION", "CUTOFF_RADIUS", "EDEP_DZ", "ENG_NBINS"):
+                       "BEAMANGLE", "COVAR", "BEAM_RCUT", "SEED","OUTNAME", "OUTFOLDER",\
+                       "QUICKMODE", "MINIROOT", "CUTOFF_ENERGYFRACTION",\
+                       "CUTOFF_RADIUS", "EDEP_DZ", "ENG_NBINS", "ANGLIM", "POSLIM"):
             if key.startswith("MAGNET"):
                 continue
             raise KeyError("Did not expect key {} in the simSetup".format(key))
@@ -168,6 +168,9 @@ def runScatter(simSetup, quiet=False,allOutput=False, logName=None, onlyCommand=
 
     if "POSLIM" in simSetup:
         cmd += ["--histPosLim", str(simSetup["POSLIM"])]
+
+    if "ANGLIM" in simSetup:
+        cmd += ["--histAngLim", str(simSetup["ANGLIM"])]
 
     if "MAGNET" in simSetup:
         for mag in simSetup["MAGNET"]:

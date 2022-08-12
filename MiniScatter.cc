@@ -86,6 +86,8 @@ void printHelp(G4double target_thick,
                G4double cutoff_radius,
                G4double edep_dens_dz,
                G4int    engNbins,
+               G4double histPosLim,
+               G4double histAngLim,
                std::vector<G4String> &magnetDefinitions);
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -224,7 +226,9 @@ int main(int argc,char** argv) {
                       cutoff_radius,
                       edep_dens_dz,
                       engNbins,
-                      magnetDefinitions); //need to add for histLims
+                      histPosLim,
+                      histAngLim,
+                      magnetDefinitions);
             exit(1);
             break;
 
@@ -560,11 +564,11 @@ int main(int argc,char** argv) {
             }
             break;
 
-        case 1100: //Object/Magnet definition
+        case 1100: // Object/Magnet definition
             magnetDefinitions.push_back(string(optarg));
             break;
 
-        case 1025: //histPosLim definition, borrowed from engNbins
+        case 1025: // Position Histogram Limit change
             try {
                 histPosLim = std::stod(string(optarg));
             }
@@ -576,7 +580,7 @@ int main(int argc,char** argv) {
             }
             break;
 
-        case 1026: //histAngLim definition, borrowed from engNbins
+        case 1026: // Angle Histogram Limit change
             try {
                 histAngLim = std::stod(string(optarg));
             }
@@ -634,6 +638,8 @@ int main(int argc,char** argv) {
               cutoff_radius,
               edep_dens_dz,
               engNbins,
+              histPosLim,
+              histAngLim,
               magnetDefinitions);
 
     G4cout << "Status of other arguments:" << G4endl
@@ -877,6 +883,8 @@ void printHelp(G4double target_thick,
                G4double cutoff_radius,
                G4double edep_dens_dz,
                G4int    engNbins,
+               G4double histPosLim,
+               G4double histAngLim,
                std::vector<G4String> &magnetDefinitions) {
             G4cout << "Welcome to MiniScatter!" << G4endl
                    << G4endl
@@ -986,7 +994,6 @@ void printHelp(G4double target_thick,
                    << "\t Note that the absolute value of --zoffset (which is generally negative) will mean the distance from x=y=z=0 to the starting point."
                    << "\t Default/current value = " << beam_angle << G4endl << G4endl;
 
-
             G4cout << " --covar/-c epsN[um]:beta[m]:alpha(::epsN_Y[um]:betaY[m]:alphaY)" << G4endl
                    << "\t Set initial gaussian beam distribution given in terms of Twiss parameters." << G4endl
                    << "\t If the optional part is given x,y are treated separately." << G4endl 
@@ -1043,6 +1050,14 @@ void printHelp(G4double target_thick,
             G4cout << " --engNbins <int>" << G4endl
                    << "\t Number of bins for 1D energy histograms (0 => internal default), " << G4endl
                    << "\t Default/current value = " << engNbins << G4endl << G4endl;
+
+            G4cout << " --histPosLim <double>" << G4endl
+                   << "\t Range for Position axes in ROOT histograms" << G4endl
+                   << "\t Default/current value = +/-" << histPosLim << G4endl << G4endl;
+
+            G4cout << " --histAngLim <double>" << G4endl
+                   << "\t Range for Angle axes in ROOT histograms" << G4endl
+                   << "\t Default/current value = +/-" << histAngLim << G4endl << G4endl;
 
             G4cout << " --object/--magnet (*)pos:type:length:gradient(:type=val1:specific=val2:arguments=val3)" << G4endl
                    << "\t Create an object (which may be a magnet) of the given type at the given position. " << G4endl
