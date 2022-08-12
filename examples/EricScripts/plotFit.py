@@ -158,7 +158,7 @@ def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
   m=1
   um=1e-6
   mm=1e-3
-  print("init",Twiss)
+  #print("init",Twiss)
   #Twiss=[beta,alpha,gemt,gamma]
   #Calculations from Eq 7 and 8 from Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
   e8dgem = 0.5 * Twiss[0]*m * thetasq * thetasq #[m*rad^2]
@@ -167,7 +167,7 @@ def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
   e8gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e8dgem) #[m^-1]
   e8gemt = Twiss[2] + e8dgem
   #e8nemt = e8nemt/(beta_rel*gamma_rel)
-  print("e8",thetasq,e8beta,e8alph,e8gemt,e8gamma)
+  #print("e8",thetasq,e8beta,e8alph,e8gemt,e8gamma)
   #28.7-supposed to have thetasq*thetasq in gamma. Previously did NOT have it! Now numbers are great!
   return [e8beta,e8alph,e8gemt,e8gamma]
 
@@ -180,8 +180,8 @@ def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
   #Twiss=[beta,alpha,gemt,gamma]
   #Calculations from Eq 15 and 16 from Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
   e16dgem = 0.5 * thetasq * thetasq * (Twiss[0]*m + thick*mm * Twiss[1] + thick*mm*thick*mm/3 * Twiss[3]) #[m*rad^2]
-  e16alph = (Twiss[2] * Twiss[1] - thick*mm * 0.5 * thetasq* thetasq ) / (Twiss[2] + e16dgem)
-  e16beta = (Twiss[2] * Twiss[0]*m + thick*mm * thick*mm / 3 * thetasq* thetasq ) / (Twiss[2] + e16dgem) #[m]
+  e16alph = (Twiss[2] * Twiss[1] - thick*mm * 0.5 * thetasq * thetasq ) / (Twiss[2] + e16dgem)
+  e16beta = (Twiss[2] * Twiss[0]*m + thick*mm * thick*mm / 3 * thetasq * thetasq ) / (Twiss[2] + e16dgem) #[m]
   e16gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e16dgem) #[m^-1]
   e16gemt = Twiss[2]*um + e16dgem
   #28.7-supposed to have thetasq*thetasq in gamma, alph and beta! Previously did NOT have it! Now numbers are great!

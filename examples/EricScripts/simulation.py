@@ -146,7 +146,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
     #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
 
-    outname = "simplePBW_"+str(thick)+"mm"+mat+"_N{:.0e}_betterESSbeam_full".format(baseSimSetup["N"])
+    outname = "simplePBW_"+str(thick)+"mm"+mat+"_N{:.0e}_MagnetPBW".format(baseSimSetup["N"])
     #outname = "simplePBW_N{:.0e}_betterESSbeam_real_".format(baseSimSetup["N"])+str(baseSimSetup["PHYS"])
 
   #Some output settings
@@ -223,7 +223,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
   else:
     myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree = myFile.Get("magnet_3_ExitHits")
+    myTree = myFile.Get("magnet_1_ExitHits")
     thick=4.25 #[mm] set here for thickness calculations
 
   xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
@@ -315,6 +315,16 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
       PDGtarg[i] = myTree.PDG
   myFile.Close()
 
+  #Filter the relevant distributions
+  PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
+  Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut) #then filter Eng with PDG and create Eng_filter that is filtered
+  #These proton only arrays are returned to the original script!
+  Etarg_filtered_p = Etarg[PDGtarg_filter]
+  xtarg_filtered_p = xtarg[PDGtarg_filter]
+  pxtarg_filtered_p = pxtarg[PDGtarg_filter]
+  ytarg_filtered_p = ytarg[PDGtarg_filter]
+  pytarg_filtered_p = pytarg[PDGtarg_filter]
+
   #For plotting Energy distribution of all species
   if engplot:
     import math
@@ -327,13 +337,13 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     else: #simple histogram plot
       import matplotlib.pyplot as plt
       plt.close()
-      plt.hist(Etarg,100,log=True)
+      plt.hist(Etarg_filtered_p,100,log=True)
       #future addition - make other PDG entries be another color?
       plt.xlabel("Energy [MeV]")
       plt.ylabel("Counts")
       plt.xlim([0,2005.0])
       plt.title(rf"Energy Distribution at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
-        "\nThrough PBW of "+mat+" For All Particle Species")
+        "\nThrough PBW of "+mat+", Protons Only")
       print(titl,engname)
       plt.savefig(engname)
       plt.close()
@@ -341,25 +351,12 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #Display Full Energy distribution results
   print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
 
-  #Filter the relevant distributions
-  PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
-  Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut) #then filter Eng with PDG and create Eng_filter that is filtered
-  #These proton only arrays are returned to the original script!
-  xtarg_filtered_p = xtarg[PDGtarg_filter]
-  pxtarg_filtered_p = pxtarg[PDGtarg_filter]
-  ytarg_filtered_p = ytarg[PDGtarg_filter]
-  pytarg_filtered_p = pytarg[PDGtarg_filter]
-
   angmax=6e-3 #[rad] one angle filter limit
   #Apply PDG, Energy Filters
   xtarg_filtered = xtarg[PDGtarg_filter][Etarg_filter]
-  #xtarg_filtered = xtarg_filtered[Etarg_filter]
   pxtarg_filtered = pxtarg[PDGtarg_filter][Etarg_filter]
-  #pxtarg_filtered = pxtarg_filtered[Etarg_filter]
   ytarg_filtered = ytarg[PDGtarg_filter][Etarg_filter]
-  #ytarg_filtered = ytarg_filtered[Etarg_filter]
   pytarg_filtered = pytarg[PDGtarg_filter][Etarg_filter]
-  #pytarg_filtered = pytarg_filtered[Etarg_filter]
   #Apply >,< filters
   #X, <
   pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
@@ -412,23 +409,29 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   ##TwisstEy  = [Ebetay,Ealphy,Enemty/(beta_rel*gamma_rel)]
 
   if baseSimSetup["THICK"] == 0.0:
-    m1Len = baseSimSetup["MAGNET"][0]["length"]
+    m1Len = 1.0 #baseSimSetup["MAGNET"][0]["length"]
     #Al Front contribution
     thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLenAl) * (1 + 0.038 * np.log(m1Len/radLenAl))
     Twisse8xAl1 = calcEq8(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
     Twisse8yAl1 = calcEq8(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
+    Twisse16xAl1 = calcEq16(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
+    Twisse16yAl1 = calcEq16(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
 
     #H2O contribution
-    m2Len = baseSimSetup["MAGNET"][1]["length"]
+    m2Len = 2.0 #baseSimSetup["MAGNET"][1]["length"]
     thetasqH2O = 13.6 * partZ / betap * np.sqrt(m2Len/radLenH2O) * (1 + 0.038 * np.log(m2Len/radLenH2O))
     Twisse8xH2O = calcEq8(thetasqH2O, Twisse8xAl1,m2Len,beta_rel,gamma_rel)
     Twisse8yH2O = calcEq8(thetasqH2O, Twisse8yAl1,m2Len,beta_rel,gamma_rel)
+    Twisse16xH2O = calcEq16(thetasqH2O, Twisse16xAl1,m2Len,beta_rel,gamma_rel)
+    Twisse16yH2O = calcEq16(thetasqH2O, Twisse16yAl1,m2Len,beta_rel,gamma_rel)
 
     #Al Back contribution
-    m3Len = baseSimSetup["MAGNET"][2]["length"]
+    m3Len = 1.25 #baseSimSetup["MAGNET"][2]["length"]
     thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLenAl) * (1 + 0.038 * np.log(m3Len/radLenAl))
-    Twisse8xAl2 = calcEq8(thetasqAl2, Twisse8xH2O,m3Len,beta_rel,gamma_rel)
-    Twisse8yAl2 = calcEq8(thetasqAl2, Twisse8yH2O,m3Len,beta_rel,gamma_rel)
+    Twisse8x = calcEq8(thetasqAl2, Twisse8xH2O,m3Len,beta_rel,gamma_rel)
+    Twisse8y = calcEq8(thetasqAl2, Twisse8yH2O,m3Len,beta_rel,gamma_rel)
+    Twisse16x = calcEq16(thetasqAl2, Twisse16xH2O,m3Len,beta_rel,gamma_rel)
+    Twisse16y = calcEq16(thetasqAl2, Twisse16yH2O,m3Len,beta_rel,gamma_rel)
 
   elif baseSimSetup["THICK"] != 0.0: #if only one layer (MiniScatter "target")
     Twisse8x  = calcEq8(thetasq, TwissIx,thick,beta_rel,gamma_rel) #calculated target exit Twiss
@@ -455,8 +458,10 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #e8Targy = toTarget(Twisse8y,"e8Y")
   #e16Targx = toTarget(Twisse16x,"e16X")
   #e16Targy = toTarget(Twisse16y,"e16Y")
-  e8TargxReal = toTarget(Twisse8xAl2,"e8XReal")
-  e8TargyReal = toTarget(Twisse8yAl2,"e8YReal")
+  e8TargxReal = toTarget(Twisse8x,"e8XReal")
+  e8TargyReal = toTarget(Twisse8y,"e8YReal")
+  e16TargxReal = toTarget(Twisse16x,"e8XReal")
+  e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
   #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
   from plotFit import compareTargets
@@ -465,6 +470,6 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
   compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Eq 8",savename,mat)
-  
+  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
+
   return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm #filter by PDG only
-  #return savename, xexit/mm, yexit/mm #bc why?
