@@ -143,7 +143,7 @@ def calcTwiss(labelx,labely,x,y):
   #gamma_rel = 3.132
   #get Twiss from np.cov
   xcov = np.cov(x,y)
-  #print(labelx,labely,xcov,"\n")
+  print(labelx,labely,xcov,"\n")
   #calculated Twiss parameters
   gemt = np.sqrt(np.linalg.det(xcov)) 
   beta = xcov[0,0]/gemt
@@ -290,11 +290,11 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   elif axis=="Y":
     sigmatextx = r"$\sigma_{Y}$:"
     sigmatextpx = r"$\sigma_{Y'}$:"
-  sigmatextx +="\nLeast Square = "+"{:.2f}".format(sigmax)+"mm"
+  sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
   sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mcal[0])+"mm"
   sigmatextx +="\n"+PDFlabele8+" RMS = "+"{:.2f}".format(Me8[0])+"mm"
   sigmatextx +="\n"+PDFlabele16+" RMS = "+"{:.2f}".format(Me16[0])+"mm"
-  sigmatextpx +="\nLeast Square = "+"{:.2f}".format(sigmapx/mm)+"mrad"
+  sigmatextpx +="\nHistogram = "+"{:.2f}".format(sigmapx/mm)+"mrad"
   sigmatextpx +="\nTwiss RMS = "+"{:.2f}".format(Mcal[1]/mm)+"mrad"
   sigmatextpx +="\n"+PDFlabele8+" RMS = "+"{:.2f}".format(Me8[1]/mm)+"mrad"
   sigmatextpx +="\n"+PDFlabele16+" RMS = "+"{:.2f}".format(Me16[1]/mm)+"mrad"
@@ -384,11 +384,11 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
   sigmatextx = r"$\sigma_{X}$:"
-  sigmatextx +="\nLeast Square = "+"{:.2f}".format(sigmax)+"mm"
+  sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
   sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mtx[0])+"mm"
   sigmatextx +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
   sigmatexty = r"$\sigma_{Y}$:"
-  sigmatexty +="\nLeast Square = "+"{:.2f}".format(sigmay)+"mm"
+  sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
   sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mty[0])+"mm"
   sigmatexty +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
 

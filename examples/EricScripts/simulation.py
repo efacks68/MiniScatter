@@ -60,7 +60,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   baseSimSetup = {}
   #baseSimSetup["PHYS"] = "QGSP_BERT__SS" #Use the __SS physics lists for thin foils due to checking each atom cross section
   baseSimSetup["PHYS"]  = "QGSP_BERT_EMZ" #better for scattering through 1mm sheets
-  baseSimSetup["ENERGY"] = energy #2000.0 #[MeV] #ESS beam energy
+  baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
 
   #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
   # 3 variables = symmetric, 6 variables = asymetric
@@ -120,7 +120,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
     baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location
-    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_N{:.0e}_betterESSbeam".format(baseSimSetup["N"])
+    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
   else:
     baseSimSetup["THICK"] = 0.0
     baseSimSetup["DIST"] = [5000] #Detector locations. At PBW Exit and ESS Target location 
@@ -138,15 +138,15 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     baseSimSetup["MAGNET"].append(m1)
 
     mat = "Real"
-    radLenAl = 88.97 #Al
-    radLenH2O = 36.08 #liquid Water 
+    radLenAl = 88.97 #[mm] Al
+    radLenH2O = 360.8 #[mm] liquid Water 
     radLen = 64.08 #mm average of 2.25mm Al and 2.0mm Light Water
     atomZ = 13 + 8 + 2 / 4 #not great, but ok
     atomA = 26.9 + 16 + 2 / 4
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
     #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
 
-    outname = "simplePBW_"+str(thick)+"mm"+mat+"_N{:.0e}_MagnetPBW".format(baseSimSetup["N"])
+    outname = "simplePBW_"+str(thick)+"mm"+mat+"_MagnetPBW_{:.0f}MeV_emx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
     #outname = "simplePBW_N{:.0e}_betterESSbeam_real_".format(baseSimSetup["N"])+str(baseSimSetup["PHYS"])
 
   #Some output settings
@@ -205,7 +205,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   myFile.Close()
 
   #Filter with Energy for now as PDG isn't working yet
-  Einit_filter = np.greater(Einit,energy*Engcut)
+  Einit_filter = np.greater(Einit,energy*Engcut/100)
   xinit_filtered = xinit[Einit_filter]
   pxinit_filtered = pxinit[Einit_filter]
   yinit_filtered = yinit[Einit_filter]
@@ -247,7 +247,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
       xexit[i] = myTree.x *mm #m
       pxexit[i] = myTree.px / pzexit[i] #from Kyrre 5.5.22 to make it true X'!
       yexit[i] = myTree.y *mm #m
-      pyexit[i] = myTree.py/pzexit[i]
+      pyexit[i] = myTree.py / pzexit[i]
       Eexit[i] = myTree.E
       PDGexit[i] = myTree.PDG
   myFile.Close() 
@@ -255,7 +255,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   #Filter the relevant distributions
   PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
   Eexit_filtered = Eexit[PDGexit_filter]
-  Eexit_filter = np.greater(Eexit_filtered,energy*Engcut) #then create Eng_filter that is filtered
+  Eexit_filter = np.greater(Eexit_filtered,energy*Engcut/100) #then create Eng_filter that is filtered
   Eexit_filtered = Eexit_filtered[Eexit_filter]
 
   angmax=4e-3 #[rad] one angle filter limit 
@@ -317,7 +317,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
 
   #Filter the relevant distributions
   PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
-  Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut) #then filter Eng with PDG and create Eng_filter that is filtered
+  Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut/100) #Engcut is % number not decimal
   #These proton only arrays are returned to the original script!
   Etarg_filtered_p = Etarg[PDGtarg_filter]
   xtarg_filtered_p = xtarg[PDGtarg_filter]

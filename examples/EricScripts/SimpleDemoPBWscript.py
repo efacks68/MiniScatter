@@ -19,14 +19,17 @@ from simulation import simulation
 materials = ["G4_Al","G4_Au"] 
 thick=4.25 #default
 N=1e5 #number of particles
-nemx = 0.113 #[um-mrad] #ESS beam at PBW: 0.113
-betax = 1000 #[m] 1000
-alphx = -50 #[mrad] -50
-nemy = 0.121 #[um-mrad] 0.121
-betay = 200 #[m] 200
-alphy = -7 #[mrad] -7
+nemx = 0.11315 #[um-mrad]
+betax = 941.25 #[m]
+alphx = -58.81
+nemy = 0.12155 #[um-mrad]
+betay = 120.03 #[m]
+alphy = -7.46
 ifplot=False #for plotting the 3 graphs per material
 engplot = False
+energy = 570 #[MeV]
+engcut = 95.0
+zoff = "-5"
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
@@ -109,7 +112,7 @@ sigmatexty = r"$\sigma_y$:"
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
   #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemx ,nemy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemx ,nemy ,alphx,alphy,betax,betay,2000.0,-10.0, 0.95,engplot)
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemx ,nemy ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
