@@ -143,7 +143,7 @@ def calcTwiss(labelx,labely,x,y):
   #gamma_rel = 3.132
   #get Twiss from np.cov
   xcov = np.cov(x,y)
-  print(labelx,labely,xcov,"\n")
+  #print(labelx,labely,xcov,"\n")
   #calculated Twiss parameters
   gemt = np.sqrt(np.linalg.det(xcov)) 
   beta = xcov[0,0]/gemt
@@ -197,6 +197,7 @@ def getMoments(Twiss):
   return [sigma,sigmapx]
 
 def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamma_rel,TwissI):
+  #16.8.22 No longer useful, as it doesn't use layer by layer
   #For plotting particle Distribution at Target Exit with PDF from Twiss parameters.
   import numpy as np
   import matplotlib.pyplot as plt
@@ -257,8 +258,6 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label=axis+" Histogram Least Square")
     y1b = norm.pdf(binsx, mux, Mcal[0])
     l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label=axis+" Twiss RMS")
-    y1c = norm.pdf(binsx, mux, Me8[0])
-    l1c = s1.plot(binsx, y1c, "b.", linewidth=1,label=PDFlabele8+" "+axis+" Twiss")
     y1d = norm.pdf(binsx, mux, Me8[0])
     l1d = s1.plot(binsx, y1d, "y--", linewidth=1,label=PDFlabele16+" "+axis+" Twiss")
 
@@ -354,6 +353,9 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   Mty = getMoments(targTwy)
   print(fitlabel,Mtx,Mfx)
 
+  print("Histogram sigma X: {:.2f}mm, sigma Y: {:.2f}mrad".format(Mfx[0],Mfy[0]))
+  print("Target    sigma X: {:.2f}mm, sigma Y: {:.2f}mrad".format(Mtx[0],Mty[0]))
+
   #Create the fig with 2 plots side by side
   plt.clf()
   fig = plt.figure(figsize=(15,6.0))
@@ -386,16 +388,22 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   sigmatextx = r"$\sigma_{X}$:"
   sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
   sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mtx[0])+"mm"
-  sigmatextx +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
+  import re
+  if re.search(",",fitlabel):
+    label = re.sub(".+(?<=(,))","",fitlabel)
+    label = label.replace(" ","")
+  else:
+    label = fitlabel
+  sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
   sigmatexty = r"$\sigma_{Y}$:"
   sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
   sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mty[0])+"mm"
-  sigmatexty +="\n"+fitlabel+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
+  sigmatexty +="\n"+label+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
 
-  s1.set_title(fitlabel+" at Target after "+mat+" PBW, X Distribution",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+  s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
-  xlim = 40
+  xlim = 4*sigmax
   s1.set_xlim([-xlim,xlim])
   xlim1 = s1.get_xlim()
   ylim1 = s1.get_ylim()
@@ -407,7 +415,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=9)
 
   s2.set_xlim([-xlim,xlim])
-  s2.set_title(fitlabel+" at Target after "+mat+" PBW, Y Distribution",fontsize=fs)
+  s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
   handles2, labels2 = plt.gca().get_legend_handles_labels()
@@ -424,7 +432,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   from datetime import datetime
   dt = datetime.now()
 
-  name = savename+fitlabel.replace(' ','')+"Twiss_Target_"+dt.strftime("%H-%M-%S")+".png"##
+  name = savename+dt.strftime("%H-%M-%S")+".png"##
   #plt.show()
   plt.savefig(name,bbox_inches="tight")
   plt.close()

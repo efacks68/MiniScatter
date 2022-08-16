@@ -133,7 +133,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     m1["length"]   = 200 #[mm]
     m1["gradient"] = 0.0
     m1["keyval"] = {}
-    m1["keyval"]["material"] = "G4_Al"
+    m1["keyval"]["material"] = material
     m1["keyval"]["radius"]    = 88.0 #[mm]
     baseSimSetup["MAGNET"].append(m1)
 
@@ -185,34 +185,34 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
 
   #If one wants to use the initial spread
-  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  myTree= myFile.Get("InitParts")
+ # myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+ # myTree= myFile.Get("InitParts")
   #print(myTree)
-  xinit = np.zeros(myTree.GetEntries())
-  pxinit = np.zeros(myTree.GetEntries())
-  yinit = np.zeros(myTree.GetEntries())
-  pyinit = np.zeros(myTree.GetEntries())
-  Einit = np.zeros(myTree.GetEntries())
+ # xinit = np.zeros(myTree.GetEntries())
+ # pxinit = np.zeros(myTree.GetEntries())
+ # yinit = np.zeros(myTree.GetEntries())
+ # pyinit = np.zeros(myTree.GetEntries())
+ # Einit = np.zeros(myTree.GetEntries())
   #print(len(xinit))
-  for i in range(myTree.GetEntries()):
-      myTree.GetEntry(i)
+ # for i in range(myTree.GetEntries()):
+ #     myTree.GetEntry(i)
       #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
-      xinit[i] = myTree.x *mm
-      pxinit[i] = myTree.px
-      yinit[i] = myTree.y *mm
-      pyinit[i] = myTree.py
-      Einit[i] = myTree.E
-  myFile.Close()
+ #     xinit[i] = myTree.x *mm
+ #     pxinit[i] = myTree.px
+ #     yinit[i] = myTree.y *mm
+ #     pyinit[i] = myTree.py
+ #     Einit[i] = myTree.E
+ # myFile.Close()
 
   #Filter with Energy for now as PDG isn't working yet
-  Einit_filter = np.greater(Einit,energy*Engcut/100)
-  xinit_filtered = xinit[Einit_filter]
-  pxinit_filtered = pxinit[Einit_filter]
-  yinit_filtered = yinit[Einit_filter]
-  pyinit_filtered = pyinit[Einit_filter]
+ # Einit_filter = np.greater(Einit,energy*Engcut/100)
+ # xinit_filtered = xinit[Einit_filter]
+ # pxinit_filtered = pxinit[Einit_filter]
+ # yinit_filtered = yinit[Einit_filter]
+ # pyinit_filtered = pyinit[Einit_filter]
 
-  initxTwf = calcTwiss("Initial X Filtered","Initial X' Filtered",xinit_filtered,pxinit_filtered)
-  inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
+ # initxTwf = calcTwiss("Initial X Filtered","Initial X' Filtered",xinit_filtered,pxinit_filtered)
+ # inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
 
   ##Get the distributions from the PBW exit face
   if thick != 0:
@@ -442,16 +442,16 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   ##Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
     #Displays Twiss values and calculated mu and sigma
   #print("\nPre PBW Twiss")
-  #plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-  #plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
+ # plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+ # plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
   #print("\nPBW Exit Twiss Calculated")
-  plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+  #plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
   #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
 
   #Extension to Target. Needed for compareTargets!
-  from plotFit import toTarget
-  #initTargx = toTarget(TwissIx,"initX")
-  #intiTargy = toTarget(TwissIy,"initY")
+  from plotFit import toTarget,compareTargets
+  initTargx = toTarget(TwissIx,"initX")
+  initTargy = toTarget(TwissIy,"initY")
   #exitTargx = toTarget(exitxTwf,"exitX")
   #exitTargy = toTarget(exityTwf,"exitY")
   #e8Targx = toTarget(Twisse8x,"e8X")
@@ -464,12 +464,11 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
   #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
-  from plotFit import compareTargets
-  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,intiTargy,"Initial",savename,mat)
+  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
-  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Eq 8",savename,mat)
-  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
+  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
   return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm #filter by PDG only
