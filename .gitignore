@@ -29,6 +29,12 @@ plots/
 quicksilver.py
 verbose.mac
 vis.mac
-examples/EricScripts/
+examples/EricScripts/13AprilResearch.txt
+examples/EricScripts/ESSTwiss1e4.txt
+examples/EricScripts/generalplot.py
+examples/EricScripts/output.txt
+examples/EricScripts/output2.txt
+examples/EricScripts/SimpleDemoPBWscriptApril.py
+examples/EricScripts/simulationApril.py
 examples/SimpleDemoPBW.ipynb
 examples/simplePBW_1mmAl_1e5_DistribTest.png

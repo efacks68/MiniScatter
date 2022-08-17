@@ -135,6 +135,9 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     m1["keyval"] = {}
     m1["keyval"]["material"] = material
     m1["keyval"]["radius"]    = 88.0 #[mm]
+    m1["keyval"]["al1Thick"] = 1.0 #[mm]
+    m1["keyval"]["waterThick"] = 2.0 #[mm]
+    m1["keyval"]["al2Thick"] = 1.25 #[mm]
     baseSimSetup["MAGNET"].append(m1)
 
     mat = "Real"
@@ -146,8 +149,9 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
     #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
 
-    outname = "simplePBW_"+str(thick)+"mm"+mat+"_MagnetPBW_{:.0f}MeV_emx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
-    #outname = "simplePBW_N{:.0e}_betterESSbeam_real_".format(baseSimSetup["N"])+str(baseSimSetup["PHYS"])
+    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemx*1e3,Inemy*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+    #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemx*1e3,baseSimSetup["N"])
+    #outname = "PBW_{:.0f}MeV_eX{:.0f}".format(baseSimSetup["ENERGY"],Inemx*1e3)
 
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
@@ -409,7 +413,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   ##TwisstEy  = [Ebetay,Ealphy,Enemty/(beta_rel*gamma_rel)]
 
   if baseSimSetup["THICK"] == 0.0:
-    m1Len = 1.0 #baseSimSetup["MAGNET"][0]["length"]
+    m1Len = baseSimSetup["MAGNET"][0]["keyval"]["al1Thick"]
     #Al Front contribution
     thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLenAl) * (1 + 0.038 * np.log(m1Len/radLenAl))
     Twisse8xAl1 = calcEq8(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
@@ -418,7 +422,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     Twisse16yAl1 = calcEq16(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
 
     #H2O contribution
-    m2Len = 2.0 #baseSimSetup["MAGNET"][1]["length"]
+    m2Len = baseSimSetup["MAGNET"][0]["keyval"]["waterThick"]
     thetasqH2O = 13.6 * partZ / betap * np.sqrt(m2Len/radLenH2O) * (1 + 0.038 * np.log(m2Len/radLenH2O))
     Twisse8xH2O = calcEq8(thetasqH2O, Twisse8xAl1,m2Len,beta_rel,gamma_rel)
     Twisse8yH2O = calcEq8(thetasqH2O, Twisse8yAl1,m2Len,beta_rel,gamma_rel)
@@ -426,7 +430,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     Twisse16yH2O = calcEq16(thetasqH2O, Twisse16yAl1,m2Len,beta_rel,gamma_rel)
 
     #Al Back contribution
-    m3Len = 1.25 #baseSimSetup["MAGNET"][2]["length"]
+    m3Len = baseSimSetup["MAGNET"][0]["keyval"]["al2Thick"]
     thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLenAl) * (1 + 0.038 * np.log(m3Len/radLenAl))
     Twisse8x = calcEq8(thetasqAl2, Twisse8xH2O,m3Len,beta_rel,gamma_rel)
     Twisse8y = calcEq8(thetasqAl2, Twisse8yH2O,m3Len,beta_rel,gamma_rel)
@@ -464,7 +468,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
   #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
-  compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat)
+  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
