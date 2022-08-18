@@ -97,7 +97,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     atomA = 0.1
   elif material == "G4_Al":
     mat = "Al"
-    radLen = 88.97 #[mm] #0.2401 #[g/mm^2] # #24.01 [g/cm^2]
+    radLen = 88.97 #[mm]
     atomZ = 13
     atomA = 26.981
   elif material == "G4_AIR":
@@ -126,11 +126,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     baseSimSetup["DIST"] = [5000] #Detector locations. At PBW Exit and ESS Target location 
     baseSimSetup["MAGNET"] = []
     #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
-    #Al first piece
+    #Specialized PBW magnet!
     m1 = {}
     m1["pos"]      = 0.0 #pos is at CENTER
     m1["type"]     = "PBW"
-    m1["length"]   = 200 #[mm]
+    m1["length"]   = 0 #[mm]
     m1["gradient"] = 0.0
     m1["keyval"] = {}
     m1["keyval"]["material"] = material
@@ -143,11 +143,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     mat = "Real"
     radLenAl = 88.97 #[mm] Al
     radLenH2O = 360.8 #[mm] liquid Water 
-    radLen = 64.08 #mm average of 2.25mm Al and 2.0mm Light Water
-    atomZ = 13 + 8 + 2 / 4 #not great, but ok
-    atomA = 26.9 + 16 + 2 / 4
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
-    #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
 
     outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
     #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"])
@@ -387,11 +383,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   p = np.sqrt((energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
   betap = beta_rel*p #Eq 5
   thetasq = 13.6 * partZ / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
-  #q=partA*partA/energy #used for mimicing AnaScatter's "BeamBeta2" RadLen Calculatons
-  #betap = energy-q 
-  #thetasq = 13.6 * partZ / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick*partZ**2/(radLen*(1-q/energy)))) #from MiniScatter
   print("\nradLen: {:.2f}, p: {:.3e}, gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(radLen,p,gamma_rel,beta_rel,thetasq))
-  #using beta*q or energy-q produces similar #s (within 7%)
 
   ##Characteristic and Screening Angle calculations, 14/15 June 22
   # as per https://doi-org.ezproxy.uio.no/10.1016/0168-583X(91)95671-Y
