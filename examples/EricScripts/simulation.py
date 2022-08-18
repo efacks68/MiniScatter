@@ -6,7 +6,7 @@
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot):
+def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot):
   import numpy as np
   import ROOT
   import os
@@ -31,8 +31,8 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
 
   #Get rid of Normalized Emittance!
-  Igemx = Inemx/(beta_rel*gamma_rel)
-  Igemy = Inemy/(beta_rel*gamma_rel)
+  Igemtx = Inemtx/(beta_rel*gamma_rel)
+  Igemty = Inemty/(beta_rel*gamma_rel)
 
   #Setup MiniScatter -- modify the path to where you built MiniScatter!
   MiniScatter_path="../../MiniScatter/build/."
@@ -64,10 +64,10 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
 
   #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
   # 3 variables = symmetric, 6 variables = asymetric
-  EPSX   = Inemx #[um]
+  EPSX   = Inemtx #[um]
   BETAX  = Ibetax #[m]
   ALPHAX = Ialphx #[um-mrad]
-  EPSY   = Inemy #[um]
+  EPSY   = Inemty #[um]
   BETAY  = Ibetay #[m]
   ALPHAY = Ialphy #[um-mrad]
   baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY) 
@@ -120,7 +120,7 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
     baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location
-    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
+    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
   else:
     baseSimSetup["THICK"] = 0.0
     baseSimSetup["DIST"] = [5000] #Detector locations. At PBW Exit and ESS Target location 
@@ -149,9 +149,9 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
     #radLen = 4.25/((.225*2.70)/8.897 + (2.0*1.0)/3.608) 
 
-    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemx*1e3,Inemy*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
-    #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemx*1e3,baseSimSetup["N"])
-    #outname = "PBW_{:.0f}MeV_eX{:.0f}".format(baseSimSetup["ENERGY"],Inemx*1e3)
+    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+    #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"])
+    #outname = "PBW_{:.0f}MeV_eX{:.0f}".format(baseSimSetup["ENERGY"],Inemtx*1e3)
 
   #Some output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
@@ -407,8 +407,8 @@ def simulation(N,material,beam,thick,Inemx,Inemy,Ialphx,Ialphy,Ibetax,Ibetay,ene
   ##If magnet, use multiple scattering layers instead of averaging!
   from plotFit import plotTwissFit,calcEq8,calcEq16
   #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-  TwissIx   = [Ibetax,Ialphx,Igemx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
-  TwissIy   = [Ibetay,Ialphy,Igemy*um,((1+Ialphy*Ialphy)/Ibetay)]
+  TwissIx   = [Ibetax,Ialphx,Igemtx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
+  TwissIy   = [Ibetay,Ialphy,Igemty*um,((1+Ialphy*Ialphy)/Ibetay)]
   ##TwisstEx  = [Ebetax,Ealphx,Enemtx/(beta_rel*gamma_rel)]#target Exit Twiss
   ##TwisstEy  = [Ebetay,Ealphy,Enemty/(beta_rel*gamma_rel)]
 

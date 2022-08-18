@@ -12,19 +12,19 @@ from plotFit import plotFit,findFit
 from simulation import simulation
 
 # Simulation setup
-#simulation(N,material,nemx,nemy,alphax,alphay,betax,betay,energy(float),zoff(float))
+#simulation(N,material,nemtx,nemty,alphax,alphay,betax,betay,energy(float),zoff(float))
 
 #Define something preliminarily
 #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
 materials = ["G4_Al","G4_Au"] 
 thick=4.25 #default
 N=1e5 #number of particles
-nemx = 0.11315 #[um-mrad]
 betax = 941.25 #[m]
 alphx = -58.81
-nemy = 0.12155 #[um-mrad]
+nemtx = 0.11315 #[um-mrad]
 betay = 120.03 #[m]
 alphy = -7.46
+nemty = 0.12155 #[um-mrad]
 ifplot=False #for plotting the 3 graphs per material
 engplot = False
 energy = 570 #[MeV]
@@ -33,12 +33,12 @@ zoff = "-5"
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
-  nemx = float(input("What is the Emittance in X? "))
   betax = float(input("What is the Beta in X? "))
   alphx = float(input("What is the Alpha in X? "))
-  nemy = float(input("What is the Emittance in Y? "))
+  nemtx = float(input("What is the Emittance in X? "))
   betay = float(input("What is the Beta in Y? "))
   alphy = float(input("What is the Alpha in Y? "))
+  nemty = float(input("What is the Emittance in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
 elif sys.argv[1] == "ESS": #auto profiles
@@ -54,32 +54,32 @@ elif sys.argv[1] == "ESS": #auto profiles
     materials = ["G4_Al"]
   N=1e5 #number of particles
   #updated Twiss on 13 June 2022 from OpenXAL script
-  nemx = 0.11315 #[um-mrad]
   betax = 941.25 #[m] original:1000m
   alphx = -58.81 #original: -50
-  nemy = 0.12155 #[um-mrad]
+  nemtx = 0.11315 #[um-mrad]
   betay = 120.03 #[m] original: 200m
   alphy = -7.46 #original: -7
+  nemty = 0.12155 #[um-mrad]
 elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
   materials = ["G4_Al"]
   N=1e5 #number of particles
-  nemx = 1e-4 #[um-mrad] 
-  betax = 1e-2 #[m] 
-  alphx = 0 #[mrad] 
-  nemy = 1e-4 #[um-mrad] 
-  betay = 1e-2 #[m] 
-  alphy = 0 #[mrad] 
+  betax = 1e-2 #[m]
+  alphx = 0
+  nemtx = 1e-4 #[um-mrad]
+  betay = 1e-2 #[m]
+  alphy = 0
+  nemty = 1e-4 #[um-mrad]
   ifplot=True
 elif isfloat(sys.argv[1]) and isfloat(sys.argv[7]): #input variables are inputs
   N = sys.argv[1]
-  nemx = sys.argv[2] #[um-mrad] 
-  betax = sys.argv[3] #[m] 
-  alphx = sys.argv[4] #[mrad] 
-  nemy = sys.argv[5] #[um-mrad] 
-  betay = sys.argv[6] #[m] 
-  alphy = sys.argv[7] #[mrad] 
+  betax = sys.argv[2] #[m]
+  alphx = sys.argv[3]
+  nemtx = sys.argv[4] #[um-mrad]
+  betay = sys.argv[5] #[m]
+  alphy = sys.argv[6]
+  nemty = sys.argv[7] #[um-mrad]
   if sys.arg[8]:
     ifplot = True #remember, sys.argv[8] anything produces plotting!
 
@@ -111,8 +111,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemx ,nemy ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemx ,nemy ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -133,15 +133,15 @@ for material in materials:
       xmax = math.ceil(np.max(xtarg)/100)*100
       print(xmax)
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
-      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
       plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo
-      plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material,thick) #10 sigma range halo
+      #plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material,thick) #10 sigma range halo
   elif material == "G4_Au":
     if ifplot:
       print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
       xmax = math.ceil(np.max(xtarg)/100)*100
       #plotFit(xs,    ys, savename,xlim,   ylim,material) 
-      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
       plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material,thick) #full range halo
       plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material,thick) #10 sigma range halo
   
@@ -231,8 +231,8 @@ ylim2=s2.get_ylim() #dynamically get the ylimits
 s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
 s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
 fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
-        rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemx,betax,alphx) +
-    rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemy,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
+        rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtx,betax,alphx) +
+    rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemty,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
 #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
 #Can date stamp the multi plot for easier tracking of changes, if necessary
