@@ -29,7 +29,7 @@ ifplot=False #for plotting the 3 graphs per material
 engplot = False
 energy = 570 #[MeV]
 engcut = 95.0
-zoff = "-5"
+zoff = "*-50" #[mm] with preappended * to keep covar defined at z=0
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))

@@ -123,12 +123,12 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
   else:
     baseSimSetup["THICK"] = 0.0
-    baseSimSetup["DIST"] = [5000] #Detector locations. At PBW Exit and ESS Target location 
+    baseSimSetup["DIST"] = [5000] #Detector locations. At ESS Target location 
     baseSimSetup["MAGNET"] = []
     #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
     #Specialized PBW magnet!
     m1 = {}
-    m1["pos"]      = 0.0 #pos is at CENTER
+    m1["pos"]      = 24.125 #[mm] Minimum position is 24.125mm for r=88m,t=4.25,arcPhi=120!!
     m1["type"]     = "PBW"
     m1["length"]   = 0 #[mm]
     m1["gradient"] = 0.0
