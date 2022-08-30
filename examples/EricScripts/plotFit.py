@@ -20,15 +20,15 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
   mux, sigmax, xinterval = findFit(xs) #dynamically gets parameters AND histogram intervals!
   muy, sigmay, yinterval = findFit(ys)
 
-  #Find range of particles that are within 3 sigma
+  #Find range of particles that are outside 3 sigma
   sigx=np.abs(xs)>3*sigmax# and np.abs(xs)<10*sigma)
   sigy=np.abs(ys)>3*sigmay
 
-  #Find % of particles within 3 sigma
+  #Find % of particles outside 3 sigma
   pOut3sigx = len(xs[sigx])/len(xs)*100
   pOut3sigy = len(ys[sigy])/len(ys)*100
-  #print(pOut3sigx,"% outisde 3 sigma")
-  #print(pOut3sigy,"% outisde 3 sigma")
+  #print(pOut3sigx,"% outside 3 sigma")
+  #print(pOut3sigy,"% outside 3 sigma")
 
   #Create the fig with 2 plots side by side
   plt.clf()
@@ -167,7 +167,7 @@ def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
   e8gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e8dgem) #[m^-1]
   e8gemt = Twiss[2] + e8dgem
   #e8nemt = e8nemt/(beta_rel*gamma_rel)
-  #print("e8",thetasq,e8beta,e8alph,e8gemt,e8gamma)
+  #print("e8",thick,thetasq,e8dgem,e8beta,e8alph,e8gemt)
   #28.7-supposed to have thetasq*thetasq in gamma. Previously did NOT have it! Now numbers are great!
   return [e8beta,e8alph,e8gemt,e8gamma]
 
@@ -176,7 +176,7 @@ def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
   m=1
   um=1e-6
   mm=1e-3
-
+  #print("init",Twiss)
   #Twiss=[beta,alpha,gemt,gamma]
   #Calculations from Eq 15 and 16 from Twiss MCS Formalism Calculations from https://cds.cern.ch/record/499590
   e16dgem = 0.5 * thetasq * thetasq * (Twiss[0]*m + thick*mm * Twiss[1] + thick*mm*thick*mm/3 * Twiss[3]) #[m*rad^2]
@@ -184,6 +184,7 @@ def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
   e16beta = (Twiss[2] * Twiss[0]*m + thick*mm * thick*mm / 3 * thetasq * thetasq ) / (Twiss[2] + e16dgem) #[m]
   e16gamma = (Twiss[2] * Twiss[3] + thetasq * thetasq ) / (Twiss[2] + e16dgem) #[m^-1]
   e16gemt = Twiss[2]*um + e16dgem
+  #print("e16",thick,thetasq,e16dgem,e16beta,e16alph,e16gemt)
   #28.7-supposed to have thetasq*thetasq in gamma, alph and beta! Previously did NOT have it! Now numbers are great!
   return [e16beta,e16alph,e16gemt,e16gamma]
 
@@ -333,10 +334,10 @@ def toTarget(TwPm,label):
   drift_PBW_Targ = np.array([ [1, d_PBW_Targ],[ 0, 1]])
   Calc_PBW_Targ = np.linalg.multi_dot([drift_PBW_Targ,PBWexitBetaMx,np.transpose(drift_PBW_Targ)])
   #print(label,"PBWexit:",PBWexitBetaMx,"\n",drift_PBW_Targ,"\n",Calc_PBW_Targ)
-  
+
   return [Calc_PBW_Targ[0][0],-Calc_PBW_Targ[1][0],TwPm[2],Calc_PBW_Targ[1][1]]
 
-def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat):
+def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,PBWTwx,PBWTwy):
   import numpy as np
   from plotFit import findFit, getMoments
   from scipy.stats import norm 
@@ -347,14 +348,26 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   mux,sigmax,xinterval = findFit(targx)
   muy,sigmay,yinterval = findFit(targy)
 
+  #Find range of particles that are outside 3 sigma
+  sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
+  sigy=np.abs(targy)>3*sigmay
+
+  #Find % of particles outside 3 sigma
+  pOut3sigx = len(targx[sigx])/len(targx)*100
+  pOut3sigy = len(targy[sigy])/len(targy)*100
+  print(fitlabel,pOut3sigx,"% outside 3 sigma X")
+  print(fitlabel,pOut3sigy,"% outside 3 sigma Y")
+
   Mfx = getMoments(fitTwx)
   Mfy = getMoments(fitTwy)
-  Mtx = getMoments(targTwx)
-  Mty = getMoments(targTwy)
-  print(fitlabel,Mtx,Mfx)
+  Mhx = getMoments(targTwx)
+  Mhy = getMoments(targTwy)
+  #print(fitlabel,Mhx,Mfx)
 
-  print("Histogram sigma X: {:.2f}mm, sigma Y: {:.2f}mrad".format(Mfx[0],Mfy[0]))
-  print("Target    sigma X: {:.2f}mm, sigma Y: {:.2f}mrad".format(Mtx[0],Mty[0]))
+  print("Histogram",fitlabel,"sigma X: {:.2f}mm".format(Mhx[0]))
+  print("Histogram",fitlabel,"sigma Y: {:.2f}mm".format(Mhy[0]))
+  print("Fit      ",fitlabel,"sigma X: {:.2f}mm".format(Mfx[0]))
+  print("Fit      ",fitlabel,"sigma Y: {:.2f}mm".format(Mfy[0]))
 
   #Create the fig with 2 plots side by side
   plt.clf()
@@ -364,30 +377,30 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s2 = fig.add_subplot(1,2,2)
 
   #Make the histogram of the full energy distrubtion for X with findFit intervals
-  nx, binsx, patchesx = s1.hist(targx, xinterval, density=True, facecolor="green", alpha=0.75,label="MiniScatter Target X Histogram")
+  nx, binsx, patchesx = s1.hist(targx, xinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target X Histogram")
 
   #Add the "best fit" line using the findFit mu and sigma for x and display sigma
   y1a = norm.pdf(binsx, mux, sigmax)
   l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Least Square")
-  y1b = norm.pdf(binsx, mux, Mtx[0])
+  y1b = norm.pdf(binsx, mux, Mhx[0])
   l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS")
   y1c = norm.pdf(binsx, mux, Mfx[0])
   l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
   #Make the histogram of the full energy distrubtion for Y with findFit intervals
-  ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
+  ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
 
   #Add the "best fit" line using the findFit mu and sigma for Y and display sigma
   y2a = norm.pdf(binsy, muy, sigmay)
   l2a = s2.plot(binsy, y2a, "k--", linewidth=1,label="Histogram Least Square")
-  y2b = norm.pdf(binsy, muy, Mty[0])
+  y2b = norm.pdf(binsy, muy, Mhy[0])
   l2b = s2.plot(binsy, y2b, "r--", linewidth=2,label="Target Twiss RMS")
   y2c = norm.pdf(binsy, muy, Mfy[0])
   l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
   sigmatextx = r"$\sigma_{X}$:"
   sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
-  sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mtx[0])+"mm"
+  sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
   import re
   if re.search(",",fitlabel):
     label = re.sub(".+(?<=(,))","",fitlabel)
@@ -395,19 +408,31 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   else:
     label = fitlabel
   sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
+  sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
+
   sigmatexty = r"$\sigma_{Y}$:"
   sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
-  sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mty[0])+"mm"
+  sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mhy[0])+"mm"
   sigmatexty +="\n"+label+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
+  sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
 
   s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
-  xlim = 4*sigmax
+  xlim = 270#4*sigmax
   s1.set_xlim([-xlim,xlim])
+  #s1.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-58
+  s1.set_ylim([1e-6,1]) 
   xlim1 = s1.get_xlim()
   ylim1 = s1.get_ylim()
-  s1.text(xlim1[0]*0.97,ylim1[1]*0.7,sigmatextx,fontsize=fs-2)
+  #print("1",xlim1,ylim1)
+  s1.text(xlim1[0]*0.97,3e-2,sigmatextx,fontsize=fs-2)
+  #PBWTwx = [Ibetax,Ialphx,Inemtx]
+  s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
+  s1.text(xlim1[0]*0.97,7e-3,r"$\epsilon_{Nx}$ = "+"{:.3f} [mm*mrad]".format(PBWTwx[2]),fontsize=fs-4)
+  s1.text(xlim1[0]*0.97,4e-3,r"$\beta_{x}$ = "+"{:.1f} [m]".format(PBWTwx[0]),fontsize=fs-4)
+  s1.text(xlim1[0]*0.97,2.4e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
+
   handles1, labels1 = plt.gca().get_legend_handles_labels()
   #print(labels1)
   order1=[0,1,2]
@@ -415,9 +440,12 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=9)
 
   s2.set_xlim([-xlim,xlim])
+  s2.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-100
+  s2.set_ylim([1e-6,1])
   s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
+
   handles2, labels2 = plt.gca().get_legend_handles_labels()
   #print(labels2)
   order2=[0,1,2]
@@ -425,14 +453,20 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=9)
   ylim2=s2.get_ylim() #dynamically get the graph limits
   xlim2=s2.get_xlim()
+  #print("2",xlim2,ylim2)
   #print("xlim2: {:.1e}-{:.1e}, ylim2: {:.1e}-{:.1e}".format(xlim2[0],xlim2[1],ylim2[0],ylim2[1]))
-  s2.text(xlim2[0]*0.97,ylim2[1]*0.7,sigmatexty,fontsize=fs-2)
+  s2.text(xlim2[0]*0.97,3e-2,sigmatexty,fontsize=fs-2)
+  #PBWTwx = [Ibetax,Ialphx,Inemtx]
+  s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
+  s2.text(xlim2[0]*0.97,7e-3,r"$\epsilon_{Ny}$ = "+"{:.3f} [mm*mrad]".format(PBWTwy[2]),fontsize=fs-4)
+  s2.text(xlim2[0]*0.97,4e-3,r"$\beta_{y}$ = "+"{:.1f} [m]".format(PBWTwy[0]),fontsize=fs-4)
+  s2.text(xlim2[0]*0.97,2.4e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
 
   #Can date stamp the multi plot for easier tracking of changes, if necessary
   from datetime import datetime
   dt = datetime.now()
 
-  name = savename+dt.strftime("%H-%M-%S")+".png"##
+  name = savename+"_log_"+dt.strftime("%H-%M-%S")+".pdf"##
   #plt.show()
   plt.savefig(name,bbox_inches="tight")
   plt.close()

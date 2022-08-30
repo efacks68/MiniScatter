@@ -16,8 +16,8 @@ from simulation import simulation
 
 #Define something preliminarily
 #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
-materials = ["G4_Al","G4_Au"] 
-thick=4.25 #default
+materials = ["G4_Al"] 
+thick=0 #new default
 N=1e5 #number of particles
 betax = 941.25 #[m]
 alphx = -58.81
@@ -50,8 +50,10 @@ elif sys.argv[1] == "ESS": #auto profiles
   #if len(sys.argv) == 4 :
   #  N = float(sys.argv[3])
   thick = float(sys.argv[2])
-  if thick ==0:
+  if thick == 0:
     materials = ["G4_Al"]
+  elif thick == 0.1:
+    materials = ["G4_Galactic"]
   N=1e5 #number of particles
   #updated Twiss on 13 June 2022 from OpenXAL script
   betax = 941.25 #[m] original:1000m
@@ -72,16 +74,18 @@ elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   alphy = 0
   nemty = 1e-4 #[um-mrad]
   ifplot=True
-elif isfloat(sys.argv[1]) and isfloat(sys.argv[7]): #input variables are inputs
-  N = sys.argv[1]
-  betax = sys.argv[2] #[m]
-  alphx = sys.argv[3]
-  nemtx = sys.argv[4] #[um-mrad]
-  betay = sys.argv[5] #[m]
-  alphy = sys.argv[6]
-  nemty = sys.argv[7] #[um-mrad]
-  if sys.arg[8]:
-    ifplot = True #remember, sys.argv[8] anything produces plotting!
+elif sys.argv[1] and sys.argv[7]: #input variables are inputs
+  N = float(sys.argv[1])
+  betax = float(sys.argv[2]) #[m]
+  alphx = float(sys.argv[3])
+  nemtx = float(sys.argv[4]) #[um-mrad]
+  betay = float(sys.argv[5]) #[m]
+  alphy = float(sys.argv[6])
+  nemty = float(sys.argv[7]) #[um-mrad]
+  thick = float(sys.argv[8]) #[mm]
+  if thick == 0.1: #case for 'no PBW'
+    materials = ["G4_Galactic"]
+  print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
@@ -125,7 +129,7 @@ for material in materials:
       #plotFit(xs,    ys, savename,xlim,   ylim,material)
       #xlim<=10 => [-xlim*sigma,xlim*sigma]; xlim>10 => [-xlim,xlim]
       #ylim==0 => with plot; ylim!=0 => [0,ylim] (5 particles /(mag of N) is for halo)
-      plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
+      #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
       plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo, with dynamic halo zoom
   elif material == "G4_Al":
     if ifplot:
@@ -239,7 +243,7 @@ fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
 from datetime import datetime
 dt = datetime.now()
 name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
-print(name) #show so it is easy to find the file
+#print(name) #show so it is easy to find the file
 #fig.savefig(name,bbox_inches="tight")
 #plt.show()
 plt.close() #be sure to close the plot
