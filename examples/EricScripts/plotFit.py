@@ -483,7 +483,8 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
   with open(fname,mode = 'w') as part_file:
     part_writer = csv.writer(part_file,delimiter = ',')
     for i in range(len(Einit)):
-      part_writer.writerow([xinit[i],pxinit[i],yinit[i],pyinit[i],z,Einit[i]])
+      part_writer.writerow(["proton",xinit[i],pxinit[i],yinit[i],pyinit[i],z,Einit[i]])
+      
   part_file.close()
 
   print(fname)

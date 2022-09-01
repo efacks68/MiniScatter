@@ -14,6 +14,8 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   from plotFit import calcTwiss
 
   saveParts = True
+  loadParts = True
+  beamFile = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N1e+05_19Aug.csv"
   #constants for below use
   #particle characteristic values
   if beam == "proton":
@@ -61,31 +63,33 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   baseSimSetup = {}
   #baseSimSetup["PHYS"] = "QGSP_BERT__SS" #Use the __SS physics lists for thin foils due to checking each atom cross section
   baseSimSetup["PHYS"]  = "QGSP_BERT_EMZ" #better for scattering through 1mm sheets
-  baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
 
-  #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
-  # 3 variables = symmetric, 6 variables = asymetric
-  EPSX   = Inemtx #[um]
-  BETAX  = Ibetax #[m]
-  ALPHAX = Ialphx #[um-mrad]
-  EPSY   = Inemty #[um]
-  BETAY  = Ibetay #[m]
-  ALPHAY = Ialphy #[um-mrad]
-  baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY) 
-
-  #Use a flat distribution or cut the tails of the Gaussian?
+  #Particle Beam definitions
   #baseSimSetup["BEAM_RCUT"] = 3.0
-
   #Where to start the beam [mm]
   #baseSimSetup["ZOFFSET_BACKTRACK"] = True
-  baseSimSetup["ZOFFSET"]   = zoff#-10.0 #Auto = 0
-  #anything behind Target is NEGATIVE!
+  baseSimSetup["N"]         = N
+  baseSimSetup["ZOFFSET"]   = zoff
+
+  #For loading particles
+  if loadParts == True:
+    baseSimSetup["BEAMFILE"] = beamFile
+  else:
+    baseSimSetup["BEAM"]    = beam
+    baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
+
+    #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
+    # 3 variables = symmetric, 6 variables = asymetric
+    EPSX   = Inemtx #[um]
+    BETAX  = Ibetax #[m]
+    ALPHAX = Ialphx #[um-mrad]
+    EPSY   = Inemty #[um]
+    BETAY  = Ibetay #[m]
+    ALPHAY = Ialphy #[um-mrad]
+    baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY)
 
   #Beam particle type
-  baseSimSetup["BEAM"]    = beam
   baseSimSetup["WORLDSIZE"] = 500.0 #Make the world wider for seeing where particles go
-
-  baseSimSetup["N"]     = N #Just a few events here! Remember that thicker targets are slower
   baseSimSetup["POSLIM"] = 100 #XY histogram Position Limit for a few, check RootFileWriter.cc
   #Some more output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
@@ -156,7 +160,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     radLenH2O = 360.8 #[mm] liquid Water 
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
-    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_19Aug".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
     #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
     #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
     #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
@@ -195,10 +199,14 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     for i in range(myTree.GetEntries()):
         myTree.GetEntry(i)
         #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
+        pzinit[i] = myTree.pz
+        if pzinit[i] == 0.0:
+          print("warning: PZinit[{}]==0".format(i))
+        continue #11.5.22 recommended by Kyrre
         xinit[i] = myTree.x *mm
-        pxinit[i] = myTree.px
+        pxinit[i] = myTree.px / pzinit[i] #from Kyrre 5.5.22 to make it true X'!
         yinit[i] = myTree.y *mm
-        pyinit[i] = myTree.py
+        pyinit[i] = myTree.py / pzinit[i]
         Einit[i] = myTree.E
     myFile.Close()
     
