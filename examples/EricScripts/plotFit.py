@@ -471,3 +471,19 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   plt.savefig(name,bbox_inches="tight")
   plt.close()
   print(name)
+
+
+def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
+  import csv
+  from datetime import datetime
+  dt = datetime.now()
+  z = -5
+
+  fname = savename+'.csv'
+  with open(fname,mode = 'w') as part_file:
+    part_writer = csv.writer(part_file,delimiter = ',')
+    for i in range(len(Einit)):
+      part_writer.writerow([xinit[i],pxinit[i],yinit[i],pyinit[i],z,Einit[i]])
+  part_file.close()
+
+  print(fname)

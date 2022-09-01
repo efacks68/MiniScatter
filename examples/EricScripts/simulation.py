@@ -13,6 +13,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   import sys
   from plotFit import calcTwiss
 
+  saveParts = True
   #constants for below use
   #particle characteristic values
   if beam == "proton":
@@ -180,25 +181,29 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
 
-  #If one wants to use the initial spread
- # myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
- # myTree= myFile.Get("InitParts")
-  #print(myTree)
- # xinit = np.zeros(myTree.GetEntries())
- # pxinit = np.zeros(myTree.GetEntries())
- # yinit = np.zeros(myTree.GetEntries())
- # pyinit = np.zeros(myTree.GetEntries())
- # Einit = np.zeros(myTree.GetEntries())
-  #print(len(xinit))
- # for i in range(myTree.GetEntries()):
- #     myTree.GetEntry(i)
-      #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
- #     xinit[i] = myTree.x *mm
- #     pxinit[i] = myTree.px
- #     yinit[i] = myTree.y *mm
- #     pyinit[i] = myTree.py
- #     Einit[i] = myTree.E
- # myFile.Close()
+  if saveParts:
+    #If one wants to use the initial spread
+    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    myTree= myFile.Get("InitParts")
+    #print(myTree)
+    xinit = np.zeros(myTree.GetEntries())
+    pxinit = np.zeros(myTree.GetEntries())
+    yinit = np.zeros(myTree.GetEntries())
+    pyinit = np.zeros(myTree.GetEntries())
+    Einit = np.zeros(myTree.GetEntries())
+    #print(len(xinit))
+    for i in range(myTree.GetEntries()):
+        myTree.GetEntry(i)
+        #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
+        xinit[i] = myTree.x *mm
+        pxinit[i] = myTree.px
+        yinit[i] = myTree.y *mm
+        pyinit[i] = myTree.py
+        Einit[i] = myTree.E
+    myFile.Close()
+    
+    from plotFit import printParticles
+    printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
 
   #Filter with Energy for now as PDG isn't working yet
  # Einit_filter = np.greater(Einit,energy*Engcut/100)

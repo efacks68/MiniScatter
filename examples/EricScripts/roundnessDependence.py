@@ -41,6 +41,8 @@ with open('beam_sizes18Aug.csv') as csv_file:
       #print(Twiss[line_count-z])
       line_count += 1
   print("Processed ",line_count,"lines")
+csv_file.close()
+
 print(datetime.now().strftime("%H-%M-%S"),"\n")
 
 n=line_count-z
@@ -199,6 +201,7 @@ with open('roundnessDependence30Aug.csv',mode = 'w') as round_file:
   round_writer.writerow([noPBW[0],VacpOut3sigX[0],VacpOut3sigY[0]])
   for i in range(len(BeamSRatio)):
     round_writer.writerow([BeamSRatio[i],HistSigmaX[i],EqSigmaX[i],OrigX[i],PBWpOut3sigX[i],HistSigmaY[i],EqSigmaY[i],OrigY[i],PBWpOut3sigY[i]])
+round_file.close()
 
 print(origin)
 print("now",datetime.now().strftime("%H-%M-%S"))
