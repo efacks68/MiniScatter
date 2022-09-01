@@ -13,9 +13,6 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   import sys
   from plotFit import calcTwiss
 
-  saveParts = True
-  loadParts = True
-  beamFile = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N1e+05_19Aug.csv"
   #constants for below use
   #particle characteristic values
   if beam == "proton":
@@ -68,12 +65,17 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #baseSimSetup["BEAM_RCUT"] = 3.0
   #Where to start the beam [mm]
   #baseSimSetup["ZOFFSET_BACKTRACK"] = True
-  baseSimSetup["N"]         = N
+  baseSimSetup["N"]         = N #need N regardless of beam origin
   baseSimSetup["ZOFFSET"]   = zoff
 
   #For loading particles
+  saveParts = True
+  loadParts = False
+  picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+  beamFile = picPWD+"PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N1e+05_19Aug.csv"
   if loadParts == True:
-    baseSimSetup["BEAMFILE"] = beamFile
+    baseSimSetup["BEAMFILE"] = beamFile # number of particles >= N
+    baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
   else:
     baseSimSetup["BEAM"]    = beam
     baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
@@ -199,14 +201,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     for i in range(myTree.GetEntries()):
         myTree.GetEntry(i)
         #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
-        pzinit[i] = myTree.pz
-        if pzinit[i] == 0.0:
-          print("warning: PZinit[{}]==0".format(i))
-        continue #11.5.22 recommended by Kyrre
         xinit[i] = myTree.x *mm
-        pxinit[i] = myTree.px / pzinit[i] #from Kyrre 5.5.22 to make it true X'!
+        pxinit[i] = myTree.px
         yinit[i] = myTree.y *mm
-        pyinit[i] = myTree.py / pzinit[i]
+        pyinit[i] = myTree.py
         Einit[i] = myTree.E
     myFile.Close()
     
