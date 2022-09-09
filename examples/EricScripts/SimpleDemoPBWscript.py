@@ -147,7 +147,7 @@ for material in materials:
       #plotFit(xs,    ys, savename,xlim,   ylim,material) 
       #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
       plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material,thick) #full range halo
-      plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material,thick) #10 sigma range halo
+      #plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material,thick) #10 sigma range halo
   
   #Multi-Material Plot section, continues the material loop to plot data.
   #For creating the PDF of particle distribution from findFit function optimized mu and sigma.
@@ -210,7 +210,7 @@ for material in materials:
   l2 = s2.plot(binsy, y2, dash, linewidth=1,label=mat) #labeled by material short-name
 
 #Set Plot characterists
-s=3 # number of sigma width to plot
+s=10 # number of sigma width to plot
 sigvals = sigmax.values() #get values of dictionary
 xlim1 = s*max(sigvals) #use s*max as the xlim
 s1.set_xlim([-xlim1,xlim1]) #seems to show all distributions, 30.3.22

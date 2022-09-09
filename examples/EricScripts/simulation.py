@@ -66,15 +66,16 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #Where to start the beam [mm]
   #baseSimSetup["ZOFFSET_BACKTRACK"] = True
   baseSimSetup["N"]         = N #need N regardless of beam origin
+  baseSimSetup["N"]         = 2.877e6#7.624e5 #change to match file particles. Used for file name
   baseSimSetup["ZOFFSET"]   = zoff
 
   #For loading particles
-  saveParts = True
-  loadParts = False
+  saveParts = False
+  loadParts = True
   picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  beamFile = picPWD+"PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N1e+05_19Aug.csv"
+  beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N2.9e+06_cyrille08-05-48"
   if loadParts == True:
-    baseSimSetup["BEAMFILE"] = beamFile # number of particles >= N
+    baseSimSetup["BEAMFILE"] = picPWD+beamFile+".csv" # number of particles >= N
     baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
   else:
     baseSimSetup["BEAM"]    = beam
@@ -91,13 +92,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY)
 
   #Beam particle type
-  baseSimSetup["WORLDSIZE"] = 500.0 #Make the world wider for seeing where particles go
+  Rcut = 1000.0
+  baseSimSetup["WORLDSIZE"] = Rcut #Make the world wider for seeing where particles go
   baseSimSetup["POSLIM"] = 100 #XY histogram Position Limit for a few, check RootFileWriter.cc
   #Some more output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
   baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
-  Rcut = 1000.0
   baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
   baseSimSetup["CUTOFF_RADIUS"] = Rcut #Larger radial cutoff #Decreased 10 May
   baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
@@ -162,10 +163,14 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     radLenH2O = 360.8 #[mm] liquid Water 
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
-    outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_19Aug".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
-    #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
-    #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
-    #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
+    if loadParts:
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+      outname = beamFile+"_run"
+    else:
+      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
+      #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
 
   #Store the .root files in a subfolder from where this script is running,
   # normally MiniScatter/examples, in order to keep things together
@@ -462,14 +467,18 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
   print(thick)
-  if thick == 0.1:
-    print("Vacuum")
-    compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"No PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
-  elif thick == 4.25:
-    print("PBW!")
-    compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat,PBWTwx,PBWTwy)
-    compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
-  #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
+  if loadParts:
+    from plotFit import plotRaster
+    plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename,mat,PBWTwx,PBWTwy)
+  else:
+    if thick == 0.1:
+      print("Vacuum")
+      compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"No PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
+    elif thick == 4.25:
+      print("PBW!")
+      compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat,PBWTwx,PBWTwy)
+      compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
+    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
   return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm #filter by PDG only

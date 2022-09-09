@@ -419,7 +419,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
-  xlim = 270#4*sigmax
+  xlim = 4*sigmax
   s1.set_xlim([-xlim,xlim])
   #s1.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-58
   s1.set_ylim([1e-6,1]) 
@@ -440,7 +440,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=9)
 
   s2.set_xlim([-xlim,xlim])
-  s2.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-100
+  #s2.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-100
   s2.set_ylim([1e-6,1])
   s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
@@ -488,3 +488,75 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
   part_file.close()
 
   print(fname)
+
+def plotRaster(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,PBWTwx,PBWTwy):
+  import numpy as np
+  from plotFit import findFit, getMoments
+  from scipy.stats import norm 
+  import matplotlib.pyplot as plt
+  mm = 1e-3
+  fs = 14
+  xline = 160
+  yline = 64
+
+  #Find % outside Open Space Box
+  boxX = np.abs(targx) > xline
+  boxY = np.abs(targy) > yline
+  pOutBoxX = len(targx[boxX])/len(targx)*100
+  pOutBoxY = len(targy[boxY])/len(targy)*100
+  print(fitlabel,pOutBoxX,"% outside 3 sigma X")
+  print(fitlabel,pOutBoxY,"% outside 3 sigma Y")
+
+  mux,sigmax,xinterval = findFit(targx)
+  muy,sigmay,yinterval = findFit(targy)
+
+  #Create the fig with 2 plots side by side
+  plt.clf()
+  fig = plt.figure(figsize=(15,6.0))
+  plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
+  s1 = fig.add_subplot(1,2,1)
+  s2 = fig.add_subplot(1,2,2)
+
+  #Make the histogram of the full energy distrubtion for X with findFit intervals
+  nx, binsx, patchesx = s1.hist(targx, xinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target X Histogram")
+
+  #Make the histogram of the full energy distrubtion for Y with findFit intervals
+  ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
+
+  xlim = 300
+  ylim = [1e-6,1e-1]
+
+  textX = "{:.3f}% outside 99% Box".format(pOutBoxX)
+  textY = "{:.3f}% outside 99% Box".format(pOutBoxY)
+
+  s1.set_title("X Raster Distribution At Target",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+  s1.set_xlabel("X Position [mm]",fontsize=fs)
+  s1.set_ylabel("Probability Density",fontsize=fs)
+  s1.set_xlim([-xlim,xlim])
+  s1.set_ylim(ylim) #if don't set, then log goes to e-58
+  s1.text(-xlim*0.97,3e-2,textX,fontsize=fs-2)
+  s1.vlines(-xline,ylim[0],ylim[1]/10)
+  s1.vlines(xline,ylim[0],ylim[1]/10)
+  #s1.legend()
+
+  s2.set_title("Y Raster Distribution At Target",fontsize=fs)
+  s2.set_xlabel("Y Position [mm]",fontsize=fs)
+  s2.set_ylabel("Probability Density",fontsize=fs)
+  s2.set_xlim([-xlim,xlim])
+  s2.set_ylim(ylim) #if don't set, then log goes to e-100
+  s2.text(-xlim*0.97,3e-2,textY,fontsize=fs-2)
+  s2.vlines(-yline,ylim[0],ylim[1]/10)
+  s2.vlines(yline,ylim[0],ylim[1]/10)
+  #s2.legend()
+
+
+  #Can date stamp the multi plot for easier tracking of changes, if necessary
+  from datetime import datetime
+  dt = datetime.now()
+
+  name = savename+"_raster_"+dt.strftime("%H-%M-%S")+".pdf"##
+  #plt.show()
+  plt.savefig(name,bbox_inches="tight")
+  plt.close()
+  print(name)
+
