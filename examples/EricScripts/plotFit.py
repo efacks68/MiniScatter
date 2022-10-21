@@ -1,11 +1,10 @@
 #plotFit.py
 #Eric Fackelman
-#29 March- 5 April 2022
+#29 March- 27 Sep 2022
 
-#This is to plot the SimpledemoPBWscript histograms 
-# Fits are made in findFit function using scipy.optimize.curve_fit found parameters
-# And passed back into plotFit.
-#import stuff here
+#This holds the functions to plot the figures for the analysisScripts
+#-plotFit - 
+
 
 def plotFit(xs,ys,savename,xlim,ylim,material,thick): 
   import numpy as np
@@ -236,6 +235,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
   s1 = fig.add_subplot(1,2,1)
   s2 = fig.add_subplot(1,2,2)
+
   #Make the histogram of the full energy distrubtion for X with findFit intervals
   nx, binsx, patchesx = s1.hist(xs, xinterval, density=True, facecolor="green", alpha=0.75,label="MiniScatter "+axis+" Histogram")
   npx,binspx, patchespx = s2.hist(pxs,pxinterval,density=True, facecolor="green", alpha=0.75,label="MiniScatter "+axis+"' Histogram")
@@ -274,16 +274,14 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     order=[4,0,1,2,3] #order of labels in legend
 
   titlestart = "At {:.2f}mm ".format(thick) + mat + " " + titledescr
-  #finish setting plot characteristics
+  #Finish setting various plot characteristics
   s1.set_title(titlestart+", Twiss Fit "+axis+" Distribution",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel(axis+" Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
   handles1, labels1 = plt.gca().get_legend_handles_labels()
-  #print(labels1)
   s1.legend([handles1[idx] for idx in order],[labels1[idx] for idx in order],fontsize=9)
   ylim1=s1.get_ylim() #dynamically get the ylimits
   xlim1=s1.get_xlim()
-  #text="Original:\n"+rf"$ \epsilon_N: {{:.1e}}$m, $\sigma_F:{{:.1f}}$mm".format(orig,sigmaTwx)+"\n"+"Modified:\n"+rf"$\epsilon_N:{{:.1e}}$m, $\sigma_F:${{:.1f}}mm".format(calcxTwf[2],csigmaTwx)
   if axis=="X":
     sigmatextx = r"$\sigma_{X}$:"
     sigmatextpx = r"$\sigma_{X'}$:"
@@ -310,7 +308,6 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   s2.legend([handles2[idx] for idx in order],[labels2[idx] for idx in order],fontsize=9)
   ylim2=s2.get_ylim() #dynamically get the ylimits
   xlim2=s2.get_xlim()
-  #print("xlim2: {:.1e}-{:.1e}, ylim2: {:.1e}-{:.1e}".format(xlim2[0],xlim2[1],ylim2[0],ylim2[1]))
   s2.text(xlim2[0]*0.97,ylim2[1]*0.7,sigmatextpx,fontsize=fs-2)
 
   #Can date stamp the multi plot for easier tracking of changes, if necessary
@@ -324,8 +321,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
   print(name)
 
 def toTarget(TwPm,label):
-  #Now extend the distributions to the Target Location
-  #But I should also extend the Eq Twiss Params to Target separately from the MiniScatter Output.
+  #Extend the distributions to the Target Location
   import numpy as np
   #Twiss=[beta,alpha,gemt,gamma]
   PBWexitBetaMx = np.array([[TwPm[0],-TwPm[1]],[-TwPm[1],TwPm[3]]])
@@ -345,6 +341,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   mm = 1e-3
   fs = 14
 
+  #Find fit to histogram
   mux,sigmax,xinterval = findFit(targx)
   muy,sigmay,yinterval = findFit(targy)
 
@@ -358,6 +355,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   print(fitlabel,pOut3sigx,"% outside 3 sigma X")
   print(fitlabel,pOut3sigy,"% outside 3 sigma Y")
 
+  #Get sigma for position and angle
   Mfx = getMoments(fitTwx)
   Mfy = getMoments(fitTwy)
   Mhx = getMoments(targTwx)
@@ -398,6 +396,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   y2c = norm.pdf(binsy, muy, Mfy[0])
   l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
+  #Write texts to display sigmas
   sigmatextx = r"$\sigma_{X}$:"
   sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
   sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
@@ -416,16 +415,16 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   sigmatexty +="\n"+label+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
   sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
 
+  #Set various plot variables, often found through trial and error
   s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
   xlim = 4*sigmax
   s1.set_xlim([-xlim,xlim])
-  #s1.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-58
-  s1.set_ylim([1e-6,1]) 
+  #s1.set_ylim([1e-6,0.1])
+  s1.set_ylim([1e-6,1])  #if don't set, then log goes to e-58
   xlim1 = s1.get_xlim()
   ylim1 = s1.get_ylim()
-  #print("1",xlim1,ylim1)
   s1.text(xlim1[0]*0.97,3e-2,sigmatextx,fontsize=fs-2)
   #PBWTwx = [Ibetax,Ialphx,Inemtx]
   s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
@@ -434,27 +433,21 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
   s1.text(xlim1[0]*0.97,2.4e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
 
   handles1, labels1 = plt.gca().get_legend_handles_labels()
-  #print(labels1)
   order1=[0,1,2]
-  #order1 = [2,0,1]#for no Eq fits for initial Hist plot
   s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=9)
 
   s2.set_xlim([-xlim,xlim])
-  #s2.set_ylim([1e-6,0.1]) #if don't set, then log goes to e-100
-  s2.set_ylim([1e-6,1])
+  s2.set_ylim([1e-6,1]) #if don't set, then log goes to e-58
   s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
 
   handles2, labels2 = plt.gca().get_legend_handles_labels()
-  #print(labels2)
   order2=[0,1,2]
-  #order2 = [2,0,1] #for no Eq fits for initial Hist plot
   s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=9)
   ylim2=s2.get_ylim() #dynamically get the graph limits
   xlim2=s2.get_xlim()
-  #print("2",xlim2,ylim2)
-  #print("xlim2: {:.1e}-{:.1e}, ylim2: {:.1e}-{:.1e}".format(xlim2[0],xlim2[1],ylim2[0],ylim2[1]))
+
   s2.text(xlim2[0]*0.97,3e-2,sigmatexty,fontsize=fs-2)
   #PBWTwx = [Ibetax,Ialphx,Inemtx]
   s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
@@ -484,18 +477,18 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
     part_writer = csv.writer(part_file,delimiter = ',')
     for i in range(len(Einit)):
       part_writer.writerow(["proton",xinit[i],pxinit[i],yinit[i],pyinit[i],z,Einit[i]])
-      
   part_file.close()
-
   print(fname)
 
-def plotRaster(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,PBWTwx,PBWTwy):
+
+def plotRaster(targx,targy,fitlabel,savename,mat):
   import numpy as np
   from plotFit import findFit, getMoments
-  from scipy.stats import norm 
+  #from scipy.stats import norm 
   import matplotlib.pyplot as plt
   mm = 1e-3
   fs = 14
+  #99% box widths from Beam Requirements
   xline = 160
   yline = 64
 
@@ -507,6 +500,7 @@ def plotRaster(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,P
   print(fitlabel,pOutBoxX,"% outside 3 sigma X")
   print(fitlabel,pOutBoxY,"% outside 3 sigma Y")
 
+  #Useful to get intervals for nice plotting
   mux,sigmax,xinterval = findFit(targx)
   muy,sigmay,yinterval = findFit(targy)
 
@@ -523,40 +517,79 @@ def plotRaster(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,P
   #Make the histogram of the full energy distrubtion for Y with findFit intervals
   ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
 
-  xlim = 300
-  ylim = [1e-6,1e-1]
-
-  textX = "{:.3f}% outside 99% Box".format(pOutBoxX)
-  textY = "{:.3f}% outside 99% Box".format(pOutBoxY)
+  #General range:
+  xlim1 = 300
+  ylim1 = [1e-6,1e-1]
+  xlim2 = 300
+  ylim2 = [1e-6,1e-1]
+  #to zoom in on peaks:
+  #xlim1 = 60
+  #ylim1 = [5e-3,1.3e-2]
+  #xlim2 = 20
+  #ylim2 = [2.1e-2,2.7e-2]
 
   s1.set_title("X Raster Distribution At Target",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
-  s1.set_xlim([-xlim,xlim])
-  s1.set_ylim(ylim) #if don't set, then log goes to e-58
-  s1.text(-xlim*0.97,3e-2,textX,fontsize=fs-2)
-  s1.vlines(-xline,ylim[0],ylim[1]/10)
-  s1.vlines(xline,ylim[0],ylim[1]/10)
-  #s1.legend()
+  s1.set_xlim([-xlim1,xlim1])
+  s1.set_ylim(ylim1) #if don't set, then log goes to e-58
 
   s2.set_title("Y Raster Distribution At Target",fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
-  s2.set_xlim([-xlim,xlim])
-  s2.set_ylim(ylim) #if don't set, then log goes to e-100
-  s2.text(-xlim*0.97,3e-2,textY,fontsize=fs-2)
-  s2.vlines(-yline,ylim[0],ylim[1]/10)
-  s2.vlines(yline,ylim[0],ylim[1]/10)
-  #s2.legend()
+  s2.set_xlim([-xlim2,xlim2])
+  s2.set_ylim(ylim2) #if don't set, then log goes to e-100
 
+  #99% Box label. Comment out placement if zooming in!
+  textX = "{:.3f}% outside 99% Box".format(pOutBoxX)
+  textY = "{:.3f}% outside 99% Box".format(pOutBoxY)
+  s1.text(-xlim1*0.97,3e-2,textX,fontsize=fs-2)
+  s2.text(-xlim2*0.97,3e-2,textY,fontsize=fs-2)
+
+  #Makes 99% box lines
+  s1.vlines(-xline,ylim1[0],ylim1[1]/10)
+  s1.vlines(xline,ylim1[0],ylim1[1]/10)
+  s2.vlines(-yline,ylim2[0],ylim2[1]/10)
+  s2.vlines(yline,ylim2[0],ylim2[1]/10)
+  
+  #To focus on small area and have fine grid
+  ##https://stackoverflow.com/questions/44078409/matplotlib-semi-log-plot-minor-tick-marks-are-gone-when-range-is-large/44079725#44079725
+  #import matplotlib.ticker as tick
+  #locmin = tick.LogLocator(base=10.0, subs=(1e-3,5e-2,1e-2,1e-1 ))
+  #s2.yaxis.set_minor_locator(locmin)
+  #s1.grid(visible=True,which='both')
+  #s2.grid(visible=True, which='both')
 
   #Can date stamp the multi plot for easier tracking of changes, if necessary
   from datetime import datetime
   dt = datetime.now()
 
-  name = savename+"_raster_"+dt.strftime("%H-%M-%S")+".pdf"##
+  name = savename+"_"+fitlabel+"_"+dt.strftime("%H-%M-%S")##
   #plt.show()
-  plt.savefig(name,bbox_inches="tight")
+  plt.savefig(name+".pdf",bbox_inches="tight")
   plt.close()
   print(name)
 
+def numLines(beamFile):
+  import csv
+  with open(beamFile+".csv") as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    N = 0
+    for row in csv_reader:
+      N += 1
+    csv_file.close()
+  from datetime import datetime
+  dt = datetime.now()
+  print("There are ",N,"lines"+dt.strftime("%H-%M-%S"))
+  return N
+
+
+def rasterImage(targx,targy,savename):
+  import matplotlib.pyplot as plt
+  import numpy as np
+  name=savename+"rasterImage.pdf"
+  plt.clf()
+  plt.scatter(targx,targy,cmap='hot')
+  plt.savefig(name)
+  plt.close()
+  print(name)

@@ -6,7 +6,7 @@
 # ## Code setup
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
+import argparse,sys
 import math
 from plotFit import plotFit,findFit
 from simulation import simulation
@@ -30,6 +30,18 @@ engplot = False
 energy = 570 #[MeV]
 engcut = 95.0
 zoff = "*-50" #[mm] with preappended * to keep covar defined at z=0
+beamAngle = 0 #[mm] #0 for no angle ~? is nominal
+
+#Set up Argument Parsing
+parser = argparse.ArgumentParser()
+beam = parser.add_mutually_exclusive_group()
+beam.add_argument("--ESS",action="store_true")
+beam.add_argument("--pencil",action="store_true")
+parser.add_argument("--l",action="store_true",help="Load Particles or not")
+parser.add_argument("--t",type=int,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
+parser.add_argument("--twiss",type=float,nargs=9,help="N particles,BetaX,AlphX,NemtX,BetaY,AlphY,NemtY,Thickness")
+parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculated and used in aRasterMaker.py")
+args = parser.parse_args()
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
@@ -41,7 +53,7 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
   nemty = float(input("What is the Emittance in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
-elif sys.argv[1] == "ESS": #auto profiles
+elif args.ESS: #auto profiles
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
   #materials = ["G4_Galactic"]
@@ -49,10 +61,9 @@ elif sys.argv[1] == "ESS": #auto profiles
   ifplot=False #for plotting the 3 graphs per material
   #if len(sys.argv) == 4 :
   #  N = float(sys.argv[3])
-  thick = float(sys.argv[2])
-  if thick == 0:
+  if args.t == 0:
     materials = ["G4_Al"]
-  elif thick == 0.1:
+  elif args.t == 0.1:
     materials = ["G4_Galactic"]
   N=1e5 #number of particles
   #updated Twiss on 13 June 2022 from OpenXAL script
@@ -62,7 +73,10 @@ elif sys.argv[1] == "ESS": #auto profiles
   betay = 120.03 #[m] original: 200m
   alphy = -7.46 #original: -7
   nemty = 0.12155 #[um-mrad]
-elif sys.argv[1] == "pencil": #for a reasonable pencil beam
+  loadParts = False
+  if args.l:
+    loadParts = True
+elif args.pencil: #for a reasonable pencil beam
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
   materials = ["G4_Al"]
@@ -74,7 +88,7 @@ elif sys.argv[1] == "pencil": #for a reasonable pencil beam
   alphy = 0
   nemty = 1e-4 #[um-mrad]
   ifplot=True
-elif sys.argv[1] and sys.argv[7]: #input variables are inputs
+elif args.twiss: #input variables are inputs
   N = float(sys.argv[1])
   betax = float(sys.argv[2]) #[m]
   alphx = float(sys.argv[3])
@@ -89,6 +103,9 @@ elif sys.argv[1] and sys.argv[7]: #input variables are inputs
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
+
+if args.angle != 0:
+  beamAngle = angle
 
 if ifplot:
   engplot=True
@@ -115,8 +132,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,loadParts,beamAngle):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot,loadParts,beamAngle)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
