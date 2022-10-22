@@ -72,7 +72,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   saveParts = False
   if loadParts == True:
     picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N2.9e+05_cyrille20-07-23"
+    beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N2.9e+06_cyrilleCorrect"
     from plotFit import numLines
     parts = numLines(picPWD+beamFile)
     baseSimSetup["N"]        = parts #7.624e5 #change to match file particles. Used for file name
@@ -486,7 +486,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   print(thick)
   if loadParts:
     from plotFit import plotRaster,rasterImage
-  #  plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat)
+    plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat)
     plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat)
     #rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename)
   else:
