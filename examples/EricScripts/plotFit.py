@@ -481,7 +481,7 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
   print(fname)
 
 
-def plotRaster(targx,targy,fitlabel,savename,mat):
+def plotRaster(targx,targy,fitlabel,savename,mat,position):
   import numpy as np
   from plotFit import findFit, getMoments
   #from scipy.stats import norm 
@@ -528,13 +528,13 @@ def plotRaster(targx,targy,fitlabel,savename,mat):
   #xlim2 = 20
   #ylim2 = [2.1e-2,2.7e-2]
 
-  s1.set_title("X Raster Distribution At Target",fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+  s1.set_title("X Raster Distribution At "+position,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
   s1.set_xlabel("X Position [mm]",fontsize=fs)
   s1.set_ylabel("Probability Density",fontsize=fs)
   s1.set_xlim([-xlim1,xlim1])
   s1.set_ylim(ylim1) #if don't set, then log goes to e-58
 
-  s2.set_title("Y Raster Distribution At Target",fontsize=fs)
+  s2.set_title("Y Raster Distribution At "+position,fontsize=fs)
   s2.set_xlabel("Y Position [mm]",fontsize=fs)
   s2.set_ylabel("Probability Density",fontsize=fs)
   s2.set_xlim([-xlim2,xlim2])

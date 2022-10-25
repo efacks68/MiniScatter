@@ -299,7 +299,7 @@ private:
     G4double waterThick = 2.0*mm;  //[G4 length units] Thickness of water channel, >0
     G4double al2Thick = 1.25*mm;  //[G4 length units] Inner thickness of metal window, >0
     G4double thickness = 4.25*mm;  //[G4 length units] Total thicnkess
-    G4double width = 60.0*mm;  //[G4 length units] Width of cylinder as seen by PBW, >0
+    G4double width = 200.0*mm;  //[G4 length units] Width of cylinder as seen by PBW, >0
     G4double height = 160.0*mm;  //[G4 length units] Height of window section, >0
     G4double arcPhi = 120.0*deg;  // [deg] Arc angle of window section, within: 0 <= arcPhi <= 180
     G4double startPhi = 30*deg;  // [deg] Start angle of window section, = 90 - arcPhi/2 for geometry

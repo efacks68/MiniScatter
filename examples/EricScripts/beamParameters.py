@@ -1,6 +1,6 @@
 import numpy as np
 
-energy = float(input("What is the energy of the proton? "))
+energy = float(input("What is the energy of the proton beam in MeV? "))
 #partA = input("What is the mass of the particle? ")
 
 partA = 938.27209 #[MeV/c2]

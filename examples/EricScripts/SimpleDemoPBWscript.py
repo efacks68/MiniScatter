@@ -31,17 +31,33 @@ energy = 570 #[MeV]
 engcut = 95.0
 zoff = "*-50" #[mm] with preappended * to keep covar defined at z=0
 beamAngle = 0 #[mm] #0 for no angle ~? is nominal
+loadParts = False
+beamFile=""
 
 #Set up Argument Parsing
 parser = argparse.ArgumentParser()
 beam = parser.add_mutually_exclusive_group()
 beam.add_argument("--ESS",action="store_true")
 beam.add_argument("--pencil",action="store_true")
-parser.add_argument("--l",action="store_true",help="Load Particles or not")
-parser.add_argument("--t",type=int,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
+parser.add_argument("--l",type=str,help="Load Particles or not")
+parser.add_argument("--t",type=float,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
 parser.add_argument("--twiss",type=float,nargs=9,help="N particles,BetaX,AlphX,NemtX,BetaY,AlphY,NemtY,Thickness")
 parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculated and used in aRasterMaker.py")
 args = parser.parse_args()
+print(args)
+
+if args.l:
+  loadParts=True
+if args.l != "":
+  beamFile = args.l
+
+thick = args.t
+if thick == 0:
+  materials = ["G4_Al"]
+elif thick == 0.1:
+  materials = ["G4_Galactic"]
+if args.angle != 0:
+  beamAngle = angle
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
@@ -57,37 +73,26 @@ elif args.ESS: #auto profiles
   #materials = ["G4_Galactic","G4_Al","G4_Au"]
   #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
   #materials = ["G4_Galactic"]
-  materials = ["G4_Al"]
   ifplot=False #for plotting the 3 graphs per material
   #if len(sys.argv) == 4 :
   #  N = float(sys.argv[3])
-  if args.t == 0:
-    materials = ["G4_Al"]
-  elif args.t == 0.1:
-    materials = ["G4_Galactic"]
   N=1e5 #number of particles
   #updated Twiss on 13 June 2022 from OpenXAL script
   betax = 941.25 #[m] original:1000m
   alphx = -58.81 #original: -50
-  nemtx = 0.11315 #[um-mrad]
+  nemtx = 0.11315 #[mm-mrad]
   betay = 120.03 #[m] original: 200m
   alphy = -7.46 #original: -7
-  nemty = 0.12155 #[um-mrad]
-  loadParts = False
-  if args.l:
-    loadParts = True
+  nemty = 0.12155 #[mm-mrad]
 elif args.pencil: #for a reasonable pencil beam
-  #materials = ["G4_Galactic","G4_Al","G4_Au"]
-  #materials = ["G4_Al","G4_Au"] #only use solids as Vac or Air does nothing
-  materials = ["G4_Al"]
   N=1e5 #number of particles
   betax = 1e-2 #[m]
   alphx = 0
-  nemtx = 1e-4 #[um-mrad]
+  nemtx = 1e-4 #[mm-mrad]
   betay = 1e-2 #[m]
   alphy = 0
-  nemty = 1e-4 #[um-mrad]
-  ifplot=True
+  nemty = 1e-4 #[mm-mrad]
+  ifplot=False
 elif args.twiss: #input variables are inputs
   N = float(sys.argv[1])
   betax = float(sys.argv[2]) #[m]
@@ -97,15 +102,11 @@ elif args.twiss: #input variables are inputs
   alphy = float(sys.argv[6])
   nemty = float(sys.argv[7]) #[um-mrad]
   thick = float(sys.argv[8]) #[mm]
-  if thick == 0.1: #case for 'no PBW'
-    materials = ["G4_Galactic"]
-  print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
+
+print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
-
-if args.angle != 0:
-  beamAngle = angle
 
 if ifplot:
   engplot=True
@@ -132,8 +133,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,loadParts,beamAngle):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot,loadParts,beamAngle)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,loadParts,beamAngle,beamFile):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot,loadParts,beamAngle,beamFile)
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   

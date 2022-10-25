@@ -1,12 +1,15 @@
 #simulation.py
 #Eric Fackelman
-#29 March - 1 June 2022
+#29 March - 31 Dec 2022
 
 #This is to run the simulation of a beam through a PBW of input material 
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot,loadParts,beamAngle):
+#To Do:
+# -clean up if statements in baseSetup section
+
+def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot,loadParts,beamAngle,beamFile):
   import numpy as np
   import ROOT
   import os
@@ -72,10 +75,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   saveParts = False
   if loadParts == True:
     picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59,aY-7_N2.9e+06_cyrilleCorrect"
+    #beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59mm,aY-7mm_N1.4e+05_2.9e+02us_cyrille"
     from plotFit import numLines
     parts = numLines(picPWD+beamFile)
-    baseSimSetup["N"]        = parts #7.624e5 #change to match file particles. Used for file name
+    baseSimSetup["N"]        = parts #change to match file particles. Used for file name
     baseSimSetup["BEAMFILE"] = picPWD+beamFile+".csv" # number of particles >= N
     baseSimSetup["ENERGY"]   = energy #570 #[MeV] #ESS beam energy update 15.8
   else:
@@ -86,10 +89,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     # 3 variables = symmetric, 6 variables = asymetric
     EPSX   = Inemtx #[um]
     BETAX  = Ibetax #[m]
-    ALPHAX = Ialphx #[um-mrad]
+    ALPHAX = Ialphx #[mm-mrad]
     EPSY   = Inemty #[um]
     BETAY  = Ibetay #[m]
-    ALPHAY = Ialphy #[um-mrad]
+    ALPHAY = Ialphy #[mm-mrad]
     baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY)
 
   #Beam particle type
@@ -144,7 +147,9 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
     baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location
-    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],baseSimSetup["COVAR"][0]*1e3)
+    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Ibetax*1e3)
+    if loadParts:
+      outname = outname + beamFile+"_run"
   else:
     baseSimSetup["THICK"] = 0.0
     baseSimSetup["DIST"] = [5000] #Detector locations. At ESS Target location 
@@ -173,11 +178,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     if loadParts:
       #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
-      outname = beamFile+"_run"
+      outname = beamFile+"_{:.0f}mm_run".format(thick)
       if beamAngle != 0:
         outname = outname + "_ang" + "{:.2f}mrad".format(beamAngle*1e3)
     else:
-      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,thick,baseSimSetup["N"])
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
       #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
@@ -236,76 +241,78 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
  # inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
 
   ##Get the distributions from the PBW exit face
-  if thick != 0:
-    #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
-    #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
-    #These are not at the ESS Target location, but are at the far side of the PBW
-    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
-  else:
-    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-    myTree = myFile.Get("magnet_1_ExitHits")
-    thick=4.25 #[mm] set here for thickness calculations
+  e=False
+  if e: #save some time by only getting when needed
+    if thick != 0:
+      #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
+      #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
+      #These are not at the ESS Target location, but are at the far side of the PBW
+      myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+      myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
+    else:
+      myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+      myTree = myFile.Get("magnet_1_ExitHits")
+      thick=4.25 #[mm] set here for thickness calculations
 
-  xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
-  pxexit = np.zeros(myTree.GetEntries())
-  yexit = np.zeros(myTree.GetEntries())
-  pyexit = np.zeros(myTree.GetEntries())
-  pzexit = np.zeros(myTree.GetEntries())
-  Eexit = np.zeros(myTree.GetEntries())
-  PDGexit = np.zeros(myTree.GetEntries())
-  #print("The length of the arrays are ",len(xexit))
+    xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
+    pxexit = np.zeros(myTree.GetEntries())
+    yexit = np.zeros(myTree.GetEntries())
+    pyexit = np.zeros(myTree.GetEntries())
+    pzexit = np.zeros(myTree.GetEntries())
+    Eexit = np.zeros(myTree.GetEntries())
+    PDGexit = np.zeros(myTree.GetEntries())
+    #print("The length of the arrays are ",len(xexit))
 
-  #import warnings
-  #warnings.filterwarnings("error")
+    #import warnings
+    #warnings.filterwarnings("error")
 
-  for i in range(myTree.GetEntries()): #put data in arrays
-      myTree.GetEntry(i)
-      pzexit[i] = myTree.pz
-      if pzexit[i] == 0.0:
-        print("warning: PZexit[{}]==0".format(i))
-        continue #11.5.22 recommended by Kyrre
-      xexit[i] = myTree.x *mm #m
-      pxexit[i] = myTree.px / pzexit[i] #from Kyrre 5.5.22 to make it true X'!
-      yexit[i] = myTree.y *mm #m
-      pyexit[i] = myTree.py / pzexit[i]
-      Eexit[i] = myTree.E
-      PDGexit[i] = myTree.PDG
-  myFile.Close() 
+    for i in range(myTree.GetEntries()): #put data in arrays
+        myTree.GetEntry(i)
+        pzexit[i] = myTree.pz
+        if pzexit[i] == 0.0:
+          print("warning: PZexit[{}]==0".format(i))
+          continue #11.5.22 recommended by Kyrre
+        xexit[i] = myTree.x *mm #m
+        pxexit[i] = myTree.px / pzexit[i] #from Kyrre 5.5.22 to make it true X'!
+        yexit[i] = myTree.y *mm #m
+        pyexit[i] = myTree.py / pzexit[i]
+        Eexit[i] = myTree.E
+        PDGexit[i] = myTree.PDG
+    myFile.Close() 
 
-  #Filter the relevant distributions
-  PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
-  Eexit_filtered = Eexit[PDGexit_filter]
-  Eexit_filter = np.greater(Eexit_filtered,energy*Engcut/100) #then create Eng_filter that is filtered
-  Eexit_filtered = Eexit_filtered[Eexit_filter]
+    #Filter the relevant distributions
+    PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
+    Eexit_filtered = Eexit[PDGexit_filter]
+    Eexit_filter = np.greater(Eexit_filtered,energy*Engcut/100) #then create Eng_filter that is filtered
+    Eexit_filtered = Eexit_filtered[Eexit_filter]
 
-  angmax=4e-3 #[rad] one angle filter limit 
-  #Apply PDG, Energy Filters
-  xexit_filtered = xexit[PDGexit_filter][Eexit_filter]
-  yexit_filtered = yexit[PDGexit_filter][Eexit_filter]
-  pxexit_filtered = pxexit[PDGexit_filter][Eexit_filter]
-  pyexit_filtered = pyexit[PDGexit_filter][Eexit_filter]
-  #Apply >,< filters
-  #X, <
-  pxfilterL = np.less(pxexit_filtered,angmax) #[rad]
-  pxexit_filtered = pxexit_filtered[pxfilterL]
-  xexit_filtered = xexit_filtered[pxfilterL]
-  #Y, <
-  pyfilterL = np.less(pyexit_filtered,angmax) #[rad]
-  pyexit_filtered = pyexit_filtered[pyfilterL]
-  yexit_filtered = yexit_filtered[pyfilterL]
-  #X, >
-  pxfilterG = np.greater(pxexit_filtered,-angmax) #[rad]
-  pxexit_filtered = pxexit_filtered[pxfilterG]
-  xexit_filtered = xexit_filtered[pxfilterG]
-  #Y, >
-  pyfilterG = np.greater(pyexit_filtered,-angmax) #[rad]
-  pyexit_filtered = pyexit_filtered[pyfilterG]
-  yexit_filtered = yexit_filtered[pyfilterG]
+    angmax=4e-3 #[rad] one angle filter limit 
+    #Apply PDG, Energy Filters
+    xexit_filtered = xexit[PDGexit_filter][Eexit_filter]
+    yexit_filtered = yexit[PDGexit_filter][Eexit_filter]
+    pxexit_filtered = pxexit[PDGexit_filter][Eexit_filter]
+    pyexit_filtered = pyexit[PDGexit_filter][Eexit_filter]
+    #Apply >,< filters
+    #X, <
+    pxfilterL = np.less(pxexit_filtered,angmax) #[rad]
+    pxexit_filtered = pxexit_filtered[pxfilterL]
+    xexit_filtered = xexit_filtered[pxfilterL]
+    #Y, <
+    pyfilterL = np.less(pyexit_filtered,angmax) #[rad]
+    pyexit_filtered = pyexit_filtered[pyfilterL]
+    yexit_filtered = yexit_filtered[pyfilterL]
+    #X, >
+    pxfilterG = np.greater(pxexit_filtered,-angmax) #[rad]
+    pxexit_filtered = pxexit_filtered[pxfilterG]
+    xexit_filtered = xexit_filtered[pxfilterG]
+    #Y, >
+    pyfilterG = np.greater(pyexit_filtered,-angmax) #[rad]
+    pyexit_filtered = pyexit_filtered[pyfilterG]
+    yexit_filtered = yexit_filtered[pyfilterG]
 
-  #Get Twiss for the filtered distributions
-  exitxTwf = calcTwiss("Exit X Filtered","Exit X' Filtered",xexit_filtered,pxexit_filtered)
-  exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
+    #Get Twiss for the filtered distributions
+    exitxTwf = calcTwiss("Exit X Filtered","Exit X' Filtered",xexit_filtered,pxexit_filtered)
+    exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
 
 
   ##Below are the distributions taken from the ESS Target location (the detector located 5m from PBW)
@@ -486,8 +493,8 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   print(thick)
   if loadParts:
     from plotFit import plotRaster,rasterImage
-    plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat)
-    plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat)
+    plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
+    plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
     #rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename)
   else:
     if thick == 0.1:
