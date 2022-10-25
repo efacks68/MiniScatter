@@ -22,7 +22,6 @@ t_pulse = round(0.04 * 1/14 * 1e6) # mus
 pulse_start = 10
 t_end = (2* pulse_start + t_pulse) /1000# - 2#3 ms
 time_length = round(t_end * args.a ) #number of pulses, nominal = 2.86e3
-#time_length = int(2.0e4 * 1.0) #200kHz of chopper from paper
 
 t = np.linspace(0,t_end,time_length)
 N_t = len(t) # number of time samples
@@ -51,8 +50,6 @@ px = pb/Fx * np.ones(N_t) #[s]
 py = pb/Fy * np.ones(N_t) #[s]
 beamAngleX = 0
 beamAngleY = 0
-#nx = 400 # nx is 'number of columns'
-#ny = 350 # ny is 'number of rows'
 dt =  np.mean(np.diff(t)) #[s]
 delta_t = np.linspace(0,dt,n_tii) #[s]
 
@@ -77,18 +74,10 @@ if yAtBPM93 !=0:
   beamAngleY = np.arctan(yAtBPM93/dBPM93to94) #[rad]
   name = name + "_Y{:.0f}mrad".format(beamAngleY*1e3)
 #print("dx",beamAngleX,"dy",beamAngleY)
-
 print(name)
-#rng = np.random.default_rng()
-#ptsX = rng.multivariate_normal([0,0],covx,size = Nparts) #[mm]
-#plt.scatter(ptsX[:,0],ptsX[:,1])
-#plt.hist(ptsX)
-#plt.show()
-#print(np.covar(ptsX))
 
 i=0
 j=0
-k=0
 #Right = 52*mm
 #Top = 17*mm
 
@@ -130,9 +119,6 @@ z = -10
 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 outname = picPWD+name
 
-#from plotFit import numLines
-#N = numLines(outname)
-
 nonzero = np.not_equal(totX[:,0],0) #be careful!
 totX = totX[nonzero]
 totY = totY[nonzero]
@@ -154,8 +140,6 @@ if args.g:
   s2 = fig.add_subplot(1,2,2)
   s1.plot(totX[:,0], totY[:,0], '.', alpha=0.5)
   s2.hist(totX[:,0],bins='auto')
-  #plt.axis('equal')
-  #plt.yaxis.set_minor_locator(MultipleLocator(10))
   s1.set_xlabel("X [mm]")
   s2.set_xlabel("X [mm]")
   plt.grid()
