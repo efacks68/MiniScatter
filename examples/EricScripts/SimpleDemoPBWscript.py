@@ -11,8 +11,9 @@ import math
 from plotFit import plotFit,findFit
 from simulation import simulation
 
-# Simulation setup
-#simulation(N,material,nemtx,nemty,alphax,alphay,betax,betay,energy(float),zoff(float))
+# To Do:
+#  -fix --twiss option if statement assignments
+#  -
 
 #Define something preliminarily
 #materials = ["G4_Galactic","G4_AIR","G4_Al","G4_Au"] #full list as of 1.4.22
@@ -70,14 +71,8 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
 elif args.ESS: #auto profiles
-  #materials = ["G4_Galactic","G4_Al","G4_Au"]
-  #materials = ["G4_Al","G4_Galactic"]#,"G4_Au"]
-  #materials = ["G4_Galactic"]
   ifplot=False #for plotting the 3 graphs per material
-  #if len(sys.argv) == 4 :
-  #  N = float(sys.argv[3])
   N=1e5 #number of particles
-  #updated Twiss on 13 June 2022 from OpenXAL script
   betax = 941.25 #[m] original:1000m
   alphx = -58.81 #original: -50
   nemtx = 0.11315 #[mm-mrad]

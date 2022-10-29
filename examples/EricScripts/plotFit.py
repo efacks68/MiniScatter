@@ -482,6 +482,9 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
 
 
 def plotRaster(targx,targy,fitlabel,savename,mat,position):
+  # To Do:
+  # --Add sobel filter for finding edge of Raster
+  # --Add XY view with 99% box, beam edges, current density calculation, 
   import numpy as np
   from plotFit import findFit, getMoments
   #from scipy.stats import norm 
@@ -580,16 +583,39 @@ def numLines(beamFile):
     csv_file.close()
   from datetime import datetime
   dt = datetime.now()
-  print("There are ",N,"lines"+dt.strftime("%H-%M-%S"))
+  print("There are ",N,"lines "+dt.strftime("%H-%M-%S"))
   return N
 
 
-def rasterImage(targx,targy,savename):
+def rasterImage(targx,targy,savename,position):
   import matplotlib.pyplot as plt
   import numpy as np
-  name=savename+"rasterImage.pdf"
-  plt.clf()
-  plt.scatter(targx,targy,cmap='hot')
-  plt.savefig(name)
+  from datetime import datetime
+  #import cv2
+  name=savename+"rasterImageAt"+position
+  #print(datetime.now().strftime("%H-%M-%S"))
+  #im = np.hstack(targx,targy)
+  #cv2.imwrite(im,"test.png") #doesn't work!
+
+  print(datetime.now().strftime("%H-%M-%S"))
+  import mpl_scatter_density
   plt.close()
-  print(name)
+  fig = plt.figure()
+  s1 = fig.add_subplot(1,1,1,projection="scatter_density")
+  x=targx
+  y=targy
+  density = s1.scatter_density(x,y,cmap='jet')
+  fig.colorbar(density,label=r"Protons/mm^2")
+  #if position == "PBW":
+  #  s1.set_xlim([-80,80])
+  #  s1.set_ylim([-30,30])
+  #if position == "Target":
+  s1.set_xlim([-100,100])
+  s1.set_ylim([-50,50])
+  s1.set_xlabel("X [mm]")
+  s1.set_ylabel("Y [mm]")
+  plt.title("Distribution at "+position+"\n{:.1e} protons".format(len(targx)),fontsize=14)
+  dt = datetime.now()
+  plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".pdf")
+  plt.close()
+  print(name,datetime.now().strftime("%H-%M-%S"))

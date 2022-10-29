@@ -3,7 +3,9 @@ from beamConstants import *
 import matplotlib.pyplot as plt
 import csv, math,sys
 import argparse
-
+from datetime import datetime
+start = datetime.now()
+print(start)
 #distance 1e0 unit in this script is mm, so 1e3=1meter
 
 #Use Argument Parser to control
@@ -16,6 +18,7 @@ parser.add_argument("--N",type=int,default=100)
 parser.add_argument("--a",type=float,default=1e3)
 parser.add_argument("--rX",type=float,default=0)
 parser.add_argument("--rY",type=float,default=0)
+parser.add_argument("--edges",action="store_true")
 args = parser.parse_args()
 
 t_pulse = round(0.04 * 1/14 * 1e6) # mus
@@ -23,108 +26,132 @@ pulse_start = 10
 t_end = (2* pulse_start + t_pulse) /1000# - 2#3 ms
 time_length = round(t_end * args.a ) #number of pulses, nominal = 2.86e3
 
-t = np.linspace(0,t_end,time_length)
+t = np.linspace(0,t_end,time_length) #array of steps of length time_length
 N_t = len(t) # number of time samples
 n_tii  = 10 
 #print("t= ",N_t, time_length,t_end)
 
 totX = np.zeros([N_t*n_tii*args.N,2])
 totY = np.zeros([N_t*n_tii*args.N,2])
-#print(len(totX))
+print(len(totX))
 
-# raster centre on BEW
-cx_r = 0 # mm
-cy_r = 0 # mm
-cx_r = cx_r * np.ones(N_t) # [mm]
-cy_r = cy_r * np.ones(N_t) # [mm]
-#ax0,ay0 here produce the beam size ON target, not before
-b = 1
-ax0 = 54.65*b # [mm]
-ay0 = 18.37*b # [mm]
-ax = ax0 * np.ones(N_t) # [mm]
-ay = ay0 * np.ones(N_t) # [mm]
+#Raster Constants
+#Raster Amplitude: ax0,ay0 here produce the beam size ON target, not before. source:?
+ax0 = 54.65 #[mm]
+ay0 = 18.37 #[mm]
+ax = ax0 * np.ones(N_t) #[mm]
+ay = ay0 * np.ones(N_t) #[mm]
+#Raster Frequency
 Fx = 39.953*1e3 #[kHz]
 Fy = 28.7051*1e3 #[kHz]
 pb = 1
-px = pb/Fx * np.ones(N_t) #[s]
+px = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
 py = pb/Fy * np.ones(N_t) #[s]
-beamAngleX = 0
-beamAngleY = 0
 dt =  np.mean(np.diff(t)) #[s]
 delta_t = np.linspace(0,dt,n_tii) #[s]
+z = -10 #[mm] for z location to generate protons at in MiniScatter
+picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-if args.ESS: #assume 570MeC
+if args.ESS: #assume 570MeV
   covx = gemtx/mm * np.asarray([[betax/mm,-alphx],[-alphx,(1+alphx**2)/(betax/mm)]]) #[mm]
   covy = gemty/mm * np.asarray([[betay/mm,-alphy],[-alphy,(1+alphy**2)/(betay/mm)]]) #[mm]
-  name = "PBW_{:.0f}MeV_ESSBeam_aX{:.0f}mm_aY{:.0f}mm_N{:.1e}_{:.1e}us_cyrille".format(energy,ax0,ay0,len(totX),time_length)#dt.strftime("%H-%M-%S")
 
 if args.pencil: #assume 570MeV
   covx = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
   covy = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
-  name = "PBW_{:.0f}MeV_pencilBeam_aX{:.0f}mm_aY{:.0f}mm_N{:.1e}_{:.1e}us_cyrille".format(energy,ax0,ay0,len(totX),time_length)#dt.strftime("%H-%M-%S")
 
-#Angle Contribution this is the x', the 2nd part of [cx0,0]
-dBPM93to94 = 3031 #[mm]
-xAtBPM93 = args.rX #[mm] from axis
-yAtBPM93 = args.rY #[mm] from axis
-if xAtBPM93 !=0:
-  beamAngleX = np.arctan(xAtBPM93/dBPM93to94) #[rad]
-  name = name + "_X{:.0f}mrad".format(beamAngleX*1e3)
-if yAtBPM93 !=0:
-  beamAngleY = np.arctan(yAtBPM93/dBPM93to94) #[rad]
-  name = name + "_Y{:.0f}mrad".format(beamAngleY*1e3)
-#print("dx",beamAngleX,"dy",beamAngleY)
-print(name)
+#Calculate Envelope Center Angle
+dBPM93to94 = 3031 #[mm] from OpenXAL(?)
+dBPM93toTarg = 21222 #[mm] assumed from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
+dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
+envXatBPM94 = args.rX #[mm] distance from beamline axis at BPM94, assume Cross Over at BPM93
+envYatBPM94 = args.rY #[mm]
+#x',y' not radians!
+envXAngle = envXatBPM94 / dBPM93to94 
+envYAngle = envYatBPM94 / dBPM93to94
+
+# raster centre on BEW
+cx_r = 0 + envXAngle * dBPM93toPBW #[mm] Takes into account angular drift since Cross Over
+cy_r = 0 + envYAngle * dBPM93toPBW #[mm]
+cx_r = cx_r * np.ones(N_t) #[mm]
+cy_r = cy_r * np.ones(N_t) #[mm]
+
+#For weighting edges case (--edges argument)
+Right = 50
+Top = 17
 
 i=0
 j=0
-#Right = 52*mm
-#Top = 17*mm
+k=0
 
 centroids = np.zeros([N_t*n_tii,2])
 for jj in range(N_t):
   for ii in range(n_tii):
     tjj_ii = t[jj] + delta_t[ii]
-    cx0 = cx_r[jj] + 2 * ax[jj] / math.pi * math.asin(math.sin(2*math.pi/px[jj] * tjj_ii )) #[mm]
-    cy0 = cy_r[jj] + 2 * ay[jj] / math.pi * math.asin(math.sin(2*math.pi/py[jj] * tjj_ii )) #[mm]
 
+    #Calculate the Raster Magnet contribution to Beamlet Center Location relative to Envelope Center Location, as per Cyrille Thomas
+    beamletX = 2 * ax[jj] / math.pi * math.asin(math.sin(2 * math.pi / px[jj] * tjj_ii )) #[mm]
+    beamletY = 2 * ay[jj] / math.pi * math.asin(math.sin(2 * math.pi / py[jj] * tjj_ii )) #[mm]
+
+    #Calculate the total Beamlet Angle = Envelope Center Angle + the angle given to each beamlet by the Raster Magnets
+    if xAtBPM94 !=0:
+      beamletXAngle = envXAngle + cx0 / dBPM93toTarg #[mm] because ax0 would be the max displacement at Target
+    if yAtBPM94 !=0:
+      beamletYAngle = envYAngle + cy0 / dBPM93toTarg #[mm]
+
+    #Include Envelope Center in total Beamlet Location relative to beamline axis
+    cx0 = cx_r[jj] + beamletX
+    cy0 = cy_r[jj] + beamletY
+
+    #save total beamlet position
     centroids[i,0] = cx0
     centroids[i,1] = cy0
+    N = args.N
 
-    #if cx0 > -Right and cx0 < Right and cy0 < Top and cy0 > -Top: #set weight depending on position
-    #  N = 10
-    #  j += 1
-    #else:
-    #N = args.N #for later on, write core to csv with difference weight than edge particles for ROOT.
-    #  k += 1
+    #In case of weighting edges of raster 
+    if args.edges:
+      if cx0 > -Right and cx0 < Right and cy0 < Top and cy0 > -Top: #set weight depending on position
+        N = 5
+        j += 1
+      else:
+        N = args.N #for later on, write core to csv with difference weight than edge particles for ROOT.
+        k += 1
 
+    #Generate beamlet distributions
     rng = np.random.default_rng()
-    ptsX = rng.multivariate_normal([cx0,beamAngleX],covx,size = args.N) #mean is [pos,ang]!
-    ptsY = rng.multivariate_normal([cy0,beamAngleY],covy,size = args.N)
+    ptsX = rng.multivariate_normal([cx0,beamletXAngle],covx,size = N) #mean is [pos,ang]!
+    ptsY = rng.multivariate_normal([cy0,beamletYAngle],covy,size = N)
     
-    for k in range(args.N): #put this beamlet into total. Could just be written, figure that out later.
-      totX[args.N*i+k,0] = ptsX[k,0]
-      totX[args.N*i+k,1] = ptsX[k,1]
-      totY[args.N*i+k,0] = ptsY[k,0]
-      totY[args.N*i+k,1] = ptsY[k,1]
+    for k in range(N): #put this beamlet into total. Could just be written, figure that out later.
+      totX[N*i+k,0] = ptsX[k,0]
+      totX[N*i+k,1] = ptsX[k,1]
+      totY[N*i+k,0] = ptsY[k,0]
+      totY[N*i+k,1] = ptsY[k,1]
     i +=1
-print(i,j)
+print(i,j,k)
 
+#Check on output parameters
 print(np.max(centroids[:,0]),np.max(centroids[:,1]))
-print(np.min(centroids[:,0]),np.min(centroids[:,1]))
 print(np.max(totX[:,0]),np.max(totY[:,0]))
-from datetime import datetime
-dt = datetime.now()
-z = -10
-picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-outname = picPWD+name
-
+#Remove 0,0 particles, should be none except for weighted edges case
+print(np.shape(totX))
 nonzero = np.not_equal(totX[:,0],0) #be careful!
 totX = totX[nonzero]
 totY = totY[nonzero]
 print(np.shape(totX))
 
-#print(len(totX))
+#Pick name based on beam
+if args.ESS:
+  name = "PBW_{:.0f}MeV_ESSBeam_aX{:.0f}mm_aY{:.0f}mm_N{:.1e}_{:.1e}us_cyrille".format(energy,ax0,ay0,len(totX),time_length)#dt.strftime("%H-%M-%S")
+if args.pencil:
+  name = "PBW_{:.0f}MeV_pencilBeam_aX{:.0f}mm_aY{:.0f}mm_N{:.1e}_{:.1e}us_cyrille".format(energy,ax0,ay0,len(totX),time_length)#dt.strftime("%H-%M-%S")
+if envXatBPM94 != 0:
+  name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
+if envYatBPM94 != 0:
+  name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
+print(name)
+
+outname = picPWD+name
 if args.s:
   with open(outname+".csv",mode = 'w',newline=None) as part_file:
     part_writer = csv.writer(part_file,delimiter = ',')
@@ -132,16 +159,21 @@ if args.s:
       part_writer.writerow(["proton", totX[i,0], totX[i,1], totY[i,0], totY[i,1], z, energy])
   part_file.close()
 
+finish = datetime.now()
+print(finish-start)
+
 if args.g:
+  #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
+  import mpl_scatter_density
   plt.close()
-  fig = plt.figure(figsize=(15,6.0))
-  plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
-  s1 = fig.add_subplot(1,2,1)
-  s2 = fig.add_subplot(1,2,2)
-  s1.plot(totX[:,0], totY[:,0], '.', alpha=0.5)
-  s2.hist(totX[:,0],bins='auto')
+  fig = plt.figure()
+  s1 = fig.add_subplot(1,1,1,projection="scatter_density")
+  x=totX[:,0]
+  y=totY[:,0]
+  density = s1.scatter_density(x,y,cmap='jet')
+  fig.colorbar(density,label=r"Protons/mm^2")
   s1.set_xlabel("X [mm]")
-  s2.set_xlabel("X [mm]")
-  plt.grid()
+  s1.set_ylabel("Y [mm]")
+  s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
   plt.show()
   plt.close()

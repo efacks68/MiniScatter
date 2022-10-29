@@ -15,6 +15,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   import os
   import sys
   from plotFit import calcTwiss
+  from datetime import datetime
 
   #constants for below use
   #particle characteristic values
@@ -162,11 +163,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     m1["length"]   = 0 #[mm] Must be 0!
     m1["gradient"] = 0.0
     m1["keyval"] = {}
-    m1["keyval"]["material"] = material
-    m1["keyval"]["radius"]    = 88.0 #[mm]
-    m1["keyval"]["al1Thick"] = 1.0 #[mm]
+    m1["keyval"]["material"]   = material
+    m1["keyval"]["radius"]     = 88.0 #[mm]
+    m1["keyval"]["al1Thick"]   = 1.0 #[mm]
     m1["keyval"]["waterThick"] = 2.0 #[mm]
-    m1["keyval"]["al2Thick"] = 1.25 #[mm]
+    m1["keyval"]["al2Thick"]   = 1.25 #[mm]
     baseSimSetup["MAGNET"].append(m1)
 
     m1Len = baseSimSetup["MAGNET"][0]["keyval"]["al1Thick"]
@@ -179,8 +180,6 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     if loadParts:
       #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
       outname = beamFile+"_{:.0f}mm_run".format(thick)
-      if beamAngle != 0:
-        outname = outname + "_ang" + "{:.2f}mrad".format(beamAngle*1e3)
     else:
       outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,thick,baseSimSetup["N"])
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
@@ -203,9 +202,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   savename=savepath+outname #base savename for plots downstream, brings directly to my directory
   savedfile=os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
 
+  print(simSetup_simple1)
   #Run simulation or load old simulation root file!
   #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
+  print("Simulation Finished",datetime.now().strftime("%H-%M-%S"))
 
   #If one wants to use the initial spread
   myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
@@ -491,11 +492,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
   print(thick)
+  print("make plots",datetime.now().strftime("%H-%M-%S"))
   if loadParts:
     from plotFit import plotRaster,rasterImage
-    plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-    plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
-    #rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename)
+    #plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
+    #plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
+    rasterImage(xinit/mm,yinit/mm,savename,"PBW")
+    rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename,"Target")
   else:
     if thick == 0.1:
       print("Vacuum")
