@@ -591,11 +591,21 @@ def rasterImage(targx,targy,savename,position):
   import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
-  #import cv2
-  name=savename+"rasterImageAt"+position
-  #print(datetime.now().strftime("%H-%M-%S"))
-  #im = np.hstack(targx,targy)
-  #cv2.imwrite(im,"test.png") #doesn't work!
+  from math import ceil
+  name=savename+"_rasterImageAt"+position
+
+  nx = 400
+  ny = 350
+  #for i in range(targx):
+  #  for j in range(nx):
+  #    if targx[i]
+
+  meanX = np.mean(targx)
+  meanY = np.mean(targy)
+  sigmaX = np.std(targx)
+  sigmaY = np.std(targy)
+  print(meanX,sigmaX)
+  print(meanY,sigmaY)
 
   print(datetime.now().strftime("%H-%M-%S"))
   import mpl_scatter_density
@@ -606,16 +616,18 @@ def rasterImage(targx,targy,savename,position):
   y=targy
   density = s1.scatter_density(x,y,cmap='jet')
   fig.colorbar(density,label=r"Protons/mm^2")
-  #if position == "PBW":
-  #  s1.set_xlim([-80,80])
-  #  s1.set_ylim([-30,30])
-  #if position == "Target":
-  s1.set_xlim([-100,100])
-  s1.set_ylim([-50,50])
+  if position == "PBW":
+    nSigX = 3
+    nSigY = 3
+  if position == "Target":
+    nSigX = 3
+    nSigY = 4
+  s1.set_xlim([meanX-nSigX*sigmaX,meanX+nSigX*sigmaX])
+  s1.set_ylim([meanY-nSigY*sigmaY,meanY+nSigY*sigmaY])
   s1.set_xlabel("X [mm]")
   s1.set_ylabel("Y [mm]")
   plt.title("Distribution at "+position+"\n{:.1e} protons".format(len(targx)),fontsize=14)
   dt = datetime.now()
-  plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".pdf")
+  #plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".pdf")
   plt.close()
   print(name,datetime.now().strftime("%H-%M-%S"))

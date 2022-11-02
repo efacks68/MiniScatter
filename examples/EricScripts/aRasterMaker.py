@@ -36,11 +36,6 @@ totY = np.zeros([N_t*n_tii*args.N,2])
 print(len(totX))
 
 #Raster Constants
-#Raster Amplitude: ax0,ay0 here produce the beam size ON target, not before. source:?
-ax0 = 54.65 #[mm]
-ay0 = 18.37 #[mm]
-ax = ax0 * np.ones(N_t) #[mm]
-ay = ay0 * np.ones(N_t) #[mm]
 #Raster Frequency
 Fx = 39.953*1e3 #[kHz]
 Fy = 28.7051*1e3 #[kHz]
@@ -62,19 +57,29 @@ if args.pencil: #assume 570MeV
 
 #Calculate Envelope Center Angle
 dBPM93to94 = 3031 #[mm] from OpenXAL(?)
-dBPM93toTarg = 21222 #[mm] assumed from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
 dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
+dBPM93toTarg = 21222 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
+dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
 envXatBPM94 = args.rX #[mm] distance from beamline axis at BPM94, assume Cross Over at BPM93
 envYatBPM94 = args.rY #[mm]
-#x',y' not radians!
-envXAngle = envXatBPM94 / dBPM93to94 
-envYAngle = envYatBPM94 / dBPM93to94
+envXAngle = envXatBPM94 / dBPM93to94 #x' not radians, as per Kyrre 2.11.22
+envYAngle = envYatBPM94 / dBPM93to94 #y'
+beamletXAngle = 0 #default
+beamletYAngle = 0 #default
 
-# raster centre on BEW
+#Envelope Center Offset, i.e. raster centre on BEW
 cx_r = 0 + envXAngle * dBPM93toPBW #[mm] Takes into account angular drift since Cross Over
 cy_r = 0 + envYAngle * dBPM93toPBW #[mm]
 cx_r = cx_r * np.ones(N_t) #[mm]
 cy_r = cy_r * np.ones(N_t) #[mm]
+
+#Raster Amplitude: ax0,ay0 here produces the beamlet displacement AT the Target, as per Cyrille
+ax0 = 54.65 #[mm]
+ay0 = 18.37 #[mm]
+#because generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
+amplScale = 1 - dPBWtoTarg / dBPM93toTarg #double check you account for Z before PBW in MiniScatter! beam production plane in GEANT, not exact PBW center!
+ax = ax0 * amplScale * np.ones(N_t) #[mm]
+ay = ay0 * amplScale * np.ones(N_t) #[mm]
 
 #For weighting edges case (--edges argument)
 Right = 50
@@ -89,23 +94,17 @@ for jj in range(N_t):
   for ii in range(n_tii):
     tjj_ii = t[jj] + delta_t[ii]
 
-    #Calculate the Raster Magnet contribution to Beamlet Center Location relative to Envelope Center Location, as per Cyrille Thomas
-    beamletX = 2 * ax[jj] / math.pi * math.asin(math.sin(2 * math.pi / px[jj] * tjj_ii )) #[mm]
-    beamletY = 2 * ay[jj] / math.pi * math.asin(math.sin(2 * math.pi / py[jj] * tjj_ii )) #[mm]
+    #Calculate the Raster Magnet contribution to Beamlet Center Location relative to beamline axis, as per Cyrille Thomas
+    beamletX = cx_r[jj] + 2 * ax[jj] / math.pi * math.asin(math.sin(2 * math.pi / px[jj] * tjj_ii )) #[mm]
+    beamletY = cy_r[jj] + 2 * ay[jj] / math.pi * math.asin(math.sin(2 * math.pi / py[jj] * tjj_ii )) #[mm]
 
     #Calculate the total Beamlet Angle = Envelope Center Angle + the angle given to each beamlet by the Raster Magnets
-    if xAtBPM94 !=0:
-      beamletXAngle = envXAngle + cx0 / dBPM93toTarg #[mm] because ax0 would be the max displacement at Target
-    if yAtBPM94 !=0:
-      beamletYAngle = envYAngle + cy0 / dBPM93toTarg #[mm]
-
-    #Include Envelope Center in total Beamlet Location relative to beamline axis
-    cx0 = cx_r[jj] + beamletX
-    cy0 = cy_r[jj] + beamletY
+    beamletXAngle = beamletX / dBPM93toTarg + envXAngle #[mm]
+    beamletYAngle = beamletY / dBPM93toTarg + envYAngle #[mm]
 
     #save total beamlet position
-    centroids[i,0] = cx0
-    centroids[i,1] = cy0
+    centroids[i,0] = beamletX
+    centroids[i,1] = beamletY
     N = args.N
 
     #In case of weighting edges of raster 
@@ -119,8 +118,8 @@ for jj in range(N_t):
 
     #Generate beamlet distributions
     rng = np.random.default_rng()
-    ptsX = rng.multivariate_normal([cx0,beamletXAngle],covx,size = N) #mean is [pos,ang]!
-    ptsY = rng.multivariate_normal([cy0,beamletYAngle],covy,size = N)
+    ptsX = rng.multivariate_normal([beamletX,beamletXAngle],covx,size = N) #mean is [pos,ang]!
+    ptsY = rng.multivariate_normal([beamletY,beamletYAngle],covy,size = N)
     
     for k in range(N): #put this beamlet into total. Could just be written, figure that out later.
       totX[N*i+k,0] = ptsX[k,0]

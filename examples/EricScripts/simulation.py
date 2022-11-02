@@ -18,6 +18,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   from datetime import datetime
 
   #constants for below use
+  QUIET     = False #Reduced output, doesn't show events
+  saveParts = False
+  PBIP = True #slows down, only use when needed
+  exitDistributions = False #slows down, may not be necessary anymore
+
   #particle characteristic values
   if beam == "proton":
     partA = 938.27209 #[MeV/c2]
@@ -72,8 +77,6 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   baseSimSetup["ZOFFSET"]   = zoff
 
   #For loading particles
-  QUIET     = False #Reduced output, doesn't show events
-  saveParts = False
   if loadParts == True:
     picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59mm,aY-7mm_N1.4e+05_2.9e+02us_cyrille"
@@ -147,13 +150,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
-    baseSimSetup["DIST"] = [5000] #Detector location. only at ESS Target location
+    baseSimSetup["DIST"] = [4400] #Detector location. only at ESS Target location
     outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Ibetax*1e3)
     if loadParts:
       outname = outname + beamFile+"_run"
   else:
     baseSimSetup["THICK"] = 0.0
-    baseSimSetup["DIST"] = [5000] #Detector locations. At ESS Target location 
+    baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
     baseSimSetup["MAGNET"] = []
     #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
     #Specialized PBW magnet!
@@ -177,6 +180,21 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     radLenH2O = 360.8 #[mm] liquid Water 
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
+    if PBIP:
+      #PBIP Magnet
+      m2 = {}
+      m2["pos"] = 1874.0 #[mm]
+      m2["type"] = "COLLIMATORRECT"
+      m2["length"]   = 450.0 #[mm]
+      m2["gradient"] = 0.0
+      m2["keyval"] = {}
+      m2["keyval"]["material"] = "G4_Al"
+      m2["keyval"]["holeWidth"]   = 200.0 #[mm]
+      m2["keyval"]["holeHeight"]   = 80.0 #[mm]
+      m2["keyval"]["absorberWidth"]    = 950.0 #[mm]
+      m2["keyval"]["absorberHeight"]   = 950.0 #[mm]
+      baseSimSetup["MAGNET"].append(m2)
+
     if loadParts:
       #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
       outname = beamFile+"_{:.0f}mm_run".format(thick)
@@ -186,6 +204,8 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
       #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
 
+  if PBIP:
+    outname = outname + "_PBIP"
   #Store the .root files in a subfolder from where this script is running,
   # normally MiniScatter/examples, in order to keep things together
   baseSimSetup["OUTFOLDER"] = os.path.join("/scratch/ericdf/Scratch/PBWScatter/") 
@@ -231,19 +251,8 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     from plotFit import printParticles
     printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
 
-  #Filter with Energy for now as PDG isn't working yet
- # Einit_filter = np.greater(Einit,energy*Engcut/100)
- # xinit_filtered = xinit[Einit_filter]
- # pxinit_filtered = pxinit[Einit_filter]
- # yinit_filtered = yinit[Einit_filter]
- # pyinit_filtered = pyinit[Einit_filter]
-
- # initxTwf = calcTwiss("Initial X Filtered","Initial X' Filtered",xinit_filtered,pxinit_filtered)
- # inityTwf = calcTwiss("Initial Y Filtered","Initial Y' Filtered",yinit_filtered,pyinit_filtered)
-
   ##Get the distributions from the PBW exit face
-  e=False
-  if e: #save some time by only getting when needed
+  if exitDistributions: #save some time by only getting when needed
     if thick != 0:
       #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
       #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
@@ -314,9 +323,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #Get Twiss for the filtered distributions
     exitxTwf = calcTwiss("Exit X Filtered","Exit X' Filtered",xexit_filtered,pxexit_filtered)
     exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
+  #end of exit Distribution if
 
+  #if PBIP:
+  #  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+  #  myTree= myFile.Get("magnet_2_edeps")
 
-  ##Below are the distributions taken from the ESS Target location (the detector located 5m from PBW)
+  ##Distributions at ESS Target location (the detector located 4.4m from PBW)
   myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
   myTree= myFile.Get("TrackerHits") #TrackerHits has all trackers, be sure to only have 1!
 
@@ -497,7 +510,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     from plotFit import plotRaster,rasterImage
     #plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
     #plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
-    rasterImage(xinit/mm,yinit/mm,savename,"PBW")
+    #rasterImage(xinit/mm,yinit/mm,savename,"PBW")
     rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename,"Target")
   else:
     if thick == 0.1:
