@@ -9,7 +9,7 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,Engcut,engplot,loadParts,beamAngle,beamFile):
+def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamAngle,beamFile):
   import numpy as np
   import ROOT
   import os
@@ -20,7 +20,6 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #constants for below use
   QUIET     = False #Reduced output, doesn't show events
   saveParts = False
-  PBIP = True #slows down, only use when needed
   exitDistributions = False #slows down, may not be necessary anymore
 
   #particle characteristic values
@@ -101,8 +100,9 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   #Beam particle type
   Rcut = 1000.0
+  Engcut = 90.0
   baseSimSetup["WORLDSIZE"] = Rcut #Make the world wider for seeing where particles go
-  baseSimSetup["POSLIM"] = 100 #XY histogram Position Limit for a few, check RootFileWriter.cc
+  baseSimSetup["POSLIM"] = 400 #XY histogram Position Limit for a few, check RootFileWriter.cc
   #Beam Angle
   #Defined by the beam size at BPM94 (TBD) compared to size at BPM93 (~0)
   if beamAngle != 0:
@@ -197,7 +197,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     if loadParts:
       #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
-      outname = beamFile+"_{:.0f}mm_run".format(thick)
+      outname = beamFile+"_run"
     else:
       outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,thick,baseSimSetup["N"])
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
@@ -222,7 +222,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   savename=savepath+outname #base savename for plots downstream, brings directly to my directory
   savedfile=os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
 
-  print(simSetup_simple1)
+  #print(simSetup_simple1)
   #Run simulation or load old simulation root file!
   #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
@@ -233,19 +233,19 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   myTree= myFile.Get("InitParts")
   #print(myTree)
   xinit = np.zeros(myTree.GetEntries())
-  pxinit = np.zeros(myTree.GetEntries())
+  #pxinit = np.zeros(myTree.GetEntries())
   yinit = np.zeros(myTree.GetEntries())
-  pyinit = np.zeros(myTree.GetEntries())
-  Einit = np.zeros(myTree.GetEntries())
+  #pyinit = np.zeros(myTree.GetEntries())
+  #Einit = np.zeros(myTree.GetEntries())
   #print(len(xinit))
   for i in range(myTree.GetEntries()):
       myTree.GetEntry(i)
       #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
       xinit[i] = myTree.x *mm
-      pxinit[i] = myTree.px
+      #pxinit[i] = myTree.px
       yinit[i] = myTree.y *mm
-      pyinit[i] = myTree.py
-      Einit[i] = myTree.E
+      #pyinit[i] = myTree.py
+      #Einit[i] = myTree.E
   myFile.Close()
   if saveParts:
     from plotFit import printParticles
@@ -335,9 +335,9 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   #Get the distributions at the ESS Target location
   xtarg = np.zeros(myTree.GetEntries()) #dynamic length arrays
-  pxtarg = np.zeros(myTree.GetEntries())
+  #pxtarg = np.zeros(myTree.GetEntries())
   ytarg = np.zeros(myTree.GetEntries())
-  pytarg = np.zeros(myTree.GetEntries())
+  #pytarg = np.zeros(myTree.GetEntries())
   pztarg = np.zeros(myTree.GetEntries())
   Etarg = np.zeros(myTree.GetEntries())
   PDGtarg = np.zeros(myTree.GetEntries())
@@ -350,9 +350,9 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
         print("warning: PZtarg[{}]==0".format(i))
         continue #11.5.22 recommended by Kyrre
       xtarg[i] = myTree.x *mm
-      pxtarg[i] = myTree.px / pztarg[i] #from Kyrre 5.5.22 to make it true X'!
+      #pxtarg[i] = myTree.px / pztarg[i] #from Kyrre 5.5.22 to make it true X'!
       ytarg[i] = myTree.y *mm
-      pytarg[i] = myTree.py / pztarg[i]
+      #pytarg[i] = myTree.py / pztarg[i]
       Etarg[i] = myTree.E
       PDGtarg[i] = myTree.PDG
   myFile.Close()
@@ -361,11 +361,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
   Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut/100) #Engcut is % number not decimal
   #These proton only arrays are returned to the original script!
-  Etarg_filtered_p = Etarg[PDGtarg_filter]
+  #Etarg_filtered_p = Etarg[PDGtarg_filter]
   xtarg_filtered_p = xtarg[PDGtarg_filter]
-  pxtarg_filtered_p = pxtarg[PDGtarg_filter]
+  #pxtarg_filtered_p = pxtarg[PDGtarg_filter]
   ytarg_filtered_p = ytarg[PDGtarg_filter]
-  pytarg_filtered_p = pytarg[PDGtarg_filter]
+  #pytarg_filtered_p = pytarg[PDGtarg_filter]
 
   #For plotting Energy distribution of all species
   if engplot:
@@ -396,30 +396,30 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   angmax=6e-3 #[rad] one angle filter limit
   #Apply PDG, Energy Filters
   xtarg_filtered = xtarg[PDGtarg_filter][Etarg_filter]
-  pxtarg_filtered = pxtarg[PDGtarg_filter][Etarg_filter]
+  #pxtarg_filtered = pxtarg[PDGtarg_filter][Etarg_filter]
   ytarg_filtered = ytarg[PDGtarg_filter][Etarg_filter]
-  pytarg_filtered = pytarg[PDGtarg_filter][Etarg_filter]
+  #pytarg_filtered = pytarg[PDGtarg_filter][Etarg_filter]
   #Apply >,< filters
-  #X, <
-  pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
-  pxtarg_filtered = pxtarg_filtered[pxfilterL]
-  xtarg_filtered = xtarg_filtered[pxfilterL]
-  #Y, <
-  pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
-  pytarg_filtered = pytarg_filtered[pyfilterL]
-  ytarg_filtered = ytarg_filtered[pyfilterL]
-  #X, >
-  pxfilterG = np.greater(pxtarg_filtered,-angmax) #[rad]
-  pxtarg_filtered = pxtarg_filtered[pxfilterG]
-  xtarg_filtered = xtarg_filtered[pxfilterG]
-  #Y, >
-  pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
-  pytarg_filtered = pytarg_filtered[pyfilterG]
-  ytarg_filtered = ytarg_filtered[pyfilterG]
+  ##X, <
+  #pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
+  #pxtarg_filtered = pxtarg_filtered[pxfilterL]
+  #xtarg_filtered = xtarg_filtered[pxfilterL]
+  ##Y, <
+  #pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
+  #pytarg_filtered = pytarg_filtered[pyfilterL]
+  #ytarg_filtered = ytarg_filtered[pyfilterL]
+  ##X, >
+  #pxfilterG = np.greater(pxtarg_filtered,-angmax) #[rad]
+  #pxtarg_filtered = pxtarg_filtered[pxfilterG]
+  #xtarg_filtered = xtarg_filtered[pxfilterG]
+  ##Y, >
+  #pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
+  #pytarg_filtered = pytarg_filtered[pyfilterG]
+  #ytarg_filtered = ytarg_filtered[pyfilterG]
 
   #Get Twiss for the filtered distributions
-  targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
-  targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
+  #targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
+  #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
   ##If magnet, use multiple scattering layers instead of averaging!
   from plotFit import plotTwissFit,calcEq8,calcEq16
@@ -510,8 +510,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     from plotFit import plotRaster,rasterImage
     #plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
     #plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
-    #rasterImage(xinit/mm,yinit/mm,savename,"PBW")
-    rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename,"Target")
+    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_xy","init_xy"])
+    #rasterImage(xinit/mm,yinit/mm,savename,"PBW",objects_PBW["init_xy"])
+    rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename,"Target",objects_PBW["tracker_xy"])
+
   else:
     if thick == 0.1:
       print("Vacuum")

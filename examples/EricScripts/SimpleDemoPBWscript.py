@@ -10,7 +10,8 @@ import argparse,sys
 import math
 from plotFit import plotFit,findFit
 from simulation import simulation
-
+from datetime import datetime
+start = datetime.now()
 # To Do:
 #  -fix --twiss option if statement assignments
 #  -
@@ -20,20 +21,21 @@ from simulation import simulation
 materials = ["G4_Al"] 
 thick=0 #new default
 N=1e5 #number of particles
-betax = 941.25 #[m]
-alphx = -58.81
-nemtx = 0.11315 #[um-mrad]
-betay = 120.03 #[m]
-alphy = -7.46
-nemty = 0.12155 #[um-mrad]
+#Twiss updated for PBW 4.4m before Target
+betax = 1006.80 #[m] 
+alphx = -60.44
+nemtx = 0.11315 #[mm-mrad]
+betay = 129.72 #[m]
+alphy = -7.72
+nemty = 0.12155 #[mm-mrad]
 ifplot=False #for plotting the 3 graphs per material
 engplot = False
 energy = 570 #[MeV]
-engcut = 95.0
-zoff = "*-50" #[mm] with preappended * to keep covar defined at z=0
+zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
 beamAngle = 0 #[mm] #0 for no angle ~? is nominal
 loadParts = False
 beamFile=""
+matplot = False
 
 #Set up Argument Parsing
 parser = argparse.ArgumentParser()
@@ -44,6 +46,7 @@ parser.add_argument("--l",type=str,help="Load Particles or not")
 parser.add_argument("--t",type=float,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
 parser.add_argument("--twiss",type=float,nargs=9,help="N particles,BetaX,AlphX,NemtX,BetaY,AlphY,NemtY,Thickness")
 parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculated and used in aRasterMaker.py")
+parser.add_argument("--PBIP",action="store_true",default=False)
 args = parser.parse_args()
 print(args)
 
@@ -128,8 +131,10 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,Engcut,engplot,loadParts,beamAngle,beamFile):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,engcut,engplot,loadParts,beamAngle,beamFile)
+  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamAngle,beamFile):
+  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamAngle,beamFile)
+  if not matplot:
+    continue
   #returns the savename and the x and y distributions of particle positions 
   #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
   
@@ -222,42 +227,42 @@ for material in materials:
   y2 = norm.pdf(binsy, muy, sigmay[material])
   l2 = s2.plot(binsy, y2, dash, linewidth=1,label=mat) #labeled by material short-name
 
-#Set Plot characterists
-s=10 # number of sigma width to plot
-sigvals = sigmax.values() #get values of dictionary
-xlim1 = s*max(sigvals) #use s*max as the xlim
-s1.set_xlim([-xlim1,xlim1]) #seems to show all distributions, 30.3.22
-s1.set_title("Fitted X Distributions",fontsize=fs)
-s1.set_xlabel("X Position [mm]",fontsize=fs)
-s1.set_ylabel("Probability Density",fontsize=fs)
-s1.legend()
-ylim1=s1.get_ylim() #dynamically get the ylimits
-s1.text(-xlim1*0.95,ylim1[1]*0.75,sigmatextx) #set the texts at 3/4 and 1/2 of ylim
-s1.text(-xlim1*0.95,ylim1[1]*0.5,percenttextx) #xlim is fixed
-#s1.text(-xlim*0.95,ylim1[1]*0.99,)
-#s1.text("Add Twiss Parameters! and have in savename as well!")
+if matplot:
+  #Set Plot characterists
+  s=10 # number of sigma width to plot
+  sigvals = sigmax.values() #get values of dictionary
+  xlim1 = s*max(sigvals) #use s*max as the xlim
+  s1.set_xlim([-xlim1,xlim1]) #seems to show all distributions, 30.3.22
+  s1.set_title("Fitted X Distributions",fontsize=fs)
+  s1.set_xlabel("X Position [mm]",fontsize=fs)
+  s1.set_ylabel("Probability Density",fontsize=fs)
+  s1.legend()
+  ylim1=s1.get_ylim() #dynamically get the ylimits
+  s1.text(-xlim1*0.95,ylim1[1]*0.75,sigmatextx) #set the texts at 3/4 and 1/2 of ylim
+  s1.text(-xlim1*0.95,ylim1[1]*0.5,percenttextx) #xlim is fixed
+  #s1.text(-xlim*0.95,ylim1[1]*0.99,)
+  #s1.text("Add Twiss Parameters! and have in savename as well!")
 
-sigvals = sigmay.values() #get values of dictionary
-xlim2 = s*max(sigvals) #use s*max as the xlim
-s2.set_xlim([-xlim2,xlim2])
-s2.set_title("Fitted Y Distributions",fontsize=fs)
-s2.set_xlabel("Y Position [mm]",fontsize=fs)
-s2.set_ylabel("Probability Density",fontsize=fs)
-s2.legend()
-ylim2=s2.get_ylim() #dynamically get the ylimits
-s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
-s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
-fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
-        rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtx,betax,alphx) +
-    rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemty,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
-#suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
+  sigvals = sigmay.values() #get values of dictionary
+  xlim2 = s*max(sigvals) #use s*max as the xlim
+  s2.set_xlim([-xlim2,xlim2])
+  s2.set_title("Fitted Y Distributions",fontsize=fs)
+  s2.set_xlabel("Y Position [mm]",fontsize=fs)
+  s2.set_ylabel("Probability Density",fontsize=fs)
+  s2.legend()
+  ylim2=s2.get_ylim() #dynamically get the ylimits
+  s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
+  s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
+  fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
+          rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtx,betax,alphx) +
+      rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemty,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
+  #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
-#Can date stamp the multi plot for easier tracking of changes, if necessary
-from datetime import datetime
-dt = datetime.now()
-name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
-#print(name) #show so it is easy to find the file
-#fig.savefig(name,bbox_inches="tight")
-#plt.show()
-plt.close() #be sure to close the plot
-print(dt.strftime("%H-%M-%S"),"\n")
+  #Can date stamp the multi plot for easier tracking of changes, if necessary
+  dt = datetime.now()
+  name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
+  #print(name) #show so it is easy to find the file
+  #fig.savefig(name,bbox_inches="tight")
+  #plt.show()
+  plt.close() #be sure to close the plot
+print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)

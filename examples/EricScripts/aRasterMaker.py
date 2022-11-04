@@ -173,6 +173,10 @@ if args.g:
   fig.colorbar(density,label=r"Protons/mm^2")
   s1.set_xlabel("X [mm]")
   s1.set_ylabel("Y [mm]")
+  #s1.set_xlim([-200,200])
+  #s1.set_ylim([-175,175])
   s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
   plt.show()
   plt.close()
+
+  

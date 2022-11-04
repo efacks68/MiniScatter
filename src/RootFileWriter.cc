@@ -325,6 +325,7 @@ void RootFileWriter::initializeRootFile(){
 						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
         target_exit_phasespaceXY->GetXaxis()->SetTitle("Position x [mm]");
         target_exit_phasespaceXY->GetYaxis()->SetTitle("Position y [mm]");
+  
         target_exit_phasespaceXY_cutoff = new TH2D("target_exit_cutoff_xy",
 						   "Target exit phase space (x,y) (charged, energy > Ecut, r < Rcut)",
 						   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
@@ -1134,10 +1135,10 @@ void RootFileWriter::doEvent(const G4Event* event){
                         }
 
                         if(tracker_phasespaceXY_cutoff_PDG[idx].find(PDG) != tracker_phasespaceXY_cutoff_PDG[idx].end()) {
-                            tracker_phasespaceXY_cutoff_PDG[idx][PDG]->Fill(hitPos.x()/mm, momentum.y()/mm);
+                            tracker_phasespaceXY_cutoff_PDG[idx][PDG]->Fill(hitPos.x()/mm, hitPos.y()/mm);
                         }
                         else {
-                            tracker_phasespaceXY_cutoff_PDG[idx][0]->Fill(hitPos.x()/mm, momentum.y()/mm);
+                            tracker_phasespaceXY_cutoff_PDG[idx][0]->Fill(hitPos.x()/mm, hitPos.y()/mm);
                         }
                     }
 

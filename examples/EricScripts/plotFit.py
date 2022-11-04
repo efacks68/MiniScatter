@@ -587,18 +587,17 @@ def numLines(beamFile):
   return N
 
 
-def rasterImage(targx,targy,savename,position):
+def rasterImage(targx,targy,savename,position,histogram2D):
   import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
-  from math import ceil
-  name=savename+"_rasterImageAt"+position
+  name=savename+"_"+position+"Image"
 
-  nx = 400
-  ny = 350
-  #for i in range(targx):
-  #  for j in range(nx):
-  #    if targx[i]
+  #99% box
+  width = 160
+  height = 64
+  boxLLx = round(-width/2)
+  boxLLy = round(-height/2)
 
   meanX = np.mean(targx)
   meanY = np.mean(targy)
@@ -607,27 +606,87 @@ def rasterImage(targx,targy,savename,position):
   print(meanX,sigmaX)
   print(meanY,sigmaY)
 
-  print(datetime.now().strftime("%H-%M-%S"))
-  import mpl_scatter_density
+  start= datetime.now()
+  print(start.strftime("%H-%M-%S"))
+  from plotFit import converter
+  import matplotlib.pyplot as plt
+  from matplotlib.patches import Rectangle
+  from matplotlib.colors import LogNorm
+  import ROOT
+
+  (hOut, xax, yax) = converter(histogram2D)
+  boxLInd = boxLLx + round(len(xax)/2)
+  boxRInd = boxLLx + round(len(xax)/2) + width
+  boxBInd = boxLLy + round(len(yax)/2)
+  boxTInd = boxLLy + round(len(yax)/2) + height
+  core = hOut[boxBInd:boxTInd,boxLInd:boxRInd]
+  sumTot = np.sum(hOut)
+  sumCore = np.sum(core)
+  pOutsideBox = (sumTot-sumCore)/sumTot*100
+  print(boxLInd,boxRInd,boxBInd,boxTInd,sumTot,sumCore,pOutsideBox,hOut.min())
+
+  X, Y = np.meshgrid(xax,yax)
   plt.close()
-  fig = plt.figure()
-  s1 = fig.add_subplot(1,1,1,projection="scatter_density")
-  x=targx
-  y=targy
-  density = s1.scatter_density(x,y,cmap='jet')
-  fig.colorbar(density,label=r"Protons/mm^2")
-  if position == "PBW":
-    nSigX = 3
-    nSigY = 3
-  if position == "Target":
-    nSigX = 3
-    nSigY = 4
-  s1.set_xlim([meanX-nSigX*sigmaX,meanX+nSigX*sigmaX])
-  s1.set_ylim([meanY-nSigY*sigmaY,meanY+nSigY*sigmaY])
-  s1.set_xlabel("X [mm]")
-  s1.set_ylabel("Y [mm]")
-  plt.title("Distribution at "+position+"\n{:.1e} protons".format(len(targx)),fontsize=14)
+  fig,ax = plt.subplots()
+  ax.set_xlim([-150,150])
+  ax.set_ylim([-75,75])
+  minim = 4e-1
+  #v = np.logspace(minim,hOut.max(),10)
+  c = ax.pcolor(X,Y,hOut,shading='auto',norm=LogNorm(vmin=minim, vmax=hOut.max()), cmap='jet')
+  lw=4
+  col='k'
+  wide=True
+  if wide:
+    ax.set_xlim([-400,400])
+    ax.set_ylim([-350,350])
+    lw=2
+    #c = ax.pcolor(X,Y,hOut,shading='auto',norm=LogNorm(vmin=3e-1, vmax=hOut.max()), cmap='jet')
+    name=name+"_wide"
+  ax.set_title("Distribution at "+position+"\n{:.1e} protons".format(len(targx)))
+  cbar = fig.colorbar(c, ax=ax)#,ticks=v)
+  cbar.set_label(r"Protons/mm$^2$")
+  if position =="Target":
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor=col,fill=False))
+    ax.text(xlim[0]*0.9,ylim[1]*0.85,"{:.1f}".format(pOutsideBox)+"% Outside 99% Box",color=col,fontsize = 16,fontweight='bold')
   dt = datetime.now()
-  #plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".pdf")
-  plt.close()
-  print(name,datetime.now().strftime("%H-%M-%S"))
+  fig.tight_layout()
+  plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
+  print(dt-start)
+
+def converter(hIn):
+    import ROOT
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+    start = datetime.now()
+
+    xax = np.zeros(hIn.GetXaxis().GetNbins()+1)
+    for i in range(len(xax)-1):
+        xax[i] = hIn.GetXaxis().GetBinLowEdge(i+1)
+    xax[-1] = hIn.GetXaxis().GetBinUpEdge(hIn.GetXaxis().GetNbins())
+    
+    yax = np.zeros(hIn.GetYaxis().GetNbins()+1)
+    for i in range(len(yax)-1):
+        yax[i] = hIn.GetYaxis().GetBinLowEdge(i+1)
+    yax[-1] = hIn.GetYaxis().GetBinUpEdge(hIn.GetYaxis().GetNbins())
+    
+    #print(xax)
+    #print(yax)
+    
+    hOut = np.zeros( (len(yax),len(xax)) )
+    #print (hOut)
+
+    for xi in range(hIn.GetXaxis().GetNbins()):
+        for yi in range(hIn.GetYaxis().GetNbins()):
+            bx = hIn.GetBin(xi+1,yi+1)
+            hOut[yi,xi] = hIn.GetBinContent(bx)
+    
+    #Must add Overflow options!!!
+
+    #print(hOut)
+    #plt.imshow(hOut,origin='lower')
+    
+    print("Coverted in",datetime.now() - start)
+    return (hOut,xax,yax)
