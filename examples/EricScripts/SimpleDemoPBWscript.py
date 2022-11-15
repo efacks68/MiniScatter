@@ -36,32 +36,37 @@ beamAngle = 0 #[mm] #0 for no angle ~? is nominal
 loadParts = False
 beamFile=""
 matplot = False
+dependence = "Twiss"
 
 #Set up Argument Parsing
 parser = argparse.ArgumentParser()
 beam = parser.add_mutually_exclusive_group()
-beam.add_argument("--ESS",action="store_true")
-beam.add_argument("--pencil",action="store_true")
+beam.add_argument("--beamType",type=str)
 parser.add_argument("--l",type=str,help="Load Particles or not")
 parser.add_argument("--t",type=float,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
 parser.add_argument("--twiss",type=float,nargs=9,help="N particles,BetaX,AlphX,NemtX,BetaY,AlphY,NemtY,Thickness")
 parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculated and used in aRasterMaker.py")
 parser.add_argument("--PBIP",action="store_true",default=False)
+parser.add_argument("--savePics",action="store_true",default=False)
 args = parser.parse_args()
 print(args)
 
 if args.l:
   loadParts=True
 if args.l != "":
-  beamFile = args.l
+  picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+  picPWD = picPWD + "TwissDependence/CSVs/"
+  beamFile = picPWD + args.l
 
 thick = args.t
 if thick == 0:
   materials = ["G4_Al"]
 elif thick == 0.1:
   materials = ["G4_Galactic"]
-if args.angle != 0:
-  beamAngle = angle
+beamXAngle = 0
+beamYAngle = 0
+rasterXAmplitude0 = 54.65 #[mm]
+rasterYAmplitude0 = 18.37 #[mm]
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
@@ -73,7 +78,7 @@ if len(sys.argv) < 2: #if no extra inputs, ask for them
   nemty = float(input("What is the Emittance in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
-elif args.ESS: #auto profiles
+if args.beamType =="ESS": #auto profiles
   ifplot=False #for plotting the 3 graphs per material
   N=1e5 #number of particles
   betax = 941.25 #[m] original:1000m
@@ -82,7 +87,7 @@ elif args.ESS: #auto profiles
   betay = 120.03 #[m] original: 200m
   alphy = -7.46 #original: -7
   nemty = 0.12155 #[mm-mrad]
-elif args.pencil: #for a reasonable pencil beam
+elif args.beamType == "pencil": #for a reasonable pencil beam
   N=1e5 #number of particles
   betax = 1e-2 #[m]
   alphx = 0
@@ -91,7 +96,14 @@ elif args.pencil: #for a reasonable pencil beam
   alphy = 0
   nemty = 1e-4 #[mm-mrad]
   ifplot=False
-elif args.twiss: #input variables are inputs
+elif args.beamType == "Yngve":
+  betax = 144.15027172522036
+  alphx = -8.184063058768368
+  nemtx = 0.3519001
+  betay = 88.04934327630778
+  alphy = -1.0382192928960423
+  nemty = 0.3651098
+if args.twiss: #input variables are inputs
   N = float(sys.argv[1])
   betax = float(sys.argv[2]) #[m]
   alphx = float(sys.argv[3])
@@ -102,6 +114,8 @@ elif args.twiss: #input variables are inputs
   thick = float(sys.argv[8]) #[mm]
 
 print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
+Twiss = [betax,alphx,nemtx,betay,alphy,nemty]
+physicsList = "QGSP_BERT_EMZ"
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
@@ -131,8 +145,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg= simulation( N,material,    beam,thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamAngle,beamFile):
-  savename,xtarg,ytarg = simulation( N,material,"proton",thick,nemtx ,nemty ,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamAngle,beamFile)
+  #savename,xtarg,ytarg,targPOutBox= simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0):
+  savename,xtarg,ytarg,targPOutBox = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence)
   if not matplot:
     continue
   #returns the savename and the x and y distributions of particle positions 

@@ -9,7 +9,7 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamAngle,beamFile):
+def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
   import numpy as np
   import ROOT
   import os
@@ -20,6 +20,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #constants for below use
   QUIET     = False #Reduced output, doesn't show events
   saveParts = False
+  initDistributions = False
   exitDistributions = False #slows down, may not be necessary anymore
 
   #particle characteristic values
@@ -66,7 +67,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   baseSimSetup = {}
   #baseSimSetup["PHYS"] = "QGSP_BERT__SS" #Use the __SS physics lists for thin foils due to checking each atom cross section
-  baseSimSetup["PHYS"]  = "QGSP_BERT_EMZ" #better for scattering through 1mm sheets
+  baseSimSetup["PHYS"]  = physList #better for scattering through 1mm sheets
 
   #Particle Beam definitions
   #baseSimSetup["BEAM_RCUT"] = 3.0
@@ -77,12 +78,12 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   #For loading particles
   if loadParts == True:
-    picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59mm,aY-7mm_N1.4e+05_2.9e+02us_cyrille"
     from plotFit import numLines
-    parts = numLines(picPWD+beamFile)
+    parts = numLines(beamFile)
     baseSimSetup["N"]        = parts #change to match file particles. Used for file name
-    baseSimSetup["BEAMFILE"] = picPWD+beamFile+".csv" # number of particles >= N
+    baseSimSetup["BEAMFILE"] = beamFile+".csv" # number of particles >= N
     baseSimSetup["ENERGY"]   = energy #570 #[MeV] #ESS beam energy update 15.8
   else:
     baseSimSetup["BEAM"]    = beam
@@ -100,29 +101,30 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   #Beam particle type
   Rcut = 1000.0
-  Engcut = 90.0
-  baseSimSetup["WORLDSIZE"] = Rcut #Make the world wider for seeing where particles go
+  Engcut = 0.9
+  baseSimSetup["WORLDSIZE"] = Rcut #[mm] Make the world wider for seeing where particles go
   baseSimSetup["POSLIM"] = 400 #XY histogram Position Limit for a few, check RootFileWriter.cc
   #Beam Angle
   #Defined by the beam size at BPM94 (TBD) compared to size at BPM93 (~0)
-  if beamAngle != 0:
+  if beamXAngle != 0 or beamYAngle != 0:
     dBPM93to94 = 3031 #[mm]
     #beamAngle = np.arctan(sizeAtBPM94/dBPM93to94) #rad?
-    modThick = thick / np.cos(beamAngle) 
-    print(beamAngle,modThick)
+    modXThick = thick / np.cos(beamXAngle) 
+    modYThick = thick / np.sin(beamYAngle)
+    print(beamXAngle,modXThick,beamYAngle,modYThick)
   #Some more output settings
   baseSimSetup["QUICKMODE"] = False #Include slow plots
   baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
   baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
   baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
-  baseSimSetup["CUTOFF_RADIUS"] = Rcut #Larger radial cutoff #Decreased 10 May
+  baseSimSetup["CUTOFF_RADIUS"] = Rcut #[mm]Larger radial cutoff #Decreased 10 May
   baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
   #print(baseSimSetup)
 
   #Define material nickname
   #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
   if material == "G4_Galactic":
-    mat = "Vacuum"
+    mat = "Vac"
     radLen = 1e24 #[mm] basically infinity
     atomZ = 0.1
     atomA = 0.1
@@ -151,9 +153,14 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
     baseSimSetup["DIST"] = [4400] #Detector location. only at ESS Target location
-    outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Ibetax*1e3)
     if loadParts:
-      outname = outname + beamFile+"_run"
+      import re
+      name = re.sub(".+(PBW)",mat,beamFile)
+      #print(name)
+      outname = name + "_run"
+    else:
+      outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Ibetax*1e3)
+
   else:
     baseSimSetup["THICK"] = 0.0
     baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
@@ -206,15 +213,29 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
   if PBIP:
     outname = outname + "_PBIP"
+
+  if physList == "QGSP_BERT_EMZ":
+    outname = outname + "_QBZ"
+  elif physList == "FTFP_BERT_EMZ":
+    outname = outname + "_FBZ"
+
   #Store the .root files in a subfolder from where this script is running,
   # normally MiniScatter/examples, in order to keep things together
+
+  #Remove upper directories that may have come with beamFile for appending outname to scratch folder
+  import re
+  if re.search("/PBW_",outname):
+    #print("\n",outname,"\n")
+    outname = re.sub(".+(?=(PBW_))","",outname)
+    #print("removed",outname)
+
   baseSimSetup["OUTFOLDER"] = os.path.join("/scratch/ericdf/Scratch/PBWScatter/") 
   #put in Scratch of HepLab0# for faster processing, as per Kyrre
 
   #copy so it is if running multiple scans in a Jupyter notebook
   simSetup_simple1 = baseSimSetup.copy()
 
-  print(outname)
+  print(outname,"\n")
   simSetup_simple1["OUTNAME"] = outname
 
   #Variables for automation
@@ -228,28 +249,29 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
   print("Simulation Finished",datetime.now().strftime("%H-%M-%S"))
 
-  #If one wants to use the initial spread
-  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  myTree= myFile.Get("InitParts")
-  #print(myTree)
-  xinit = np.zeros(myTree.GetEntries())
-  #pxinit = np.zeros(myTree.GetEntries())
-  yinit = np.zeros(myTree.GetEntries())
-  #pyinit = np.zeros(myTree.GetEntries())
-  #Einit = np.zeros(myTree.GetEntries())
-  #print(len(xinit))
-  for i in range(myTree.GetEntries()):
-      myTree.GetEntry(i)
-      #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
-      xinit[i] = myTree.x *mm
-      #pxinit[i] = myTree.px
-      yinit[i] = myTree.y *mm
-      #pyinit[i] = myTree.py
-      #Einit[i] = myTree.E
-  myFile.Close()
-  if saveParts:
-    from plotFit import printParticles
-    printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
+  if initDistributions:
+    #If one wants to use the initial spread
+    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    myTree= myFile.Get("InitParts")
+    #print(myTree)
+    xinit = np.zeros(myTree.GetEntries())
+    #pxinit = np.zeros(myTree.GetEntries())
+    yinit = np.zeros(myTree.GetEntries())
+    #pyinit = np.zeros(myTree.GetEntries())
+    #Einit = np.zeros(myTree.GetEntries())
+    #print(len(xinit))
+    for i in range(myTree.GetEntries()):
+        myTree.GetEntry(i)
+        #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
+        xinit[i] = myTree.x *mm
+        #pxinit[i] = myTree.px
+        yinit[i] = myTree.y *mm
+        #pyinit[i] = myTree.py
+        #Einit[i] = myTree.E
+    myFile.Close()
+    if saveParts:
+      from plotFit import printParticles
+      printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
 
   ##Get the distributions from the PBW exit face
   if exitDistributions: #save some time by only getting when needed
@@ -421,23 +443,25 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
   #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
-  ##If magnet, use multiple scattering layers instead of averaging!
-  from plotFit import plotTwissFit,calcEq8,calcEq16
-  #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-  TwissIx   = [Ibetax,Ialphx,Igemtx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
-  TwissIy   = [Ibetay,Ialphy,Igemty*um,((1+Ialphy*Ialphy)/Ibetay)]
-  PBWTwx = [Ibetax,Ialphx,Inemtx]
-  PBWTwy = [Ibetay,Ialphy,Inemty]
-
   #Analytical Formula Calculations
-  if baseSimSetup["THICK"] == 0.0:
+  MCS=False
+  if MCS:
+    ##If magnet, use multiple scattering layers instead of averaging!
+    from plotFit import plotTwissFit,calcEq8,calcEq16
+    #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
+    TwissIx   = [Ibetax,Ialphx,Igemtx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
+    TwissIy   = [Ibetay,Ialphy,Igemty*um,((1+Ialphy*Ialphy)/Ibetay)]
+    PBWTwx = [Ibetax,Ialphx,Inemtx]
+    PBWTwy = [Ibetay,Ialphy,Inemty]
+
+
     ##Highland Equation Radiation Length Calculation
     p = np.sqrt((energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
     betap = beta_rel*p #Eq 5
 
     m1Len = baseSimSetup["MAGNET"][0]["keyval"]["al1Thick"]
-    if beamAngle != 0: #account for angle contribution to thickness
-      m1Len = m1Len / np.cos(beamAngle) 
+    if beamXAngle != 0: #account for angle contribution to thickness
+      m1Len = m1Len / np.cos(beamXAngle) 
     #Al Front contribution
     thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLenAl) * (1 + 0.038 * np.log(m1Len/radLenAl))
     Twisse8xAl1 = calcEq8(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
@@ -447,8 +471,8 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     #H2O contribution
     m2Len = baseSimSetup["MAGNET"][0]["keyval"]["waterThick"]
-    if beamAngle != 0: #account for angle contribution to thickness
-      m2Len = m2Len / np.cos(beamAngle) 
+    if beamXAngle != 0: #account for angle contribution to thickness
+      m2Len = m2Len / np.cos(beamXAngle) 
     thetasqH2O = 13.6 * partZ / betap * np.sqrt(m2Len/radLenH2O) * (1 + 0.038 * np.log(m2Len/radLenH2O))
     Twisse8xH2O = calcEq8(thetasqH2O, Twisse8xAl1,m2Len,beta_rel,gamma_rel)
     Twisse8yH2O = calcEq8(thetasqH2O, Twisse8yAl1,m2Len,beta_rel,gamma_rel)
@@ -457,20 +481,20 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     #Al Back contribution
     m3Len = baseSimSetup["MAGNET"][0]["keyval"]["al2Thick"]
-    if beamAngle != 0: #account for angle contribution to thickness
-      m3Len = m3Len / np.cos(beamAngle) 
+    if beamXAngle != 0: #account for angle contribution to thickness
+      m3Len = m3Len / np.cos(beamXAngle) 
     thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLenAl) * (1 + 0.038 * np.log(m3Len/radLenAl))
     Twisse8x = calcEq8(thetasqAl2, Twisse8xH2O,m3Len,beta_rel,gamma_rel)
     Twisse8y = calcEq8(thetasqAl2, Twisse8yH2O,m3Len,beta_rel,gamma_rel)
     Twisse16x = calcEq16(thetasqAl2, Twisse16xH2O,m3Len,beta_rel,gamma_rel)
     Twisse16y = calcEq16(thetasqAl2, Twisse16yH2O,m3Len,beta_rel,gamma_rel)
 
-  elif baseSimSetup["THICK"] != 0.0: #if only one layer (MiniScatter "target")
+    #elif baseSimSetup["THICK"] != 0.0: #if only one layer (MiniScatter "target")
     ##Highland Equation Radiation Length Calculation
     p = np.sqrt((energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
     betap = beta_rel*p #Eq 5
-    if beamAngle != 0: #account for angle contribution to thickness
-      thick = thick / np.cos(beamAngle) 
+    if beamXAngle != 0: #account for angle contribution to thickness
+      thick = thick / np.cos(beamXAngle) 
     thetasq = 13.6 * partZ / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
     #print("\nradLen: {:.2f}, p: {:.3e}, gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(radLen,p,gamma_rel,beta_rel,thetasq))
 
@@ -479,24 +503,24 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     Twisse16x = calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel) #calculated 2 target exit Twiss
     Twisse16y = calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel)
 
-  ##Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
-    #Displays Twiss values and calculated mu and sigma
-  #print("\nPre PBW Twiss")
- # plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
- # plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
-  #print("\nPBW Exit Twiss Calculated")
-  #plotTwissFit(xexit/mm,pxexit,savename+"texitHalo",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-  #plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-  #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
+    ##Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
+      #Displays Twiss values and calculated mu and sigma
+    #print("\nPre PBW Twiss")
+  # plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+  # plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
+    #print("\nPBW Exit Twiss Calculated")
+    #plotTwissFit(xexit/mm,pxexit,savename+"texitHalo",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+    #plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
+    #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
 
-  #Extension to Target. Needed for compareTargets!
-  from plotFit import toTarget,compareTargets
-  initTargx = toTarget(TwissIx,"initX")
-  initTargy = toTarget(TwissIy,"initY")
-  e8TargxReal = toTarget(Twisse8x,"e8XReal")
-  e8TargyReal = toTarget(Twisse8y,"e8YReal")
-  #e16TargxReal = toTarget(Twisse16x,"e8XReal")
-  #e16TargyReal = toTarget(Twisse16y,"e8YReal")
+    #Extension to Target. Needed for compareTargets!
+    from plotFit import toTarget,compareTargets
+    initTargx = toTarget(TwissIx,"initX")
+    initTargy = toTarget(TwissIy,"initY")
+    e8TargxReal = toTarget(Twisse8x,"e8XReal")
+    e8TargyReal = toTarget(Twisse8y,"e8YReal")
+    #e16TargxReal = toTarget(Twisse16x,"e8XReal")
+    #e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
   #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
   #compareTargets(xexit/mm,yexit/mm,exitxTwf,exityTwf,TwissIx,TwissIy,"PBW Exit",savename+"PBWExit",mat)
@@ -507,12 +531,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   print(thick)
   print("make plots",datetime.now().strftime("%H-%M-%S"))
   if loadParts:
-    from plotFit import plotRaster,rasterImage
-    #plotRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-    #plotRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
-    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_xy","init_xy"])
-    #rasterImage(xinit/mm,yinit/mm,savename,"PBW",objects_PBW["init_xy"])
-    rasterImage(xtarg_filtered_p/mm,ytarg_filtered_p/mm,savename,"Target",objects_PBW["tracker_xy"])
+    from plotFit import plot1DRaster,rasterImage
+    #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
+    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
+    targPOutBox = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+    if initDistributions:
+      plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
+      initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
 
   else:
     if thick == 0.1:
@@ -525,4 +550,4 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
-  return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm #filter by PDG only
+  return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, targPOutBox #filter by PDG only

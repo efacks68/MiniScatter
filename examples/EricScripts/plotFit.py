@@ -481,7 +481,7 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
   print(fname)
 
 
-def plotRaster(targx,targy,fitlabel,savename,mat,position):
+def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
   # To Do:
   # --Add sobel filter for finding edge of Raster
   # --Add XY view with 99% box, beam edges, current density calculation, 
@@ -500,8 +500,8 @@ def plotRaster(targx,targy,fitlabel,savename,mat,position):
   boxY = np.abs(targy) > yline
   pOutBoxX = len(targx[boxX])/len(targx)*100
   pOutBoxY = len(targy[boxY])/len(targy)*100
-  print(fitlabel,pOutBoxX,"% outside 3 sigma X")
-  print(fitlabel,pOutBoxY,"% outside 3 sigma Y")
+  print(fitlabel,pOutBoxX,"% outside 99% box X")
+  print(fitlabel,pOutBoxY,"% outside 99% box Y")
 
   #Useful to get intervals for nice plotting
   mux,sigmax,xinterval = findFit(targx)
@@ -587,73 +587,133 @@ def numLines(beamFile):
   return N
 
 
-def rasterImage(targx,targy,savename,position,histogram2D):
+def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
   import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
   name=savename+"_"+position+"Image"
 
-  #99% box
-  width = 160
-  height = 64
-  boxLLx = round(-width/2)
-  boxLLy = round(-height/2)
-
-  meanX = np.mean(targx)
-  meanY = np.mean(targy)
-  sigmaX = np.std(targx)
-  sigmaY = np.std(targy)
-  print(meanX,sigmaX)
-  print(meanY,sigmaY)
-
   start= datetime.now()
   print(start.strftime("%H-%M-%S"))
   from plotFit import converter
-  import matplotlib.pyplot as plt
-  from matplotlib.patches import Rectangle
-  from matplotlib.colors import LogNorm
   import ROOT
 
-  (hOut, xax, yax) = converter(histogram2D)
-  boxLInd = boxLLx + round(len(xax)/2)
-  boxRInd = boxLLx + round(len(xax)/2) + width
-  boxBInd = boxLLy + round(len(yax)/2)
-  boxTInd = boxLLy + round(len(yax)/2) + height
-  core = hOut[boxBInd:boxTInd,boxLInd:boxRInd]
-  sumTot = np.sum(hOut)
-  sumCore = np.sum(core)
-  pOutsideBox = (sumTot-sumCore)/sumTot*100
-  print(boxLInd,boxRInd,boxBInd,boxTInd,sumTot,sumCore,pOutsideBox,hOut.min())
+  (Img, xax, yax) = converter(histogram2D) #convert from TH2D to numpy map
 
-  X, Y = np.meshgrid(xax,yax)
-  plt.close()
-  fig,ax = plt.subplots()
-  ax.set_xlim([-150,150])
-  ax.set_ylim([-75,75])
-  minim = 4e-1
-  #v = np.logspace(minim,hOut.max(),10)
-  c = ax.pcolor(X,Y,hOut,shading='auto',norm=LogNorm(vmin=minim, vmax=hOut.max()), cmap='jet')
-  lw=4
-  col='k'
-  wide=True
-  if wide:
-    ax.set_xlim([-400,400])
-    ax.set_ylim([-350,350])
+  #99% box
+  width = 160
+  height = 64
+  a=1.
+  boxLLx = round(-width/2) #80
+  boxLLy = round(-height/2) #32
+
+  #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
+  #  np.ndenumerate scales the best of the methods compared to 10^4 elements.
+  for idx, val in np.ndenumerate(xax):
+    if val == boxLLx:
+      boxLInd = idx[0] #400 not sure why it is index 400, but it works
+    if val == boxLLx+width:
+      boxRInd = idx[0] #600
+  for idx, val in np.ndenumerate(yax):
+    if val == boxLLy:
+      boxBInd = idx[0] #460
+    if val == boxLLy+height:
+      boxTInd = idx[0] #540
+  print("len(xax)",len(xax),"len(yax)",len(yax),"boxLLx",boxLLx,"boxLLy",boxLLy)
+  print("boxLInd",boxLInd,"boxRInd",boxRInd,"boxBInd",boxBInd,"boxTInd",boxTInd)
+
+  #Find % outside the 99% Box area
+  core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+  sumTot = np.sum(Img)
+  sumCore = np.sum(core)
+  Pprotons = sumTot / parts * 100
+  pOutsideBox = (sumTot-sumCore)/sumTot*100
+  print(sumTot,parts,sumCore,pOutsideBox)
+  #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
+
+  if savePics:
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+    from matplotlib.colors import LogNorm
+    box = True
+    X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
+    plt.close() #make sure no prior plitting messes up
+
+    fig,ax = plt.subplots()
+    ax.set_xlim([-150,150]) #for close up of beam
+    ax.set_ylim([-75,75])
+    minim = 4e-1 #background (0 hits) will be un-colored
+
+    #Set maximum value depending on the conditions of what is printed
+    import math
+    mag = math.floor(math.log10(parts)) #find magnitude of total particles
+    if mag == 4:
+      if dependence == "RasterAmplitude":
+        maxim = 30 #since RA decreases, raise the maximum value for cbar
+        cbarVals  = [1,10,maxim]
+        cbarLabels = ["1","10",str(maxim)]
+        dep = "RA" #for labeling image files for easy sorting
+    if mag == 5:
+      if dependence == "Twiss":
+        maxim = 80 #since using nominal Raster Amplitude, the maximum value won't be so high
+        cbarVals  = [1,10,50,maxim] #make array for color bar values
+        cbarLabels = ["1","10","50",str(maxim)] #make labels of the 
+        dep = "Tw" #for labeling image files for easy sorting
+      elif dependence == "RasterAmplitude":
+        maxim = 500 #since RA decreases, raise the maximum value for cbar
+        cbarVals  = [1,10,100,250,maxim]
+        cbarLabels = ["1","10","100","250",str(maxim)]
+        dep = "RA" #for labeling image files for easy sorting
+    elif mag == 6: #will include dependence when I do these plots, for now just magnitude
+      maxim = 500
+      cbarVals = [1,10,100,250,maxim]
+      cbarLabels = ["1","10","100","250",str(maxim)]
+    print("Max current Density: ",Img.max(),"/",maxim)
+
+    #Use pcolor to show density map, use log scale
+    c = ax.pcolor(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
     lw=2
-    #c = ax.pcolor(X,Y,hOut,shading='auto',norm=LogNorm(vmin=3e-1, vmax=hOut.max()), cmap='jet')
-    name=name+"_wide"
-  ax.set_title("Distribution at "+position+"\n{:.1e} protons".format(len(targx)))
-  cbar = fig.colorbar(c, ax=ax)#,ticks=v)
-  cbar.set_label(r"Protons/mm$^2$")
-  if position =="Target":
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor=col,fill=False))
-    ax.text(xlim[0]*0.9,ylim[1]*0.85,"{:.1f}".format(pOutsideBox)+"% Outside 99% Box",color=col,fontsize = 16,fontweight='bold')
+    col='k'
+    fs=14
+    wide=True
+
+    if wide:
+      ax.set_xlim([-450,450])
+      ax.set_ylim([-500,500])
+      lw=1
+    
+    #Set Plot Properties
+    ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
+    ax.set_xlabel("Horizontal [mm]")
+    ax.set_ylabel("Vertical [mm]")
+    cbar = fig.colorbar(c, ax=ax)#,ticks=v)
+    cbar.set_label(r"Protons/mm$^2$")
+    cbar.set_ticks(cbarVals)
+    cbar.set_ticklabels(cbarLabels)
+    if position =="Target":
+      name = name+"_"+dep+"_2212only"
+      xlim = ax.get_xlim()
+      ylim = ax.get_ylim()
+      #show 99% box
+      ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor='r',fill=False))
+      
+      #Display beam characteristics
+      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% outside 99% Box", color=col, fontsize = fs-2, fontweight='bold')
+      ax.text(xlim[1]*0.44, ylim[0]*0.95, physList, fontsize = fs-4, color="k")
+      ax.text(xlim[1]*0.08, ylim[0]*0.65, "Max Proton Density: {:.0f}".format(Img.max())+r"$/_{mm^2}$", fontsize=fs-4)
+      ax.text(xlim[1]*0.08, ylim[0]*0.75, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4)
+      ax.text(xlim[0]*0.95, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
+      ax.text(xlim[0]*0.95, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.95, ylim[0]*0.85, r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.95, ylim[0]*0.95, r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
+    plt.tight_layout()
+    dt = datetime.now()
+    plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
+
   dt = datetime.now()
-  fig.tight_layout()
-  plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
   print(dt-start)
+
+  return pOutsideBox
 
 def converter(hIn):
     import ROOT
@@ -662,22 +722,24 @@ def converter(hIn):
     from datetime import datetime
     start = datetime.now()
 
+    #Get X axis from ROOT
     xax = np.zeros(hIn.GetXaxis().GetNbins()+1)
     for i in range(len(xax)-1):
-        xax[i] = hIn.GetXaxis().GetBinLowEdge(i+1)
+        xax[i] = hIn.GetXaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     xax[-1] = hIn.GetXaxis().GetBinUpEdge(hIn.GetXaxis().GetNbins())
     
+    #Get Y axis from ROOT
     yax = np.zeros(hIn.GetYaxis().GetNbins()+1)
     for i in range(len(yax)-1):
-        yax[i] = hIn.GetYaxis().GetBinLowEdge(i+1)
+        yax[i] = hIn.GetYaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     yax[-1] = hIn.GetYaxis().GetBinUpEdge(hIn.GetYaxis().GetNbins())
     
     #print(xax)
     #print(yax)
     
-    hOut = np.zeros( (len(yax),len(xax)) )
-    #print (hOut)
+    hOut = np.zeros( (len(yax), len(xax)) ) #2D Image map
 
+    #Fill Image map with 2D histogram values
     for xi in range(hIn.GetXaxis().GetNbins()):
         for yi in range(hIn.GetYaxis().GetNbins()):
             bx = hIn.GetBin(xi+1,yi+1)
@@ -685,8 +747,5 @@ def converter(hIn):
     
     #Must add Overflow options!!!
 
-    #print(hOut)
-    #plt.imshow(hOut,origin='lower')
-    
     print("Coverted in",datetime.now() - start)
     return (hOut,xax,yax)
