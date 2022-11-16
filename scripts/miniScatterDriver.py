@@ -157,6 +157,12 @@ def runScatter(simSetup, quiet=False,allOutput=False, logName=None, onlyCommand=
         else:
             assert simSetup["MINIROOT"] == False
 
+    if "ANASCATTER" in simSetup:
+        if simSetup["ANASCATTER"] == True:
+            cmd += ["--anaScatterTest"]
+        else:
+            assert simSetup["ANASCATTER"] == False
+
     if "CUTOFF_ENERGYFRACTION" in simSetup:
         cmd += ["--cutoffEnergyFraction", str(simSetup["CUTOFF_ENERGYFRACTION"])]
 

@@ -308,7 +308,6 @@ private:
     G4double rightAng      = 90*deg;    //[deg] Reference for calculations
 };
 
-
 // Rectangular Opening Collimator
 // Default dimensions are for ESS PBIP with minimum absorber volume
 class MagnetCOLLIMATORRECT : public MagnetBase {
