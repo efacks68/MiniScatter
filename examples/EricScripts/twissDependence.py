@@ -21,7 +21,7 @@ beamType    = "ESS"
 energy      = 570 #[MeV]
 graph       = False
 NperBunch   = 10
-nPulses     = 1e3
+nPulses     = 1e2
 envXatBPM94 = 0
 envYatBPM94 = 0
 edges       = False
@@ -33,8 +33,8 @@ rasterXAmplitude0 = 54.65 #[mm]
 rasterYAmplitude0 = 18.37 #[mm]
 
 #Read in CSV file Twiss to simulate
-Twiss = np.zeros((17,6)) #known length of Twiss file.
-with open('beam_sizes18Aug.csv') as csv_file:
+Twiss = np.zeros((6,6)) #known length of Twiss file.
+with open('beam_sizes16Nov.csv') as csv_file:
   csv_reader = csv.reader(csv_file, delimiter=',')
   line_count = 0
   for row in csv_reader:
@@ -54,9 +54,10 @@ BeamSRatio = np.zeros(n)
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications
 csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/TwissDependence/"
-if os.path.isfile(csvPWD+"POutBoxTwissDependence.csv"):
+name = "POutBoxTwissDependenceNoRA"
+if os.path.isfile(csvPWD+name+".csv"):
   print("Found data!")
-  with open(csvPWD+'POutBoxTwissDependence.csv') as csv_file:
+  with open(csvPWD+name+".csv") as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     line_count = 0
     z=1
@@ -90,7 +91,7 @@ else:
   
   #Save values for future quick use
   if args.saveCsv:
-    with open(csvPWD+'POutBoxTwissDependence.csv',mode = 'w') as csv_file:
+    with open(csvPWD+name+'.csv',mode = 'w') as csv_file:
       csv_writer = csv.writer(csv_file,delimiter = ',')
       csv_writer.writerow(["Beam Size Ratio","POutBox PBW","POutBox Vacuum"])
       for i in range(len(BeamSRatio)):
@@ -106,8 +107,8 @@ fs=14
 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 plt.close()
 plt.clf()
-plt.scatter(BeamSRatio,POutBoxes,c="green",label=r"PBW % Outisde Box")
-plt.scatter(BeamSRatio,VacPOutBoxes,c="cyan",label=r"No PBW % Outside Box")
+plt.scatter(BeamSRatio,POutBoxes,marker='o',label=r"PBW % Outisde Box")
+plt.scatter(BeamSRatio,VacPOutBoxes,marker='x',label=r"No PBW % Outside Box")
 plt.xlabel(r"Beam Size Ratio at PBW, $\beta_X / \beta_Y$",fontsize=fs)
 plt.ylabel(r"% Outside 99% Box at Target",fontsize=fs)
 plt.title("Rastered Beam Halo Growth on Target\nwith Beam Roundness",fontsize = fs+2)

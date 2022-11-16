@@ -593,6 +593,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   from datetime import datetime
   name=savename+"_"+position+"Image"
 
+  #For modifying plot texts on a case by case basis
+  #Twiss = [1.5,0,0.18,1.6,0,0.18]
+  #parts = 1e5
+  #rasterXAmplitude = 0
+  #rasterYAmplitude = 0
+  #maxim = 1500
+  #dependence = ""
   start= datetime.now()
   print(start.strftime("%H-%M-%S"))
   from plotFit import converter
@@ -624,11 +631,11 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
 
   #Find % outside the 99% Box area
   core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
-  sumTot = np.sum(Img)
-  sumCore = np.sum(core)
+  sumTot = np.sum(Img)+1 #so no 'divide by 0 errors'
+  sumCore = np.sum(core)+1
   Pprotons = sumTot / parts * 100
   pOutsideBox = (sumTot-sumCore)/sumTot*100
-  print(sumTot,parts,sumCore,pOutsideBox)
+  print(sumTot,parts,sumCore,pOutsideBox,Img.max())
   #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
 
   if savePics:
@@ -648,8 +655,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     import math
     mag = math.floor(math.log10(parts)) #find magnitude of total particles
     if mag == 4:
-      if dependence == "RasterAmplitude":
-        maxim = 30 #since RA decreases, raise the maximum value for cbar
+      if dependence == "Twiss":
+        maxim = 50 #since using nominal Raster Amplitude, the maximum value won't be so high
+        cbarVals  = [1,10,50,maxim] #make array for color bar values
+        cbarLabels = ["1","10","50",str(maxim)] #make labels of the 
+        dep = "Tw" #for labeling image files for easy sorting
+      elif dependence == "RasterAmplitude":
+        maxim = 20 #since RA decreases, raise the maximum value for cbar
         cbarVals  = [1,10,maxim]
         cbarLabels = ["1","10",str(maxim)]
         dep = "RA" #for labeling image files for easy sorting
@@ -694,13 +706,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       name = name+"_"+dep+"_2212only"
       xlim = ax.get_xlim()
       ylim = ax.get_ylim()
-      #show 99% box
+      #Show 99% box
       ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor='r',fill=False))
       
       #Display beam characteristics
       ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% outside 99% Box", color=col, fontsize = fs-2, fontweight='bold')
       ax.text(xlim[1]*0.44, ylim[0]*0.95, physList, fontsize = fs-4, color="k")
-      ax.text(xlim[1]*0.08, ylim[0]*0.65, "Max Proton Density: {:.0f}".format(Img.max())+r"$/_{mm^2}$", fontsize=fs-4)
+      ax.text(xlim[1]*0.05, ylim[0]*0.65, "Max Proton Density: {:.0f}".format(Img.max())+r"$/_{mm^2}$", fontsize=fs-4)
       ax.text(xlim[1]*0.08, ylim[0]*0.75, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4)
       ax.text(xlim[0]*0.95, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
       ax.text(xlim[0]*0.95, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)

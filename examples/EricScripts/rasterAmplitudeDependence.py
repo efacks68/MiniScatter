@@ -78,7 +78,7 @@ VacPOutBoxes = np.zeros(len(rXAmps))
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications
 csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/"
-name = "POutBoxRasterAmplDependence_bX{:.1f}m_{:.1f}mm".format(Twiss[0],rXRange)+args.ampl
+name = "POutBoxRasterAmplDependence_bX{:.1f}m_{:.1f}mm".format(Twiss[0],rXRange)
 if os.path.isfile(csvPWD+name+".csv"):
   print("Found data! Reading in!",name)
   with open(csvPWD+name+".csv") as csv_file:

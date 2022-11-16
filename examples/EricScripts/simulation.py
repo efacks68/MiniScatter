@@ -236,7 +236,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   simSetup_simple1 = baseSimSetup.copy()
 
   print(outname,"\n")
-  simSetup_simple1["OUTNAME"] = outname
+  simSetup_simple1["OUTNAME"] = outname #"PBW_2000MeV_ESSBeam_aX55mm_aY18mm_N2.9e+05_2.9e+03us_pencil_run"#
 
   #Variables for automation
   savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location

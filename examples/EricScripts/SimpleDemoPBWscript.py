@@ -36,7 +36,7 @@ beamAngle = 0 #[mm] #0 for no angle ~? is nominal
 loadParts = False
 beamFile=""
 matplot = False
-dependence = "Twiss"
+dependence = "RasterAmplitude"
 
 #Set up Argument Parsing
 parser = argparse.ArgumentParser()
@@ -55,7 +55,7 @@ if args.l:
   loadParts=True
 if args.l != "":
   picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  picPWD = picPWD + "TwissDependence/CSVs/"
+  #picPWD = picPWD + "TwissDependence/CSVs/"
   beamFile = picPWD + args.l
 
 thick = args.t

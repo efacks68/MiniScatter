@@ -18,6 +18,8 @@ parser.add_argument("--a",type=float,default=1e3)
 parser.add_argument("--rX",type=float,default=0)
 parser.add_argument("--rY",type=float,default=0)
 parser.add_argument("--edges",action="store_true")
+parser.add_argument("--aX",type=float,default=54.65)
+parser.add_argument("--aY",type=float,default=18.37)
 args = parser.parse_args()
 NperBunch = args.N
 nPulses = args.a
@@ -45,16 +47,28 @@ periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
 periodY = pb/Fy * np.ones(N_t) #[s]
 dt =  np.mean(np.diff(t)) #[s]
 delta_t = np.linspace(0,dt,n_tii) #[s]
-z = -10 #[mm] for z location to generate protons at in MiniScatter
+z = -60 #[mm] for z location to generate protons at in MiniScatter
 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
 if args.ESS: #assume 570MeV
   covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/(betaX/mm)]]) #[mm]
   covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/(betaY/mm)]]) #[mm]
+  a = 1.25
+  Twloc = 6
 
 elif args.pencil: #assume 570MeV
-  covX = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
-  covY = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
+  betaX = 1e-2 #[m]
+  alphX = 0.1
+  gemtX = 7.945383034919336e-05 #[m*rad]
+  betaY = betaX
+  alphY = alphX
+  gemtY = gemtX
+  covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/betaX/mm]]) #[mm]
+  covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/betaY/mm]]) #[mm]
+  nemtX = gemtX * 1.6074996859386492 * 0.7829504256014067 #from beamParameters.py calculaton
+  nemtY = nemtX
+  a = 0.35
+  Twloc = 1.7
 
 #Calculate Envelope Center Angle
 dBPM93to94 = 3031 #[mm] from OpenXAL(?)
@@ -75,8 +89,8 @@ envXCenOff = envXCenterOffset * np.ones(N_t) #[mm]
 envYCenOff = envYCenterOffset * np.ones(N_t) #[mm]
 
 #Raster Amplitude: ax0,ay0 here produces the beamlet displacement AT the Target, as per Cyrille
-rasterXAmplitude0 = 54.65 #[mm] #default
-rasterYAmplitude0 = 18.37 #[mm]
+rasterXAmplitude0 = args.aX #[mm] #default
+rasterYAmplitude0 = args.aY #[mm]
 #because generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
 #amplScale = 1 - dPBWtoTarg / dBPM93toTarg #double check you account for Z before PBW in MiniScatter! beam production plane in GEANT, not exact PBW center!
 amplScale = 1 #Cyrille said the RM Amplitude is already scaled
@@ -101,6 +115,7 @@ if envXatBPM94 != 0:
 if envYatBPM94 != 0:
   name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
 
+print(name)
 centroids = np.zeros([N_t*n_tii,2])
 for jj in range(N_t):
   for ii in range(n_tii):
@@ -166,6 +181,7 @@ if args.g:
   import matplotlib.pyplot as plt
   #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
   import mpl_scatter_density
+  fs=14
   plt.close()
   fig = plt.figure()
   s1 = fig.add_subplot(1,1,1,projection="scatter_density")
@@ -173,10 +189,15 @@ if args.g:
   y=totY[:,0]
   density = s1.scatter_density(x,y,cmap='jet')
   fig.colorbar(density,label=r"Protons/mm^2")
+  xlim = plt.xlim()
+  ylim = plt.ylim()
+  plt.text(xlim[0]*0.95,ylim[0]+Twloc,"Beam Twiss at PBW:",fontsize=fs-4,c='w') #position Twiss print out depending on plot range
+  plt.text(xlim[0]*0.95,ylim[0]+Twloc-(a*1),r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(nemtX/mm,nemtY/mm)+r"$_{[mm \cdot mrad]}$",c='w',fontsize=fs-4)
+  plt.text(xlim[0]*0.95,ylim[0]+Twloc-(a*2),r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(betaX/mm, betaY/mm)+r"$_{[mm]}$",c='w',fontsize=fs-4)
+  plt.text(xlim[0]*0.95,ylim[0]+Twloc-(a*3),r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(alphX,alphY),c='w',fontsize=fs-4)
+  plt.text(xlim[0]*0.95,ylim[0]+Twloc-(a*4),r"$\sigma_{x,y}$ = "+"{:.1f}, {:.1f}".format(np.sqrt(betaX*gemtX)/mm,np.sqrt(betaY*gemtY)/mm)+r"$_{[mm]}$",c='w',fontsize=fs-4)
   s1.set_xlabel("X [mm]")
   s1.set_ylabel("Y [mm]")
-  #s1.set_xlim([-200,200])
-  #s1.set_ylim([-175,175])
   s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
   plt.show()
   plt.close()
