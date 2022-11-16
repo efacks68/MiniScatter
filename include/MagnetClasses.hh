@@ -301,14 +301,15 @@ private:
     G4double thickness     = 4.25*mm;   //[G4 length units] Total thicnkess
     G4double width         = 200.0*mm;  //[G4 length units] Width of cylinder as seen by PBW, >0
     G4double height        = 160.0*mm;  //[G4 length units] Height of window section, >0
-    G4double arcPhi        = 120.0*deg; // [deg] Arc angle of window section, within: 0 <= arcPhi <= 180
-    G4double startPhi      = 30*deg;    // [deg] Start angle of window section, = 90 - arcPhi/2 for geometry
-    G4double waterStartPhi = 60*deg;    // [deg] Start angle of water channel, = 90 - arcPhi/4 for geometry
+    G4double arcPhi        = 120.0*deg; //[deg] Arc angle of window section, within: 0 <= arcPhi <= 180
+    G4double startPhi      = 30*deg;    //[deg] Start angle of window section, = 90 - arcPhi/2 for geometry
+    G4double waterStartPhi = 60*deg;    //[deg] Start angle of water channel, = 90 - arcPhi/4 for geometry
     G4double boxCenter     = 68.125*mm; //[G4 length units] Distance to translate PBW so center lines up with pos
     G4double rightAng      = 90*deg;    //[deg] Reference for calculations
 };
 
-// Rectangular OPENING COLLIMATOR
+
+// Rectangular Opening Collimator
 // Default dimensions are for ESS PBIP with minimum absorber volume
 class MagnetCOLLIMATORRECT : public MagnetBase {
 public:
@@ -324,8 +325,8 @@ private:
     G4Material* absorberMaterial = NULL;
     G4double absorberWidth  = 250.0*mm; //[G4 length units]
     G4double absorberHeight = 100.0*mm; //[G4 length units]
-    G4double holeWidth      = 200.0*mm; //[G4 length units]
-    G4double holeHeight     = 80.0*mm;  //[G4 length units]
+    G4double apertureWidth  = 200.0*mm; //[G4 length units]
+    G4double apertureHeight = 80.0*mm;  //[G4 length units]
 };
 
 #endif

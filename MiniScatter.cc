@@ -788,7 +788,8 @@ int main(int argc,char** argv) {
                                                                     rngSeed,
                                                                     beam_eFlat_min,
                                                                     beam_eFlat_max,
-                                                                    beam_loadFile);
+                                                                    beam_loadFile,
+                                                                    numEvents);
     runManager->SetUserAction(gen_action);
     //
     RunAction* run_action = new RunAction;
@@ -1054,11 +1055,11 @@ void printHelp(G4double target_thick,
                    << "\t Only the --zoffset flag is taken into account;" << G4endl
                    << "\t  the other beam-relevant flags are ignored." << G4endl
                    << "\t The flags --energy and --beam is only used for reference energy in Twiss etc." << G4endl
-                   << "\t Note that the number of particles in the file must be at least as big as --numEvents."
+                   << "\t Note that the number of particles in the file must be at least as big as --numEvents." << G4endl
                    << "\t Expected format is determined from file ending, possibilities are:" << G4endl
                    << "\t\t .csv: Comma-separated list with 1 particle per row, fields are" << G4endl
-                   << "\t\t       particle_type, x<double, mm>, x' <double,px/pz>, y, y', z, Ekin<double,MeV>"
-                   << "\t\t       Here the particle_type is specified in the same way as in --beam."
+                   << "\t\t       particle_type, x<double, mm>, x' <double,px/pz>, y, y', z, Ekin<double,MeV>" << G4endl
+                   << "\t\t       Here the particle_type is specified in the same way as in --beam." << G4endl
                    << "\t Default/current value = \"" << beam_loadFile << "\"" << G4endl << G4endl;
 
             G4cout << " --seed/-s <int>" << G4endl
@@ -1150,6 +1151,14 @@ void printHelp(G4double target_thick,
                    << "\t     height:    Absorber height (<double> [mm])" << G4endl
                    << "\t     material:  Absorber material (similar to -m)" << G4endl
                    << G4endl
+                   << "\t   'COLLIMATORRECT':" << G4endl
+                   << "\t     Models a rectangular collimator with a rectangular hole in the middle along the z-axis, no field." << G4endl
+                   << "\t     apertureWidth:    Channel width (<double> [mm]), default: 200[mm]" << G4endl
+                   << "\t     apertureHeight:   Channel height (<double> [mm]), default: 80[mm]" << G4endl
+                   << "\t     absorberWidth:    Absorber width (<double> [mm]), default: 250[mm]" << G4endl
+                   << "\t     absorberHeight:   Absorber height (<double> [mm]), default: 100[mm]" << G4endl
+                   << "\t     material:  Absorber material (similar to -m), default: G4_Al" << G4endl
+                   << G4endl
                    << "\t   'TARGET':" << G4endl
                    << "\t     Models a rectangular target, no field."
                    << "\t     width:     Target width (<double> [mm])" << G4endl
@@ -1181,7 +1190,10 @@ void printHelp(G4double target_thick,
                    << G4endl
                    << "\t   'PBW':" << G4endl
                    << "\t     Models the ESS Proton Beam Window, no field." << G4endl
-                   << "\t     User must set pos to be >half length of object, see parameter initialization." << G4endl
+                   << "\t     Please remember that 'pos' is the position of the enveloping volume," << G4endl
+                   << "\t       which is not the center of the actual window." << G4endl
+                   << "\t     Also please note that the standar parameter 'length' should be set to 0," << G4endl
+                   << "\t       since it is auto-calculated based on the radius etc." << G4endl
                    << "\t     radius:     Inner radius of cylinder, >0         (<double> [mm]),    default: 88.0 [mm]" << G4endl
                    << "\t     material:   Target material (similar to -m),                         default: G4_Al" << G4endl
                    << "\t     al1Thick:   Outer thickness of metal window, >0  (<double> [mm]),    default: 1.0 [mm]" << G4endl
@@ -1189,7 +1201,7 @@ void printHelp(G4double target_thick,
                    << "\t     al2Thick:   Inner thickness of metal window, >0  (<double> [mm]),    default: 1.25 [mm]" << G4endl
                    << "\t     width:      Width of cylinder as seen by PBW, >0 (<double> [mm]),    default: 60.0 [mm]" << G4endl
                    << "\t     arcPhi:     Arc angle of window section          (<double> [deg]),   default: 120 [deg]" << G4endl
-                   << "\t\t\t\t arcPhi should be within: 0 <= arcPhi <= 180 [deg]" << G4endl
+                   << "\t                 arcPhi should be within: 0 <= arcPhi <= 180 [deg]" << G4endl
                    << G4endl;
 
             G4cout << "\t Currently the following magnet setups are specified:" << G4endl;
