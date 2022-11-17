@@ -618,14 +618,14 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   #  np.ndenumerate scales the best of the methods compared to 10^4 elements.
   for idx, val in np.ndenumerate(xax):
     if val == boxLLx:
-      boxLInd = idx[0] #400 not sure why it is index 400, but it works
+      boxLInd = idx[0] #420
     if val == boxLLx+width:
-      boxRInd = idx[0] #600
+      boxRInd = idx[0] #580
   for idx, val in np.ndenumerate(yax):
     if val == boxLLy:
-      boxBInd = idx[0] #460
+      boxBInd = idx[0] #468
     if val == boxLLy+height:
-      boxTInd = idx[0] #540
+      boxTInd = idx[0] #532
   print("len(xax)",len(xax),"len(yax)",len(yax),"boxLLx",boxLLx,"boxLLy",boxLLy)
   print("boxLInd",boxLInd,"boxRInd",boxRInd,"boxBInd",boxBInd,"boxTInd",boxTInd)
 
@@ -638,8 +638,19 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   print(sumTot,parts,sumCore,pOutsideBox,Img.max())
   #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
 
+  #Normalize to full current, see Cyrille's MatLab scripts...
+  I_tot = 62.5*1e3 #[uA]
+  Protmax = Img.max() #protons/mm^2
+  for i in range(len(Img)):
+    for j in range(len(Img[i])):
+      Img[i][j] = Img[i][j] / sumTot * I_tot #[uA/mm^2]
+  Imax = Img.max()
+  Imin = 0.5/sumTot*I_tot #background (0 hits) will be un-colored
+  Itop = Imax * 0.9
+  print(Protmax,Imax,Imin)
+
   if savePics:
-    import matplotlib.pyplot as plt
+    from matplotlib.pyplot import subplots,pcolor
     from matplotlib.patches import Rectangle
     from matplotlib.colors import LogNorm
     box = True
@@ -649,38 +660,20 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     fig,ax = plt.subplots()
     ax.set_xlim([-150,150]) #for close up of beam
     ax.set_ylim([-75,75])
-    minim = 4e-1 #background (0 hits) will be un-colored
-
-    #Set maximum value depending on the conditions of what is printed
-    import math
-    mag = math.floor(math.log10(parts)) #find magnitude of total particles
-    if mag == 4:
-      if dependence == "Twiss":
-        maxim = 50 #since using nominal Raster Amplitude, the maximum value won't be so high
-        cbarVals  = [1,10,50,maxim] #make array for color bar values
-        cbarLabels = ["1","10","50",str(maxim)] #make labels of the 
-        dep = "Tw" #for labeling image files for easy sorting
-      elif dependence == "RasterAmplitude":
-        maxim = 20 #since RA decreases, raise the maximum value for cbar
-        cbarVals  = [1,10,maxim]
-        cbarLabels = ["1","10",str(maxim)]
-        dep = "RA" #for labeling image files for easy sorting
-    if mag == 5:
-      if dependence == "Twiss":
-        maxim = 80 #since using nominal Raster Amplitude, the maximum value won't be so high
-        cbarVals  = [1,10,50,maxim] #make array for color bar values
-        cbarLabels = ["1","10","50",str(maxim)] #make labels of the 
-        dep = "Tw" #for labeling image files for easy sorting
-      elif dependence == "RasterAmplitude":
-        maxim = 500 #since RA decreases, raise the maximum value for cbar
-        cbarVals  = [1,10,100,250,maxim]
-        cbarLabels = ["1","10","100","250",str(maxim)]
-        dep = "RA" #for labeling image files for easy sorting
-    elif mag == 6: #will include dependence when I do these plots, for now just magnitude
-      maxim = 500
-      cbarVals = [1,10,100,250,maxim]
-      cbarLabels = ["1","10","100","250",str(maxim)]
-    print("Max current Density: ",Img.max(),"/",maxim)
+    print(datetime.now().strftime("%H-%M-%S"))
+    
+    #Set maximum value depending on the maximum current density
+    from math import floor,log10,ceil
+    a = 15
+    maxim = ceil(Imax / a) * a
+    minMag= floor(log10(Imin))
+    minim = 10**minMag
+    cbarVals  = [minim,minim*1e1,minim*1e2,minim*5e2,maxim] #make array for color bar values
+    cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
+                  "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+    cbarLabel = r"$\mu A / mm^2$"
+    print("maxim",maxim,minim)
+    print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
     #Use pcolor to show density map, use log scale
     c = ax.pcolor(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
@@ -698,12 +691,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
     ax.set_xlabel("Horizontal [mm]")
     ax.set_ylabel("Vertical [mm]")
-    cbar = fig.colorbar(c, ax=ax)#,ticks=v)
-    cbar.set_label(r"Protons/mm$^2$")
+    cbar = fig.colorbar(c, ax=ax,pad=0.01)#,ticks=v)
+    cbar.set_label(cbarLabel,labelpad=2)
     cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
+    print(datetime.now().strftime("%H-%M-%S"))
     if position =="Target":
-      name = name+"_"+dep+"_2212only"
+      name = name+"_2212only"
       xlim = ax.get_xlim()
       ylim = ax.get_ylim()
       #Show 99% box
@@ -711,13 +705,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       
       #Display beam characteristics
       ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% outside 99% Box", color=col, fontsize = fs-2, fontweight='bold')
-      ax.text(xlim[1]*0.44, ylim[0]*0.95, physList, fontsize = fs-4, color="k")
-      ax.text(xlim[1]*0.05, ylim[0]*0.65, "Max Proton Density: {:.0f}".format(Img.max())+r"$/_{mm^2}$", fontsize=fs-4)
-      ax.text(xlim[1]*0.08, ylim[0]*0.75, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4)
-      ax.text(xlim[0]*0.95, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-      ax.text(xlim[0]*0.95, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.95, ylim[0]*0.85, r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.95, ylim[0]*0.95, r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
+      ax.text(xlim[1]*0.97, ylim[0]*0.95, physList, fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu A/{mm^2}$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
     plt.tight_layout()
     dt = datetime.now()
     plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")

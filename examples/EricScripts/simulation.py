@@ -236,7 +236,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   simSetup_simple1 = baseSimSetup.copy()
 
   print(outname,"\n")
-  simSetup_simple1["OUTNAME"] = outname #"PBW_2000MeV_ESSBeam_aX55mm_aY18mm_N2.9e+05_2.9e+03us_pencil_run"#
+  simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
 
   #Variables for automation
   savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
@@ -351,97 +351,99 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
   #  myTree= myFile.Get("magnet_2_edeps")
 
-  ##Distributions at ESS Target location (the detector located 4.4m from PBW)
-  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
-  myTree= myFile.Get("TrackerHits") #TrackerHits has all trackers, be sure to only have 1!
+  targetTree = True
+  if targetTree:
+    ##Distributions at ESS Target location (the detector located 4.4m from PBW)
+    myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    myTree= myFile.Get("TrackerHits") #TrackerHits has all trackers, be sure to only have 1!
 
-  #Get the distributions at the ESS Target location
-  xtarg = np.zeros(myTree.GetEntries()) #dynamic length arrays
-  #pxtarg = np.zeros(myTree.GetEntries())
-  ytarg = np.zeros(myTree.GetEntries())
-  #pytarg = np.zeros(myTree.GetEntries())
-  pztarg = np.zeros(myTree.GetEntries())
-  Etarg = np.zeros(myTree.GetEntries())
-  PDGtarg = np.zeros(myTree.GetEntries())
-  #print("The length of the arrays are ",myTree.GetEntries())#len(pztarg))
+    #Get the distributions at the ESS Target location
+    xtarg = np.zeros(myTree.GetEntries()) #dynamic length arrays
+    #pxtarg = np.zeros(myTree.GetEntries())
+    ytarg = np.zeros(myTree.GetEntries())
+    #pytarg = np.zeros(myTree.GetEntries())
+    pztarg = np.zeros(myTree.GetEntries())
+    Etarg = np.zeros(myTree.GetEntries())
+    PDGtarg = np.zeros(myTree.GetEntries())
+    #print("The length of the arrays are ",myTree.GetEntries())#len(pztarg))
 
-  for i in range(myTree.GetEntries()): #put data in arrays
-      myTree.GetEntry(i)
-      pztarg[i] = myTree.pz
-      if pztarg[i] == 0.0:
-        print("warning: PZtarg[{}]==0".format(i))
-        continue #11.5.22 recommended by Kyrre
-      xtarg[i] = myTree.x *mm
-      #pxtarg[i] = myTree.px / pztarg[i] #from Kyrre 5.5.22 to make it true X'!
-      ytarg[i] = myTree.y *mm
-      #pytarg[i] = myTree.py / pztarg[i]
-      Etarg[i] = myTree.E
-      PDGtarg[i] = myTree.PDG
-  myFile.Close()
+    for i in range(myTree.GetEntries()): #put data in arrays
+        myTree.GetEntry(i)
+        pztarg[i] = myTree.pz
+        if pztarg[i] == 0.0:
+          print("warning: PZtarg[{}]==0".format(i))
+          continue #11.5.22 recommended by Kyrre
+        xtarg[i] = myTree.x *mm
+        #pxtarg[i] = myTree.px / pztarg[i] #from Kyrre 5.5.22 to make it true X'!
+        ytarg[i] = myTree.y *mm
+        #pytarg[i] = myTree.py / pztarg[i]
+        Etarg[i] = myTree.E
+        PDGtarg[i] = myTree.PDG
+    myFile.Close()
 
-  #Filter the relevant distributions
-  PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
-  Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut/100) #Engcut is % number not decimal
-  #These proton only arrays are returned to the original script!
-  #Etarg_filtered_p = Etarg[PDGtarg_filter]
-  xtarg_filtered_p = xtarg[PDGtarg_filter]
-  #pxtarg_filtered_p = pxtarg[PDGtarg_filter]
-  ytarg_filtered_p = ytarg[PDGtarg_filter]
-  #pytarg_filtered_p = pytarg[PDGtarg_filter]
+    #Filter the relevant distributions
+    PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
+    Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut/100) #Engcut is % number not decimal
+    #These proton only arrays are returned to the original script!
+    #Etarg_filtered_p = Etarg[PDGtarg_filter]
+    xtarg_filtered_p = xtarg[PDGtarg_filter]
+    #pxtarg_filtered_p = pxtarg[PDGtarg_filter]
+    ytarg_filtered_p = ytarg[PDGtarg_filter]
+    #pytarg_filtered_p = pytarg[PDGtarg_filter]
 
-  #For plotting Energy distribution of all species
-  if engplot:
-    import math
-    mag=math.floor(math.log10(N)) #for dynamic title name
-    engname=savename+"_EnergyPlot.png" #same for each plot
-    titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For All Particle Species"
+    #For plotting Energy distribution of all species
+    if engplot:
+      import math
+      mag=math.floor(math.log10(N)) #for dynamic title name
+      engname=savename+"_EnergyPlot.png" #same for each plot
+      titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For All Particle Species"
 
-    if material == "G4_Galactic":
-      print("Vacuum Energy Plot not working now, plots empty histogram. *Shrugs*")
-    else: #simple histogram plot
-      import matplotlib.pyplot as plt
-      plt.close()
-      plt.hist(Etarg_filtered_p,100,log=True)
-      #future addition - make other PDG entries be another color?
-      plt.xlabel("Energy [MeV]")
-      plt.ylabel("Counts")
-      plt.xlim([0,2005.0])
-      plt.title(rf"Energy Distribution at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
-        "\nThrough PBW of "+mat+", Protons Only")
-      print(titl,engname)
-      plt.savefig(engname)
-      plt.close()
+      if material == "G4_Galactic":
+        print("Vacuum Energy Plot not working now, plots empty histogram. *Shrugs*")
+      else: #simple histogram plot
+        import matplotlib.pyplot as plt
+        plt.close()
+        plt.hist(Etarg_filtered_p,100,log=True)
+        #future addition - make other PDG entries be another color?
+        plt.xlabel("Energy [MeV]")
+        plt.ylabel("Counts")
+        plt.xlim([0,2005.0])
+        plt.title(rf"Energy Distribution at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
+          "\nThrough PBW of "+mat+", Protons Only")
+        print(titl,engname)
+        plt.savefig(engname)
+        plt.close()
 
-  #Display Full Energy distribution results
-  #print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
+    #Display Full Energy distribution results
+    #print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
 
-  angmax=6e-3 #[rad] one angle filter limit
-  #Apply PDG, Energy Filters
-  xtarg_filtered = xtarg[PDGtarg_filter][Etarg_filter]
-  #pxtarg_filtered = pxtarg[PDGtarg_filter][Etarg_filter]
-  ytarg_filtered = ytarg[PDGtarg_filter][Etarg_filter]
-  #pytarg_filtered = pytarg[PDGtarg_filter][Etarg_filter]
-  #Apply >,< filters
-  ##X, <
-  #pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
-  #pxtarg_filtered = pxtarg_filtered[pxfilterL]
-  #xtarg_filtered = xtarg_filtered[pxfilterL]
-  ##Y, <
-  #pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
-  #pytarg_filtered = pytarg_filtered[pyfilterL]
-  #ytarg_filtered = ytarg_filtered[pyfilterL]
-  ##X, >
-  #pxfilterG = np.greater(pxtarg_filtered,-angmax) #[rad]
-  #pxtarg_filtered = pxtarg_filtered[pxfilterG]
-  #xtarg_filtered = xtarg_filtered[pxfilterG]
-  ##Y, >
-  #pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
-  #pytarg_filtered = pytarg_filtered[pyfilterG]
-  #ytarg_filtered = ytarg_filtered[pyfilterG]
+    angmax=6e-3 #[rad] one angle filter limit
+    #Apply PDG, Energy Filters
+    xtarg_filtered = xtarg[PDGtarg_filter][Etarg_filter]
+    #pxtarg_filtered = pxtarg[PDGtarg_filter][Etarg_filter]
+    ytarg_filtered = ytarg[PDGtarg_filter][Etarg_filter]
+    #pytarg_filtered = pytarg[PDGtarg_filter][Etarg_filter]
+    #Apply >,< filters
+    ##X, <
+    #pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
+    #pxtarg_filtered = pxtarg_filtered[pxfilterL]
+    #xtarg_filtered = xtarg_filtered[pxfilterL]
+    ##Y, <
+    #pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
+    #pytarg_filtered = pytarg_filtered[pyfilterL]
+    #ytarg_filtered = ytarg_filtered[pyfilterL]
+    ##X, >
+    #pxfilterG = np.greater(pxtarg_filtered,-angmax) #[rad]
+    #pxtarg_filtered = pxtarg_filtered[pxfilterG]
+    #xtarg_filtered = xtarg_filtered[pxfilterG]
+    ##Y, >
+    #pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
+    #pytarg_filtered = pytarg_filtered[pyfilterG]
+    #ytarg_filtered = ytarg_filtered[pyfilterG]
 
-  #Get Twiss for the filtered distributions
-  #targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
-  #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
+    #Get Twiss for the filtered distributions
+    #targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
+    #targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
   #Analytical Formula Calculations
   MCS=False
@@ -536,7 +538,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
     targPOutBox = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
     if initDistributions:
-      plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
+      #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
       initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
 
   else:

@@ -6,8 +6,7 @@
 # ## Code setup
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse,sys
-import math
+import argparse,sys,math,os
 from plotFit import plotFit,findFit
 from simulation import simulation
 from datetime import datetime
@@ -55,8 +54,14 @@ if args.l:
   loadParts=True
 if args.l != "":
   picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  #picPWD = picPWD + "TwissDependence/CSVs/"
   beamFile = picPWD + args.l
+  if not os.path.isfile(beamFile+".csv"):
+    pic2PWD = picPWD + "TwissDependence/CSVs/"
+    beamFile = pic2PWD + args.l
+    if not os.path.isfile(beamFile+".csv"):
+      pic3PWD = picPWD + "rAmplDependence/CSVs/"
+      beamFile = pic3PWD + args.l
+print(beamFile)
 
 thick = args.t
 if thick == 0:
