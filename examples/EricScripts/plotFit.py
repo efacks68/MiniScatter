@@ -573,9 +573,9 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
   plt.close()
   print(name)
 
-def numLines(beamFile):
+def numLines(filename):
   import csv
-  with open(beamFile+".csv") as csv_file:
+  with open(filename+".csv") as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     N = 0
     for row in csv_reader:
@@ -588,7 +588,7 @@ def numLines(beamFile):
 
 
 def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
-  import matplotlib.pyplot as plt
+  #import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
   name=savename+"_"+position+"Image"
@@ -601,9 +601,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   #maxim = 1500
   #dependence = ""
   start= datetime.now()
-  print(start.strftime("%H-%M-%S"))
+  #print(start.strftime("%H-%M-%S"))
   from plotFit import converter
-  import ROOT
+  #import ROOT
 
   (Img, xax, yax) = converter(histogram2D) #convert from TH2D to numpy map
 
@@ -626,8 +626,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       boxBInd = idx[0] #468
     if val == boxLLy+height:
       boxTInd = idx[0] #532
-  print("len(xax)",len(xax),"len(yax)",len(yax),"boxLLx",boxLLx,"boxLLy",boxLLy)
-  print("boxLInd",boxLInd,"boxRInd",boxRInd,"boxBInd",boxBInd,"boxTInd",boxTInd)
+  #print("len(xax)",len(xax),"len(yax)",len(yax),"boxLLx",boxLLx,"boxLLy",boxLLy)
+  #print("boxLInd",boxLInd,"boxRInd",boxRInd,"boxBInd",boxBInd,"boxTInd",boxTInd)
 
   #Find % outside the 99% Box area
   core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
@@ -635,45 +635,59 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   sumCore = np.sum(core)+1
   Pprotons = sumTot / parts * 100
   pOutsideBox = (sumTot-sumCore)/sumTot*100
-  print(sumTot,parts,sumCore,pOutsideBox,Img.max())
+  #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
   #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
 
   #Normalize to full current, see Cyrille's MatLab scripts...
-  I_tot = 62.5*1e3 #[uA]
+  I_pulse = 62.5*1e-3 #[A]
+  t_pulse = 2.86*1e-3 #[s]
+  e = 1.602e-19 #[C]
+  Nphys = I_pulse * t_pulse / e #[protons]
+  R = Nphys / parts
+  C = R * e / t_pulse / 1e-2 * 1e6 #[uA/cm^2], /mm^2->/cm^2 = /1e-2, A->uA = 1e6
   Protmax = Img.max() #protons/mm^2
   for i in range(len(Img)):
     for j in range(len(Img[i])):
-      Img[i][j] = Img[i][j] / sumTot * I_tot #[uA/mm^2]
+      Img[i][j] = Img[i][j] * C #[uA/cm^2]
   Imax = Img.max()
-  Imin = 0.5/sumTot*I_tot #background (0 hits) will be un-colored
-  Itop = Imax * 0.9
-  print(Protmax,Imax,Imin)
+  Imin = 0.5 * C #background (0 hits) will be un-colored
+  coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+  coreImax = coreN.max() #[uA/cm^2]
+  coreMeanI = np.mean(coreN)
+  print("Nphys",Nphys,"C",C,"Imax",Imax,"Imin",Imin,"coreMeanI",coreMeanI,"pOutsideBox",pOutsideBox)
+
+  #top=0
+  #Itop = Imax * 0.7
+  #for idx,val in np.ndenumerate(Img):
+  #  if val >= Itop:
+  #    top += 1
+  #print("Current above",Itop,"in",top,"mm^2")
 
   if savePics:
-    from matplotlib.pyplot import subplots,pcolor
+    from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
     from matplotlib.patches import Rectangle
     from matplotlib.colors import LogNorm
     box = True
     X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
-    plt.close() #make sure no prior plitting messes up
+    close() #make sure no prior plitting messes up
 
-    fig,ax = plt.subplots()
+    fig,ax = subplots()
     ax.set_xlim([-150,150]) #for close up of beam
     ax.set_ylim([-75,75])
     print(datetime.now().strftime("%H-%M-%S"))
     
     #Set maximum value depending on the maximum current density
     from math import floor,log10,ceil
-    a = 15
+    a = 10
     maxim = ceil(Imax / a) * a
     minMag= floor(log10(Imin))
     minim = 10**minMag
     cbarVals  = [minim,minim*1e1,minim*1e2,minim*5e2,maxim] #make array for color bar values
     cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
                   "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
-    cbarLabel = r"$\mu A / mm^2$"
-    print("maxim",maxim,minim)
-    print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
+    cbarLabel = r"$\mu A / cm^2$"
+    #print("maxim",maxim,minim)
+    #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
     #Use pcolor to show density map, use log scale
     c = ax.pcolor(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
@@ -695,7 +709,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     cbar.set_label(cbarLabel,labelpad=2)
     cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
-    print(datetime.now().strftime("%H-%M-%S"))
+    #print(datetime.now().strftime("%H-%M-%S"))
     if position =="Target":
       name = name+"_2212only"
       xlim = ax.get_xlim()
@@ -704,22 +718,27 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor='r',fill=False))
       
       #Display beam characteristics
-      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% outside 99% Box", color=col, fontsize = fs-2, fontweight='bold')
+      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% Outside % Box", color=col, fontsize = fs-2, fontweight='bold')
       ax.text(xlim[1]*0.97, ylim[0]*0.95, physList, fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu A/{mm^2}$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.3f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      #ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.3f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
       ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
       ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
       ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
       ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
       ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
-    plt.tight_layout()
+    tight_layout()
     dt = datetime.now()
-    plt.savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
+    from os.path import isfile
+    #if isfile(name+"*.png"):
+    #  print("already present")
+    #else:
+    savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
 
   dt = datetime.now()
-  print(dt-start)
+  #print(dt-start)
 
-  return pOutsideBox
+  return pOutsideBox, Imax, coreMeanI
 
 def converter(hIn):
     import ROOT
@@ -753,5 +772,5 @@ def converter(hIn):
     
     #Must add Overflow options!!!
 
-    print("Coverted in",datetime.now() - start)
+    #print("Coverted in",datetime.now() - start)
     return (hOut,xax,yax)

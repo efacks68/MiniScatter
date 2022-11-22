@@ -39,6 +39,10 @@ if args.Twiss == 'y':
   Twiss = [144.15027172522036,-8.184063058768368,0.3519001,88.04934327630778,-1.0382192928960423,0.3651098] #smallest from Yngve
 elif args.Twiss == 'o':
   Twiss = [1006.80,-60.44,0.11315,129.72,-7.72,0.12155] #from my OpenXAL calculation
+elif args.Twiss == 's':
+  Twiss = [50,-10,0.5,30,-5,0.5]
+elif args.Twiss == 'p':
+  Twiss = [0.15,0,0.001,0.15,0,0.001]
 
 #For the input amplitude range selection, 'short' or 'long'
 amplRatio = rasterXAmplitude0 / rasterYAmplitude0
@@ -54,7 +58,8 @@ if args.ampl == 's':
   twTloc = 0.55
   pLloc = 0.95
 elif args.ampl == 'l':
-  rXAmps = np.array([rasterXAmplitude0,15,20,25,30,35,40,45,50])
+  #rXAmps = np.array([rasterXAmplitude0,15,25,30,35,40,45,50])
+  rXAmps = np.array([rasterXAmplitude0,0.001,15,25,35])
   #Make Y amplitude values based on ratio (necessary?)
   rYAmps = np.zeros(len(rXAmps))
   for i in range(len(rXAmps)):
@@ -71,13 +76,12 @@ elif args.ampl == 'srcy': #Short Range Constant Y amplitude
   print(rXRange)
   legloc = "center right"
   twTloc = 0.55
-  pLloc = 0.95
 
 POutBoxes = np.zeros(len(rXAmps))
 VacPOutBoxes = np.zeros(len(rXAmps))
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications
-csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/"
+csvPWD = "/scratch/ericdf/Scratch/PBWScatter/CSVs/"
 name = "POutBoxRasterAmplDependence_bX{:.1f}m_{:.1f}mm".format(Twiss[0],rXRange)
 if os.path.isfile(csvPWD+name+".csv"):
   print("Found data! Reading in!",name)
@@ -134,8 +138,9 @@ plt.title("Rastered Beam Halo Growth on Target\nwith Beam Roundness at PBW",font
 #Set up texts to include with relevant info
 xlim = plt.xlim()
 ylim = plt.ylim()
-plt.ylim([-0.5,ylim[1]])
-plt.text(xlim[1]*pLloc,-0.3,physList,fontsize = fs-5,color="k")
+plt.ylim([-0.7,ylim[1]])
+ylim = plt.ylim()
+plt.text(xlim[1]*0.98,ylim[0]+0.1,physList,fontsize = fs-5,color="k",horizontalalignment="right",verticalalignment="bottom")
 plt.text(xlim[0]+0.2,ylim[1]*twTloc,"Beam Twiss at PBW:",fontsize=fs-4) #position Twiss print out depending on plot range
 plt.text(xlim[0]+0.2,ylim[1]*(twTloc-0.07*1),r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$",fontsize=fs-4)
 plt.text(xlim[0]+0.2,ylim[1]*(twTloc-0.07*2),r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$",fontsize=fs-4)

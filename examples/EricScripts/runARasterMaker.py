@@ -1,5 +1,5 @@
 
-def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence):
+def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence,csvPWD):
   import numpy as np
   from math import pi, asin, sin
   from datetime import datetime
@@ -48,7 +48,6 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   dt =  np.mean(np.diff(t)) #[s]
   delta_t = np.linspace(0,dt,n_tii) #[s]
   z = -10 #[mm] for z location to generate protons at in MiniScatter
-  picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
   if beamType == "ESS": #assume 570MeV
     covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/(betaX/mm)]]) #[mm]
@@ -104,10 +103,9 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   #if file found, don't make again!
   TwissDepC = "TwissDependence/CSVs/"
   rAmplDepC = "rAmplDependence/CSVs/"
-  if dependence == "Twiss":
-    outname = picPWD + TwissDepC + name
-  elif dependence == "RasterAmplitude":
-    outname = picPWD + rAmplDepC + name
+  #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+  csvPWD = "/scratch/ericdf/Scratch/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  outname = csvPWD + name
   from os.path import isfile
   if isfile(outname+".csv"):
     print("Found CSV, continuing.")

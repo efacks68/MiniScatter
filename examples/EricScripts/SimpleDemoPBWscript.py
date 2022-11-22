@@ -21,12 +21,12 @@ materials = ["G4_Al"]
 thick=0 #new default
 N=1e5 #number of particles
 #Twiss updated for PBW 4.4m before Target
-betax = 1006.80 #[m] 
-alphx = -60.44
-nemtx = 0.11315 #[mm-mrad]
-betay = 129.72 #[m]
-alphy = -7.72
-nemty = 0.12155 #[mm-mrad]
+betaX = 1006.80 #[m] 
+alphX = -60.44
+nemtX = 0.11315 #[mm-mrad]
+betaY = 129.72 #[m]
+alphY = -7.72
+nemtY = 0.12155 #[mm-mrad]
 ifplot=False #for plotting the 3 graphs per material
 engplot = False
 energy = 570 #[MeV]
@@ -48,19 +48,16 @@ parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculat
 parser.add_argument("--PBIP",action="store_true",default=False)
 parser.add_argument("--savePics",action="store_true",default=False)
 args = parser.parse_args()
-print(args)
+#print(args)
 
 if args.l:
   loadParts=True
 if args.l != "":
   picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  beamFile = picPWD + args.l
+  csvPWD = "/scratch/ericdf/Scratch/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  beamFile = csvPWD + args.l
   if not os.path.isfile(beamFile+".csv"):
-    pic2PWD = picPWD + "TwissDependence/CSVs/"
-    beamFile = pic2PWD + args.l
-    if not os.path.isfile(beamFile+".csv"):
-      pic3PWD = picPWD + "rAmplDependence/CSVs/"
-      beamFile = pic3PWD + args.l
+    raise Exception("CSV not found!")
 print(beamFile)
 
 thick = args.t
@@ -75,52 +72,74 @@ rasterYAmplitude0 = 18.37 #[mm]
 
 if len(sys.argv) < 2: #if no extra inputs, ask for them
   N = float(input("How many particles would you like to run? "))
-  betax = float(input("What is the Beta in X? "))
-  alphx = float(input("What is the Alpha in X? "))
-  nemtx = float(input("What is the Emittance in X? "))
-  betay = float(input("What is the Beta in Y? "))
-  alphy = float(input("What is the Alpha in Y? "))
-  nemty = float(input("What is the Emittance in Y? "))
+  betaX = float(input("What is the Beta in X? "))
+  alphX = float(input("What is the Alpha in X? "))
+  nemtX = float(input("What is the Emittance in X? "))
+  betaY = float(input("What is the Beta in Y? "))
+  alphY = float(input("What is the Alpha in Y? "))
+  nemtY = float(input("What is the Emittance in Y? "))
   if input("Would you like to graph everything? Yes=y, No=Enter "):
     ifplot=True
 if args.beamType =="ESS": #auto profiles
   ifplot=False #for plotting the 3 graphs per material
   N=1e5 #number of particles
-  betax = 941.25 #[m] original:1000m
-  alphx = -58.81 #original: -50
-  nemtx = 0.11315 #[mm-mrad]
-  betay = 120.03 #[m] original: 200m
-  alphy = -7.46 #original: -7
-  nemty = 0.12155 #[mm-mrad]
+  betaX = 941.25 #[m] original:1000m
+  alphX = -58.81 #original: -50
+  nemtX = 0.11315 #[mm-mrad]
+  betaY = 120.03 #[m] original: 200m
+  alphY = -7.46 #original: -7
+  nemtY = 0.12155 #[mm-mrad]
 elif args.beamType == "pencil": #for a reasonable pencil beam
   N=1e5 #number of particles
-  betax = 1e-2 #[m]
-  alphx = 0
-  nemtx = 1e-4 #[mm-mrad]
-  betay = 1e-2 #[m]
-  alphy = 0
-  nemty = 1e-4 #[mm-mrad]
+  betaX = 1e-2 #[m]
+  alphX = 0
+  nemtX = 1e-4 #[mm-mrad]
+  betaY = 1e-2 #[m]
+  alphY = 0
+  nemtY = 1e-4 #[mm-mrad]
   ifplot=False
 elif args.beamType == "Yngve":
-  betax = 144.15027172522036
-  alphx = -8.184063058768368
-  nemtx = 0.3519001
-  betay = 88.04934327630778
-  alphy = -1.0382192928960423
-  nemty = 0.3651098
+  betaX = 144.15027172522036
+  alphX = -8.184063058768368
+  nemtX = 0.3519001
+  betaY = 88.04934327630778
+  alphY = -1.0382192928960423
+  nemtY = 0.3651098
 if args.twiss: #input variables are inputs
   N = float(sys.argv[1])
-  betax = float(sys.argv[2]) #[m]
-  alphx = float(sys.argv[3])
-  nemtx = float(sys.argv[4]) #[um-mrad]
-  betay = float(sys.argv[5]) #[m]
-  alphy = float(sys.argv[6])
-  nemty = float(sys.argv[7]) #[um-mrad]
+  betaX = float(sys.argv[2]) #[m]
+  alphX = float(sys.argv[3])
+  nemtX = float(sys.argv[4]) #[um-mrad]
+  betaY = float(sys.argv[5]) #[m]
+  alphY = float(sys.argv[6])
+  nemtY = float(sys.argv[7]) #[um-mrad]
   thick = float(sys.argv[8]) #[mm]
-
-print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
-Twiss = [betax,alphx,nemtx,betay,alphy,nemty]
+Twiss = [betaX,alphX,nemtX,betaY,alphY,nemtY]
 physicsList = "QGSP_BERT_EMZ"
+#For sending a non-standard Twiss or RA in, find automatically
+import re
+if re.search("beta",beamFile):
+  if re.search("RMamp",beamFile):
+    betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",beamFile)[0])
+    betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",beamFile)[0])
+    if betaX == 144:
+      Twiss = [144.15027172522036,-8.184063058768368,0.3519001,88.04934327630778,-1.0382192928960423,0.3651098] #smallest from Yngve
+    elif betaX == 1007:
+      Twiss = [1006.80,-60.44,0.11315,129.72,-7.72,0.12155] #from my OpenXAL calculation
+    elif betaX == 50:
+      Twiss = [50,-10,0.5,30,-5,0.5]
+    elif betaX == 0:
+      Twiss = [0.15,0,0.0001,0.15,0,0.0001]
+    else:
+      raise Exception("Twiss not identified! Will print wrong values")
+
+    if re.search("(mm_N)",beamFile):
+      rasterYAmplitude0 = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(mm_N)))",beamFile)[0])
+      rasterXAmplitude0 = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(,([-+]?[0-9]*\.?[0-9]*)mm_N)))",beamFile)[0])
+  #print(betaX,betaY,rasterXAmplitude0,rasterYAmplitude0)
+
+print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),Twiss,rasterXAmplitude0,rasterYAmplitude0)
+
 
 mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
 #print(mag)
@@ -150,8 +169,8 @@ sigmatexty = r"$\sigma_y$:"
 
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
-  #savename,xtarg,ytarg,targPOutBox= simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0):
-  savename,xtarg,ytarg,targPOutBox = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence)
+  #savename,xtarg,ytarg,targPOutBox= simulation( N,material,    beam,thick,nemtX,nemtY,alphX,alphY,betaX,betaY,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0):
+  savename,xtarg,ytarg,targPOutBox,Imax, coreMeanI = simulation( N,material,"proton",thick,nemtX,nemtY,alphX,alphY,betaX,betaY,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence)
   if not matplot:
     continue
   #returns the savename and the x and y distributions of particle positions 
@@ -273,8 +292,8 @@ if matplot:
   s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
   s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
   fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
-          rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtx,betax,alphx) +
-      rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemty,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
+          rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtX,betaX,alphX) +
+      rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemtY,betaY,alphY),fontsize=18,y=0.99) #fontweight="bold",
   #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
   #Can date stamp the multi plot for easier tracking of changes, if necessary

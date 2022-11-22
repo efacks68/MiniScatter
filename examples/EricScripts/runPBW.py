@@ -50,7 +50,7 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
     nemty = 1e-4 #[mm-mrad]
     ifplot=False
 
-  print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
+  #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
 
   mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
   #print(mag)
@@ -81,7 +81,7 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
   for material in materials:
     #function for preparing the run and running miniScatterDriver functions
     #savename,xtarg,ytarg,Img= simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
-    savename,xtarg,ytarg,targPOutBox = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
     if not matplot:
       continue
     #returns the savename and the x and y distributions of particle positions 
@@ -216,4 +216,4 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
     plt.close() #be sure to close the plot
   print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
 
-  return targPOutBox
+  return targPOutBox, targImax, targCoreMeanI

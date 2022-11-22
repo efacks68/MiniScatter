@@ -235,7 +235,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #copy so it is if running multiple scans in a Jupyter notebook
   simSetup_simple1 = baseSimSetup.copy()
 
-  print(outname,"\n")
+  #print(outname,"\n")
   simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
 
   #Variables for automation
@@ -247,7 +247,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #Run simulation or load old simulation root file!
   #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
   miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
-  print("Simulation Finished",datetime.now().strftime("%H-%M-%S"))
+  #print("Simulation Finished",datetime.now().strftime("%H-%M-%S"))
 
   if initDistributions:
     #If one wants to use the initial spread
@@ -530,13 +530,13 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
-  print(thick)
-  print("make plots",datetime.now().strftime("%H-%M-%S"))
+  #print(thick)
+  #print("make plots",datetime.now().strftime("%H-%M-%S"))
   if loadParts:
     from plotFit import plot1DRaster,rasterImage
     #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    targPOutBox = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+    targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
     if initDistributions:
       #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
       initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
@@ -552,4 +552,4 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
   #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
-  return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, targPOutBox #filter by PDG only
+  return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, targPOutBox, targImax, targCoreMeanI #filter by PDG only
