@@ -30,7 +30,7 @@ beamType    = "ESS"
 energy      = 570 #[MeV]
 graph       = False
 NperBunch   = 10
-nPulses     = 1e3
+nPulses     = 1e2
 envXatBPM94 = 0
 envYatBPM94 = 0
 edges       = False
@@ -88,16 +88,17 @@ elif args.ampl =="map":
   rYAmps = np.linspace(args.startY,args.eY,args.stepY)
   rXRange = args.eX-args.startX
   #print(start,end,step,"\n",rXAmps,"\n",rYAmps)
+  print("there are ",args.stepX*args.stepY,"points to plot. Expect that number of minutes.")
 
 
-POutBoxes = np.zeros([len(rXAmps),len(rYAmps)])
-Imaxes = np.zeros([len(rXAmps),len(rYAmps)])
-coreMeans = np.zeros([len(rXAmps),len(rYAmps)])
+POutBoxes = np.zeros([len(rYAmps),len(rXAmps)])
+Imaxes = np.zeros([len(rYAmps),len(rXAmps)])
+coreMeans = np.zeros([len(rYAmps),len(rXAmps)])
 
 #VacPOutBoxes = np.zeros(len(rXAmps))
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications
-csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/CSVs/"
+csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
 name = "RasterAmplDependence_POutBox,Imax_bX{:.1f}m_R{:.1f},{:.1f}mm".format(Twiss[0],rXRange,args.eY-args.startY)
 if os.path.isfile(csvPWD+name+".csv"):
   print("Found data! Reading in!",name)
@@ -117,9 +118,9 @@ if os.path.isfile(csvPWD+name+".csv"):
       else:
         rXAmps[i-z] = row[0]
         rYAmps[j-z] = row[1]
-        POutBoxes[i-z][j-z] = row[2]
-        Imaxes[i-z][j-z] = row[3]
-        coreMeans[i-z][j-z] = row[4]
+        POutBoxes[j-z][i-z] = row[2]
+        Imaxes[j-z][i-z] = row[3]
+        coreMeans[j-z][i-z] = row[4]
         #VacPOutBoxes[line_count-z] = row[3]
         #print(i-z,j-z,rXAmps[i-z],rYAmps[j-z],POutBoxes[i-z][j-z])
         j += 1
@@ -135,39 +136,40 @@ else:
       #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
       rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rXAmps[i],rYAmps[j],dependence,csvPWD)
       #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-      POutBoxes[i][j], Imaxes[i][j], coreMeans[i][j] = runPBW(energy,rasterBeamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[j],dependence)
+      POutBoxes[j][i], Imaxes[j][i], coreMeans[j][i] = runPBW(energy,rasterBeamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[j],dependence)
       #Store % value for plotting
       #Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
       #noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
       #VacPOutBoxes[i] = noPBWPOutBox
-    #print("time elapsed",datetime.now()-origin)
+    print("time elapsed",datetime.now()-origin)
 
        #Save values for future quick use
-      if args.saveCsv:
-        print("Writing CSV")
-        with open(csvPWD+name+".csv",mode = 'a') as csv_file:
-          csv_writer = csv.writer(csv_file,delimiter = ',')
-          csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","IMaxes [uA/mm2]","CoreIMeans [uA/mm2]"])
-          #for i in range(len(rXAmps)):
-          #  for j in range(len(rYAmps)):
-          csv_writer.writerow([rXAmps[i],rYAmps[j],POutBoxes[i][j],Imaxes[i][j],coreMeans[i][j]])#,VacPOutBoxes[i]])
-          csv_file.close()
-          print("CSV write",csvPWD+name)
+  if args.saveCsv:
+    print("Writing CSV")
+    with open(csvPWD+name+".csv",mode = 'w') as csv_file:
+      csv_writer = csv.writer(csv_file,delimiter = ',')
+      csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","IMaxes [uA/mm2]","CoreIMeans [uA/mm2]"])
+      for i in range(len(rXAmps)):
+        for j in range(len(rYAmps)):
+          csv_writer.writerow([rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i],coreMeans[j][i]])#,VacPOutBoxes[i]])
+      csv_file.close()
+      print("CSV written",csvPWD+name)
   print("time elapsed",datetime.now()-origin)
 
-#for i in range(len(rXAmps)):
-#  for j in range(len(rYAmps)):
-#    print(rXAmps[i],rYAmps[j],POutBoxes[i][j])#,VacPOutBoxes[i])
+for i in range(len(rXAmps)):
+  for j in range(len(rYAmps)):
+    print(rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i])
 
 #Plot for parameter search analysis
 fs=14
 minim = POutBoxes.min()+0.01
 maxim = POutBoxes.max()*1.1
-print(minim,maxim)
+plotRange = maxim-minim
+print(minim,maxim,plotRange)
 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
 plt.close()
 plt.clf()
-Y, X = np.meshgrid(rXAmps,rYAmps)
+X,Y = np.meshgrid(rXAmps,rYAmps)
 fig,(ax1,ax2) = plt.subplots(1,2,figsize=(15,6))
 plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
 from matplotlib.colors import LogNorm
@@ -175,29 +177,31 @@ c = ax1.pcolor(X,Y,POutBoxes,norm=LogNorm(vmin=minim, vmax=maxim),shading='auto'
 ax1.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
 ax1.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
 ax1.set_title("Rastered Beam % Outside Box on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
-cbar = fig.colorbar(c, ax=ax1,pad=0.01)
-cbarVals  = [minim,minim*1e1,minim*5e1,maxim] #make array for color bar values
+cbarVals  = [minim,minim+plotRange*0.1,minim+plotRange*0.4,minim+plotRange*0.7,maxim] #make array for color bar values
 cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
-              "{:.1f}".format(cbarVals[3])]#,"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+              "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
 cbarLabel = "% Outside Box"
-cbar.set_label(cbarLabel,labelpad=2)
-cbar.set_ticks(cbarVals)
+cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=cbarVals)
+cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
+#cbar.set_ticks(cbarVals)
 cbar.set_ticklabels(cbarLabels)
 
 ##Max I Plot
-minimMax = 0.3#Imaxes.min()*0.99
-maximMax = 1#Imaxes.max()*1.01
+minimMax = Imaxes.min()*0.9999
+maximMax = Imaxes.max()*1.0001
+plotRangeMax = maximMax-minimMax
 print(Imaxes.min(),Imaxes.max())
 d = ax2.pcolor(X,Y,Imaxes,norm=LogNorm(vmin=minimMax, vmax=maximMax),shading='auto',cmap='viridis')
 ax2.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
 ax2.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
 ax2.set_title("Peak Current Density on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
-cbar2 = fig.colorbar(d, ax=ax2,pad=0.01)
-cbarVals2  = [minimMax,minimMax*2,minimMax*6,maximMax] #make array for color bar values
-cbarLabels2 = ["{:.1f}".format(cbarVals2[0]),"{:.1f}".format(cbarVals2[1]),"{:.1f}".format(cbarVals2[2]),"{:.1f}".format(cbarVals2[3])]#,"{:.1f}".format(cbarVals2[4])]#,"{:.1f}".format(cbarVals2[5])] #make labels of Value
-cbarLabel2 = r"Current Density [$\mu$ A/mm$^2$]"
-cbar2.set_label(cbarLabel2,labelpad=2)
-cbar2.set_ticks(cbarVals2)
+cbarVals2  = [minimMax,minimMax+plotRangeMax*0.25,minimMax+plotRangeMax*0.5,minimMax+plotRangeMax*0.75,maximMax] #make array for color bar values
+cbarLabels2 = ["{:.1f}".format(cbarVals2[0]),"{:.1f}".format(cbarVals2[1]),"{:.1f}".format(cbarVals2[2]),
+              "{:.1f}".format(cbarVals2[3]),"{:.1f}".format(cbarVals2[4])]
+cbarLabel2 = r"Current Density [$\mu$A/cm$^2$]"
+cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=cbarVals2)
+cbar2.set_label(cbarLabel2,labelpad=2,fontsize=fs-2)
+#cbar2.set_ticks(cbarVals2)
 cbar2.set_ticklabels(cbarLabels2)
 ##Set up texts to include with relevant info
 #xlim = plt.xlim()
