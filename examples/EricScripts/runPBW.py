@@ -28,6 +28,7 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
     materials = ["G4_Al"]
   elif thick == 0.1:
     materials = ["G4_Galactic"]
+  boxes = [0]#,0.125,0.25,0.375] #make an args for 24.11
 
   #different 
   if beamType =="ESS": #auto profiles
@@ -80,8 +81,8 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
 
   for material in materials:
     #function for preparing the run and running miniScatterDriver functions
-    #savename,xtarg,ytarg,Img= simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
-    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+    #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
+    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
     if not matplot:
       continue
     #returns the savename and the x and y distributions of particle positions 

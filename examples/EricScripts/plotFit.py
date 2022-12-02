@@ -587,7 +587,7 @@ def numLines(filename):
   return N
 
 
-def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
+def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
   #import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
@@ -607,55 +607,79 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
 
   (Img, xax, yax) = converter(histogram2D) #convert from TH2D to numpy map
 
-  #99% box
-  width = 160
-  height = 64
-  a=1.
-  boxLLx = round(-width/2) #80
-  boxLLy = round(-height/2) #32
-
+  #99% box #for multiple boxes, use arrays
   #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
   #  np.ndenumerate scales the best of the methods compared to 10^4 elements.
-  for idx, val in np.ndenumerate(xax):
-    if val == boxLLx:
-      boxLInd = idx[0] #420
-    if val == boxLLx+width:
-      boxRInd = idx[0] #580
-  for idx, val in np.ndenumerate(yax):
-    if val == boxLLy:
-      boxBInd = idx[0] #468
-    if val == boxLLy+height:
-      boxTInd = idx[0] #532
-  #print("len(xax)",len(xax),"len(yax)",len(yax),"boxLLx",boxLLx,"boxLLy",boxLLy)
-  #print("boxLInd",boxLInd,"boxRInd",boxRInd,"boxBInd",boxBInd,"boxTInd",boxTInd)
-
   #Find % outside the 99% Box area
-  core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
   sumTot = np.sum(Img)+1 #so no 'divide by 0 errors'
-  sumCore = np.sum(core)+1
-  Pprotons = sumTot / parts * 100
-  pOutsideBox = (sumTot-sumCore)/sumTot*100
+  Pprotons2 = sumTot / parts * 100
   #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
   #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
+  widths = np.zeros(len(boxes))
+  heights = np.zeros(len(boxes))
+  pLargers = np.zeros(len(boxes))
+  widths[0] = 160
+  heights[0] = 64
+  boxLLxs = np.zeros(len(boxes))
+  boxLLys = np.zeros(len(boxes))
+  #boxLInds = np.zeros(len(boxes))
+  #boxRInds = np.zeros(len(boxes))
+  #boxTInds = np.zeros(len(boxes))
+  #boxBInds = np.zeros(len(boxes))
+  #sumCores = np.zeros(len(boxes))
+  pOutsideBoxes = np.zeros(len(boxes))
+  Pprotons = sumTot / parts * 100 #this is constant
+  cols = ["r","cyan","gold","lime","k"]
+  for i in range(len(boxes)): 
+    pLargers[i] = boxes[i]
+    widths[i] = round(widths[0]*(1+pLargers[i]) / 2) * 2
+    heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2
+    boxLLxs[i] = round(-widths[i]/2 / 2) * 2 #-90
+    boxLLys[i] = round(-heights[i]/2 / 2) * 2 #-80
+    #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i])
 
-  #Normalize to full current, see Cyrille's MatLab scripts...
+    for idx, val in np.ndenumerate(xax):
+      if int(val) == boxLLxs[i]:
+        boxLInd = idx[0] #455
+      if int(val) == boxLLxs[i]+widths[i]:
+        boxRInd = idx[0] #545
+    for idx, val in np.ndenumerate(yax):
+      if int(val) == boxLLys[i]:
+        boxBInd = idx[0] #460
+      if int(val) == boxLLys[i]+heights[i]:
+        boxTInd = idx[0] #540
+    if i == 0: #for base box case
+      boxBIndC = boxBInd #set to use later
+      boxTIndC = boxTInd
+      boxLIndC = boxLInd
+      boxRIndC = boxRInd
+    #Find % outside the 99% Box area
+    core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+    sumCore = np.sum(core)+1
+    pOutsideBoxes[i] = (sumTot-sumCore)/sumTot*100
+    #print(sumCore,pOutsideBoxes[i])
+
+
+  #Normalize to full current, see 
   I_pulse = 62.5*1e-3 #[A]
-  t_pulse = 2.86*1e-3 #[s]
-  e = 1.602e-19 #[C]
-  Nphys = I_pulse * t_pulse / e #[protons]
-  R = Nphys / parts
-  C = R * e / t_pulse / 1e-2 * 1e6 #[uA/cm^2], /mm^2->/cm^2 = /1e-2, A->uA = 1e6
+  #t_pulse = 2.86*1e-3 #[s]
+  #e = 1.602e-19 #[C]
+  #Nphys = I_pulse * t_pulse / e #[protons] #can skip the Nphys since e and t_pulse get canceled out
+  #R = Nphys / parts 
+  #C = R * e / t_pulse / 1e-2 * 1e6 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
+  C = I_pulse / parts / 1e-2 * 1e6 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
   Protmax = Img.max() #protons/mm^2
   for i in range(len(Img)):
     for j in range(len(Img[i])):
       Img[i][j] = Img[i][j] * C #[uA/cm^2]
   Imax = Img.max()
-  Imin = 0.5 * C #background (0 hits) will be un-colored
-  coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+  Imin = 0.9 * C #background (0 hits) will be un-colored
+  coreN = Img[boxBIndC:boxTIndC,boxLIndC:boxRIndC]
   coreImax = coreN.max() #[uA/cm^2]
   coreMeanI = np.mean(coreN)
-  print("Nphys",Nphys,"C",C,"Imax",Imax,"Imin",Imin,"coreMeanI",coreMeanI,"pOutsideBox",pOutsideBox)
+  print("C",C,"Proton max",Protmax,"Imax",Imax,"Imin",Imin,"coreMeanI",coreMeanI,"pOutsideBox",pOutsideBoxes)
 
+  #Flat Top Current density calculations: tbd
   #top=0
   #Itop = Imax * 0.7
   #for idx,val in np.ndenumerate(Img):
@@ -671,27 +695,27 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
     close() #make sure no prior plitting messes up
 
-    fig,ax = subplots()
+    fig,ax = subplots(dpi=150,figsize=(6.4,4.8),tight_layout=True)
     ax.set_xlim([-150,150]) #for close up of beam
     ax.set_ylim([-75,75])
     print(datetime.now().strftime("%H-%M-%S"))
     
     #Set maximum value depending on the maximum current density
-    from math import floor,log10,ceil
+    from math import log10,ceil
     a = 10
     maxim = ceil(Imax / a) * a
-    minMag= floor(log10(Imin))
+    minMag = ceil(log10(Imin))
     minim = 10**minMag
-    cbarVals  = [minim,minim*1e1,minim*1e2,minim*5e2,maxim] #make array for color bar values
-    cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
-                  "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+    cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
+    cbarLabels = ["{:.0f}".format(cbarVals[0]),"{:.0f}".format(cbarVals[1]),"{:.0f}".format(cbarVals[2]),
+                  "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
     cbarLabel = r"$\mu A / cm^2$"
     #print("maxim",maxim,minim)
     #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
     #Use pcolor to show density map, use log scale
     c = ax.pcolor(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
-    lw=2
+    lw=1
     col='k'
     fs=14
     wide=True
@@ -700,7 +724,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       ax.set_xlim([-450,450])
       ax.set_ylim([-500,500])
       lw=1
-    
+
     #Set Plot Properties
     ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
     ax.set_xlabel("Horizontal [mm]")
@@ -715,30 +739,36 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       xlim = ax.get_xlim()
       ylim = ax.get_ylim()
       #Show 99% box
-      ax.add_patch(Rectangle((boxLLx,boxLLy),width,height,linewidth=lw,edgecolor='r',fill=False))
+      ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
       
       #Display beam characteristics
-      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+"% Outside % Box", color=col, fontsize = fs-2, fontweight='bold')
+      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold')
       ax.text(xlim[1]*0.97, ylim[0]*0.95, physList, fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.3f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-      #ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.3f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.0f}, {:.0f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+      ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
       ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$ = "+"{:.3f}, {:.3f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$ = "+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$ = "+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
-    tight_layout()
+      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.2f}, {:.2f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
+      #if len(boxes) > 1:
+      #  import matplotlib.patheffects as path_effects
+      for i in range(1,len(boxes)): #make multiple boxes
+        ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
+        ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), color=cols[i], fontweight='bold',fontsize = fs-2)#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
     dt = datetime.now()
-    from os.path import isfile
+    #from os.path import isfile
     #if isfile(name+"*.png"):
     #  print("already present")
     #else:
     savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
+    close(fig)
+    print(name+"_"+dt.strftime("%H-%M-%S")+".png")
 
   dt = datetime.now()
   #print(dt-start)
 
-  return pOutsideBox, Imax, coreMeanI
+  return pOutsideBoxes[0], Imax, coreMeanI
 
 def converter(hIn):
     import ROOT
@@ -774,3 +804,6 @@ def converter(hIn):
 
     #print("Coverted in",datetime.now() - start)
     return (hOut,xax,yax)
+
+
+#add function to check if ROOT file is complete, else delete and make new

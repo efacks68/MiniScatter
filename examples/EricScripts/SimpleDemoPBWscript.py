@@ -36,6 +36,7 @@ loadParts = False
 beamFile=""
 matplot = False
 dependence = "RasterAmplitude"
+boxes = [0]#,0.125,0.25,0.375] #make an args for 24.11
 
 #Set up Argument Parsing
 parser = argparse.ArgumentParser()
@@ -54,7 +55,7 @@ if args.l:
   loadParts=True
 if args.l != "":
   picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  csvPWD = "/scratch/ericdf/Scratch/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch2 to save my disk space!
   beamFile = csvPWD + args.l
   if not os.path.isfile(beamFile+".csv"):
     raise Exception("CSV not found!")
@@ -170,7 +171,7 @@ sigmatexty = r"$\sigma_y$:"
 for material in materials:
   #function for preparing the run and running miniScatterDriver functions
   #savename,xtarg,ytarg,targPOutBox= simulation( N,material,    beam,thick,nemtX,nemtY,alphX,alphY,betaX,betaY,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0):
-  savename,xtarg,ytarg,targPOutBox,Imax, coreMeanI = simulation( N,material,"proton",thick,nemtX,nemtY,alphX,alphY,betaX,betaY,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence)
+  savename,xtarg,ytarg,targPOutBox,Imax, coreMeanI = simulation( N,material,"proton",thick,nemtX,nemtY,alphX,alphY,betaX,betaY,energy,zoff,args.PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,args.savePics,physicsList,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence,boxes)
   if not matplot:
     continue
   #returns the savename and the x and y distributions of particle positions 

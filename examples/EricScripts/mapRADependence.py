@@ -203,6 +203,10 @@ cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=cbarVals2)
 cbar2.set_label(cbarLabel2,labelpad=2,fontsize=fs-2)
 #cbar2.set_ticks(cbarVals2)
 cbar2.set_ticklabels(cbarLabels2)
+from math import floor,ceil
+ax1.hlines(rasterYAmplitude0,floor(rasterXAmplitude0*0.5),ceil(rasterXAmplitude0*0.5),color='m')
+ax1.vlines(rasterXAmplitude0*0.5,floor(rasterYAmplitude0),ceil(rasterYAmplitude0),color='m')
+ax1.text(rasterXAmplitude0*0.5+1,rasterYAmplitude0+1,"Nominal Y, Half Nominal X")
 ##Set up texts to include with relevant info
 #xlim = plt.xlim()
 #ylim = plt.ylim()

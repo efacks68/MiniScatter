@@ -9,11 +9,9 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
+def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
   import numpy as np
-  import ROOT
-  import os
-  import sys
+  import ROOT, os, sys
   from plotFit import calcTwiss
   from datetime import datetime
 
@@ -103,7 +101,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   Rcut = 1000.0
   Engcut = 0.9
   baseSimSetup["WORLDSIZE"] = Rcut #[mm] Make the world wider for seeing where particles go
-  baseSimSetup["POSLIM"] = 400 #XY histogram Position Limit for a few, check RootFileWriter.cc
+  baseSimSetup["POSLIM"] = Rcut #XY histogram Position Limit for a few, check RootFileWriter.cc
   #Beam Angle
   #Defined by the beam size at BPM94 (TBD) compared to size at BPM93 (~0)
   if beamXAngle != 0 or beamYAngle != 0:
@@ -204,7 +202,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
 
     if loadParts:
       #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
-      outname = beamFile+"_run"
+      outname = beamFile+"_runW"
     else:
       outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,thick,baseSimSetup["N"])
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
@@ -229,8 +227,19 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     outname = re.sub(".+(?=(PBW_))","",outname)
     #print("removed",outname)
 
-  baseSimSetup["OUTFOLDER"] = os.path.join("/scratch/ericdf/Scratch/PBWScatter/") 
-  #put in Scratch of HepLab0# for faster processing, as per Kyrre
+  #Find which folder root file is in
+  if os.path.isfile("/scratch2/ericdf/PBWScatter/"+outname+".root"):
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
+  elif os.path.isfile("/scratch2/ericdf/PBWScatter/heplab01/"+outname+".root"):
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/heplab01/")
+  elif os.path.isfile("/scratch2/ericdf/PBWScatter/heplab04/"+outname+".root"):
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/heplab04/")
+  elif os.path.isfile("/scratch2/ericdf/PBWScatter/old/"+outname+".root"):
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/old/")
+  else:
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
+  print(baseSimSetup["OUTFOLDER"])
+  #put in Scratch2 of tensor for faster processing, as per Kyrre
 
   #copy so it is if running multiple scans in a Jupyter notebook
   simSetup_simple1 = baseSimSetup.copy()
@@ -536,7 +545,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     from plotFit import plot1DRaster,rasterImage
     #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+    targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
     if initDistributions:
       #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
       initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)

@@ -101,10 +101,8 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
     name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
   
   #if file found, don't make again!
-  TwissDepC = "TwissDependence/CSVs/"
-  rAmplDepC = "rAmplDependence/CSVs/"
   #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  csvPWD = "/scratch/ericdf/Scratch/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
   outname = csvPWD + name
   from os.path import isfile
   if isfile(outname+".csv"):
