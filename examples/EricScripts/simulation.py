@@ -9,7 +9,7 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
+def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
   import numpy as np
   import ROOT, os, sys
   from plotFit import calcTwiss
@@ -36,10 +36,6 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   ummrad = um*1e-3
   gamma_rel = 1 + energy/partA #from PrintTwissParameters
   beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
-
-  #Get rid of Normalized Emittance!
-  Igemtx = Inemtx/(beta_rel*gamma_rel)
-  Igemty = Inemty/(beta_rel*gamma_rel)
 
   #Setup MiniScatter -- modify the path to where you built MiniScatter!
   MiniScatter_path="../../MiniScatter/build/."
@@ -74,6 +70,15 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   baseSimSetup["N"]         = N #need N regardless of beam origin
   baseSimSetup["ZOFFSET"]   = zoff
 
+  #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
+  # 3 variables = symmetric, 6 variables = asymetric
+  EPSX   = Twiss[0] #[um]
+  BETAX  = Twiss[1] #[m]
+  ALPHAX = Twiss[2] #[mm-mrad]
+  EPSY   = Twiss[3] #[um]
+  BETAY  = Twiss[4] #[m]
+  ALPHAY = Twiss[5] #[mm-mrad]
+
   #For loading particles
   if loadParts == True:
     #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
@@ -86,16 +91,11 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
   else:
     baseSimSetup["BEAM"]    = beam
     baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
+    baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY) #only for without "--beamFile"
 
-    #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
-    # 3 variables = symmetric, 6 variables = asymetric
-    EPSX   = Inemtx #[um]
-    BETAX  = Ibetax #[m]
-    ALPHAX = Ialphx #[mm-mrad]
-    EPSY   = Inemty #[um]
-    BETAY  = Ibetay #[m]
-    ALPHAY = Ialphy #[mm-mrad]
-    baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY)
+  #Get rid of Normalized Emittance!
+  Igemtx = EPSX/(beta_rel*gamma_rel)
+  Igemty = EPSY/(beta_rel*gamma_rel)
 
   #Beam particle type
   Rcut = 1000.0
@@ -157,7 +157,7 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
       #print(name)
       outname = name + "_run"
     else:
-      outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Ibetax*1e3)
+      outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Twiss[1]*1e3)
 
   else:
     baseSimSetup["THICK"] = 0.0
@@ -201,12 +201,12 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
       baseSimSetup["MAGNET"].append(m2)
 
     if loadParts:
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,baseSimSetup["N"])
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,baseSimSetup["N"])
       outname = beamFile+"_runW"
     else:
-      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],Inemtx*1e3,Inemty*1e3,Ibetax,Ibetay,Ialphx,Ialphy,thick,baseSimSetup["N"])
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],Rcut)
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],Inemtx*1e3,baseSimSetup["N"],m1Len,m3Len)
+      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,thick,baseSimSetup["N"])
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
       #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
 
   if PBIP:
@@ -228,14 +228,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     #print("removed",outname)
 
   #Find which folder root file is in
-  if os.path.isfile("/scratch2/ericdf/PBWScatter/"+outname+".root"):
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
-  elif os.path.isfile("/scratch2/ericdf/PBWScatter/heplab01/"+outname+".root"):
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/heplab01/")
-  elif os.path.isfile("/scratch2/ericdf/PBWScatter/heplab04/"+outname+".root"):
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/heplab04/")
-  elif os.path.isfile("/scratch2/ericdf/PBWScatter/old/"+outname+".root"):
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/old/")
+  if Twiss[1] >= 1:
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/ESS/")
+  elif Twiss[1] < 1:
+    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/pencil/")
   else:
     baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
   print(baseSimSetup["OUTFOLDER"])
@@ -460,10 +456,10 @@ def simulation(N,material,beam,thick,Inemtx,Inemty,Ialphx,Ialphy,Ibetax,Ibetay,e
     ##If magnet, use multiple scattering layers instead of averaging!
     from plotFit import plotTwissFit,calcEq8,calcEq16
     #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-    TwissIx   = [Ibetax,Ialphx,Igemtx*um,((1+Ialphx*Ialphx)/Ibetax)] #Initial Twiss
-    TwissIy   = [Ibetay,Ialphy,Igemty*um,((1+Ialphy*Ialphy)/Ibetay)]
-    PBWTwx = [Ibetax,Ialphx,Inemtx]
-    PBWTwy = [Ibetay,Ialphy,Inemty]
+    TwissIx   = [BETAX,ALPHAX,Igemtx*um,((1+ALPHAX*ALPHAX)/BETAX)] #Initial Twiss
+    TwissIy   = [BETAY,ALPHAY,Igemty*um,((1+ALPHAY*ALPHAY)/BETAY)]
+    PBWTwx = [BETAX,ALPHAX,EPSX]
+    PBWTwy = [BETAY,ALPHAY,EPSY]
 
 
     ##Highland Equation Radiation Length Calculation

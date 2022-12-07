@@ -10,12 +10,12 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   mm = 1e-3
 
   #Twiss from twissDependence script
-  betaX = Twiss[0] #[m]
-  alphX = Twiss[1]
-  nemtX = Twiss[2] #[mm-mrad]
-  betaY = Twiss[3] #[m]
-  alphY = Twiss[4]
-  nemtY = Twiss[5] #[mm-mrad]
+  nemtX = Twiss[0] #[mm-mrad]
+  betaX = Twiss[1] #[m]
+  alphX = Twiss[2]
+  nemtY = Twiss[3] #[mm-mrad]
+  betaY = Twiss[4] #[m]
+  alphY = Twiss[5]
   #Calculate Geometric Emittance for Covariance Matrix
   partA = 938.27209 #[MeV/c2]
   partZ = 1
@@ -92,7 +92,7 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
 
   #Pick name based on beam
   if beamType == "ESS":
-    name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)#+dt.strftime("%H-%M-%S")
+    name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)#+dt.strftime("%H-%M-%S")
   elif beamType == "pencil":
     name = "PBW_{:.0f}MeV_pencilBeam_RMampl{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   if envXatBPM94 != 0:

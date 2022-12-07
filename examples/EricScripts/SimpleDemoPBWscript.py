@@ -42,8 +42,8 @@ boxes = [0]#,0.125,0.25,0.375] #make an args for 24.11
 parser = argparse.ArgumentParser()
 beam = parser.add_mutually_exclusive_group()
 beam.add_argument("--beamType",type=str)
-parser.add_argument("--l",type=str,help="Load Particles or not")
-parser.add_argument("--t",type=float,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
+parser.add_argument("--l",type=str,help="Load Particles or not",default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
+parser.add_argument("--t",type=float,default=0,help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
 parser.add_argument("--twiss",type=float,nargs=9,help="N particles,BetaX,AlphX,NemtX,BetaY,AlphY,NemtY,Thickness")
 parser.add_argument("--angle",type=float,default=0,help="Beam Angle, as calculated and used in aRasterMaker.py")
 parser.add_argument("--PBIP",action="store_true",default=False)
@@ -71,7 +71,7 @@ beamYAngle = 0
 rasterXAmplitude0 = 54.65 #[mm]
 rasterYAmplitude0 = 18.37 #[mm]
 
-if len(sys.argv) < 2: #if no extra inputs, ask for them
+if len(sys.argv) < 2: #if no extra inputs, ask for them #2.12.22 - need to get around this somehow
   N = float(input("How many particles would you like to run? "))
   betaX = float(input("What is the Beta in X? "))
   alphX = float(input("What is the Alpha in X? "))

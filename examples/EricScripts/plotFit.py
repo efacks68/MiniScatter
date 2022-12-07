@@ -677,15 +677,19 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   coreN = Img[boxBIndC:boxTIndC,boxLIndC:boxRIndC]
   coreImax = coreN.max() #[uA/cm^2]
   coreMeanI = np.mean(coreN)
-  print("C",C,"Proton max",Protmax,"Imax",Imax,"Imin",Imin,"coreMeanI",coreMeanI,"pOutsideBox",pOutsideBoxes)
+  print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI),pOutsideBoxes)
 
   #Flat Top Current density calculations: tbd
-  #top=0
-  #Itop = Imax * 0.7
-  #for idx,val in np.ndenumerate(Img):
-  #  if val >= Itop:
-  #    top += 1
-  #print("Current above",Itop,"in",top,"mm^2")
+  top=0
+  Itop = 50
+  idxMin = (1000,1000)
+  idxMax = (1,1)
+  for idx,val in np.ndenumerate(Img):
+    if val >= Itop:
+      top += 1
+      if idx < idxMin: idxMin = idx
+      if idx > idxMax: idxMax = idx
+  print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMax[0]-idxMin[0],"x",idxMax[1]-idxMin[1],"mm^2,","{:.2f} uA/cm^2 average".format(np.mean(Img[idxMin[1]:idxMax[1],idxMin[0]:idxMax[1]])))
 
   if savePics:
     from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
@@ -748,9 +752,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
       ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
       ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.2f}, {:.2f}".format(Twiss[2],Twiss[5])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[0], Twiss[3])+r"$_{[m]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[1],Twiss[4]), fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4)
+      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4)
       #if len(boxes) > 1:
       #  import matplotlib.patheffects as path_effects
       for i in range(1,len(boxes)): #make multiple boxes

@@ -30,26 +30,14 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
     materials = ["G4_Galactic"]
   boxes = [0]#,0.125,0.25,0.375] #make an args for 24.11
 
-  #different 
-  if beamType =="ESS": #auto profiles
-    ifplot=False #for plotting the 3 graphs per material
-    #N=1e5 #number of particles
-    #Twiss from BPM93 calculation
-    betax = 1006.80 #[m]
-    alphx = -60.44
-    nemtx = 0.11315 #[mm-mrad]
-    betay = 129.72 #[m]
-    alphy = -7.72
-    nemty = 0.12155 #[mm-mrad]
-  elif beamType == "pencil": #for a reasonable pencil beam
-    N=1e5 #number of particles
-    betax = 1e-2 #[m]
-    alphx = 0
-    nemtx = 1e-4 #[mm-mrad]
-    betay = 1e-2 #[m]
-    alphy = 0
-    nemty = 1e-4 #[mm-mrad]
-    ifplot=False
+  ifplot=False
+  #Twiss from twissDependence script
+  nemtX = Twiss[0] #[mm-mrad]
+  betaX = Twiss[1] #[m]
+  alphX = Twiss[2]
+  nemtY = Twiss[3] #[mm-mrad]
+  betaY = Twiss[3] #[m]
+  alphY = Twiss[5]
 
   #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
 
@@ -81,8 +69,8 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
 
   for material in materials:
     #function for preparing the run and running miniScatterDriver functions
-    #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
-    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,nemtx,nemty,alphx,alphy,betax,betay,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
+    #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
+    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
     if not matplot:
       continue
     #returns the savename and the x and y distributions of particle positions 
