@@ -25,6 +25,10 @@ parser.add_argument("--aX",type=float,default=54.65,help="RM X Amplitude")
 parser.add_argument("--aY",type=float,default=18.37,help="RM Y Amplitude")
 parser.add_argument("--edges",action="store_true",help="Only populate edges of raster?")
 parser.add_argument("--PBIP",action="store_true",default=False,help="Is PBIP present?")
+parser.add_argument("--text",action="store_false",default=True,help="Print texts on images, default is True, calling means no text")
+parser.add_argument("--xlim",type=float,default=450,help="+/- value for horizontal axis of output rastered image")
+parser.add_argument("--ylim",type=float,default=500,help="+/- value for vertical axis of output rastered image")
+parser.add_argument("--box",action="store_false",default=True,help="Turns off printed box")
 args = parser.parse_args()
 
 #Constants for running scripts
@@ -33,6 +37,7 @@ graph       = False
 physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
 dependence  = "Twiss"
 beamClass   = "ESS" #classification for runARasterMaker function
+options = {'text':args.text, 'box':args.box, 'wide':True, 'physList':physList, 'dependence':dependence, 'xlim':args.xlim, 'ylim':args.ylim }
 # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
 if args.beamType == 'Yngve': #smallest from Yngve
   Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
@@ -49,6 +54,6 @@ csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(beamClass,energy,graph,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,args.aX,args.aY,dependence,csvPWD)
 print(rasterBeamFile,beamXAngle,beamYAngle)
 #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-ImgPOutBox = runPBW(energy,rasterBeamFile,args.beamType,args.t,beamXAngle,beamYAngle,args.PBIP,args.savePics,physList,Twiss,args.aX,args.aY,dependence)
+ImgPOutBox = runPBW(energy,rasterBeamFile,args.beamType,args.t,beamXAngle,beamYAngle,args.PBIP,args.savePics,Twiss,args.aX,args.aY,options)
 
 print("Simulation took",datetime.now()-origin,"long")

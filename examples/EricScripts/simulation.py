@@ -9,7 +9,7 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
+def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
   import numpy as np
   import ROOT, os, sys
   from plotFit import calcTwiss
@@ -61,7 +61,7 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
 
   baseSimSetup = {}
   #baseSimSetup["PHYS"] = "QGSP_BERT__SS" #Use the __SS physics lists for thin foils due to checking each atom cross section
-  baseSimSetup["PHYS"]  = physList #better for scattering through 1mm sheets
+  baseSimSetup["PHYS"]  = options['physList'] #better for scattering through 1mm sheets
 
   #Particle Beam definitions
   #baseSimSetup["BEAM_RCUT"] = 3.0
@@ -212,9 +212,9 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
   if PBIP:
     outname = outname + "_PBIP"
 
-  if physList == "QGSP_BERT_EMZ":
+  if options['physList'] == "QGSP_BERT_EMZ":
     outname = outname + "_QBZ"
-  elif physList == "FTFP_BERT_EMZ":
+  elif options['physList'] == "FTFP_BERT_EMZ":
     outname = outname + "_FBZ"
 
   #Store the .root files in a subfolder from where this script is running,
@@ -541,10 +541,10 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
     from plotFit import plot1DRaster,rasterImage
     #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
+    targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
     if initDistributions:
       #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-      initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence)
+      initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
 
   else:
     if thick == 0.1:

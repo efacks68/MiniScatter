@@ -587,7 +587,7 @@ def numLines(filename):
   return N
 
 
-def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes):
+def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
   #import matplotlib.pyplot as plt
   import numpy as np
   from datetime import datetime
@@ -599,7 +599,6 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
   #rasterXAmplitude = 0
   #rasterYAmplitude = 0
   #maxim = 1500
-  #dependence = ""
   start= datetime.now()
   #print(start.strftime("%H-%M-%S"))
   from plotFit import converter
@@ -681,15 +680,19 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
 
   #Flat Top Current density calculations: tbd
   top=0
-  Itop = 50
-  idxMin = (1000,1000)
-  idxMax = (1,1)
+  Itop = 30
+  idxMinX = 1000
+  idxMaxX = 1
+  idxMinY = 1000
+  idxMaxY = 1
   for idx,val in np.ndenumerate(Img):
     if val >= Itop:
       top += 1
-      if idx < idxMin: idxMin = idx
-      if idx > idxMax: idxMax = idx
-  print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMax[0]-idxMin[0],"x",idxMax[1]-idxMin[1],"mm^2,","{:.2f} uA/cm^2 average".format(np.mean(Img[idxMin[1]:idxMax[1],idxMin[0]:idxMax[1]])))
+      if idx[0] < idxMinX: idxMinX = idx[0]
+      if idx[0] > idxMaxX: idxMaxX = idx[0]
+      if idx[1] < idxMinY: idxMinY = idx[1]
+      if idx[1] > idxMaxY: idxMaxY = idx[1]
+  print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.mean(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
 
   if savePics:
     from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
@@ -722,15 +725,14 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
     lw=1
     col='k'
     fs=14
-    wide=True
 
-    if wide:
-      ax.set_xlim([-450,450])
-      ax.set_ylim([-500,500])
+    ax.set_xlim([-options['xlim'],options['xlim']])
+    ax.set_ylim([-options['ylim'],options['ylim']])
+    if options['xlim'] > 250:
       lw=1
-
+    
     #Set Plot Properties
-    ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
+    ax.set_title("Proton Beam Distribution at "+position,fontsize=fs)
     ax.set_xlabel("Horizontal [mm]")
     ax.set_ylabel("Vertical [mm]")
     cbar = fig.colorbar(c, ax=ax,pad=0.01)#,ticks=v)
@@ -742,24 +744,30 @@ def rasterImage(savename,position,histogram2D,parts,savePics,physList,Twiss,rast
       name = name+"_2212only"
       xlim = ax.get_xlim()
       ylim = ax.get_ylim()
-      #Show 99% box
-      ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
       
-      #Display beam characteristics
-      ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold')
-      ax.text(xlim[1]*0.97, ylim[0]*0.95, physList, fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-      ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4)
-      ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4)
-      #if len(boxes) > 1:
-      #  import matplotlib.patheffects as path_effects
-      for i in range(1,len(boxes)): #make multiple boxes
-        ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
-        ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), color=cols[i], fontweight='bold',fontsize = fs-2)#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
+      #Show 99% box
+      if options['box']:
+        ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
+
+      if options['text']:
+        ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
+
+        #Display beam characteristics
+        ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold')
+        ax.text(xlim[1]*0.97, ylim[0]*0.95, options['physList'], fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
+        ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+        ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+        ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
+        ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
+        ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+        ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4)
+        ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4)
+
+        for i in range(1,len(boxes)): #make multiple boxes
+          ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
+          ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), color=cols[i], fontweight='bold',fontsize = fs-2)#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
+    
+    
     dt = datetime.now()
     #from os.path import isfile
     #if isfile(name+"*.png"):

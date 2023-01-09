@@ -3,7 +3,7 @@
 #5 Nov 2022
 #Uses the MiniScatter Python interface to model the ESS beam interaction with the PBW
 # 2nd layer for parameter searches
-def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence):
+def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options):
   #Code setup
   import numpy as np
   import matplotlib.pyplot as plt
@@ -70,7 +70,7 @@ def runPBW(energy,beamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,savePics,ph
   for material in materials:
     #function for preparing the run and running miniScatterDriver functions
     #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
-    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,physList,Twiss,rasterXAmplitude,rasterYAmplitude,dependence,boxes)
+    savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
     if not matplot:
       continue
     #returns the savename and the x and y distributions of particle positions 
