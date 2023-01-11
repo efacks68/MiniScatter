@@ -588,23 +588,15 @@ def numLines(filename):
 
 
 def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
-  #import matplotlib.pyplot as plt
   import numpy as np
-  from datetime import datetime
   name=savename+"_"+position+"Image"
 
-  #For modifying plot texts on a case by case basis
-  #Twiss = [1.5,0,0.18,1.6,0,0.18]
-  #parts = 1e5
-  #rasterXAmplitude = 0
-  #rasterYAmplitude = 0
-  #maxim = 1500
-  start= datetime.now()
+  from datetime import datetime
+  #start= datetime.now()
   #print(start.strftime("%H-%M-%S"))
   from plotFit import converter
-  #import ROOT
 
-  (Img, xax, yax) = converter(histogram2D) #convert from TH2D to numpy map
+  (Img, xax, yax) = converter(histogram2D,options['saveHist'],name) #convert from TH2D to numpy map
 
   #99% box #for multiple boxes, use arrays
   #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
@@ -621,11 +613,6 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   heights[0] = 64
   boxLLxs = np.zeros(len(boxes))
   boxLLys = np.zeros(len(boxes))
-  #boxLInds = np.zeros(len(boxes))
-  #boxRInds = np.zeros(len(boxes))
-  #boxTInds = np.zeros(len(boxes))
-  #boxBInds = np.zeros(len(boxes))
-  #sumCores = np.zeros(len(boxes))
   pOutsideBoxes = np.zeros(len(boxes))
   Pprotons = sumTot / parts * 100 #this is constant
   cols = ["r","cyan","gold","lime","k"]
@@ -661,11 +648,6 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
 
   #Normalize to full current, see 
   I_pulse = 62.5*1e-3 #[A]
-  #t_pulse = 2.86*1e-3 #[s]
-  #e = 1.602e-19 #[C]
-  #Nphys = I_pulse * t_pulse / e #[protons] #can skip the Nphys since e and t_pulse get canceled out
-  #R = Nphys / parts 
-  #C = R * e / t_pulse / 1e-2 * 1e6 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
   C = I_pulse / parts / 1e-2 * 1e6 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
   Protmax = Img.max() #protons/mm^2
   for i in range(len(Img)):
@@ -711,6 +693,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     from math import log10,ceil
     a = 10
     maxim = ceil(Imax / a) * a
+    if options['maxim'] != 0: maxim = options['maxim'] #user provided maximum
     minMag = ceil(log10(Imin))
     minim = 10**minMag
     cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
@@ -735,8 +718,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     ax.set_title("Proton Beam Distribution at "+position,fontsize=fs)
     ax.set_xlabel("Horizontal [mm]")
     ax.set_ylabel("Vertical [mm]")
-    cbar = fig.colorbar(c, ax=ax,pad=0.01)#,ticks=v)
-    cbar.set_label(cbarLabel,labelpad=2)
+    cbar = fig.colorbar(c, ax=ax,pad=0.01)
+    cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
     cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
     #print(datetime.now().strftime("%H-%M-%S"))
@@ -767,7 +750,6 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
           ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
           ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), color=cols[i], fontweight='bold',fontsize = fs-2)#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
     
-    
     dt = datetime.now()
     #from os.path import isfile
     #if isfile(name+"*.png"):
@@ -777,17 +759,16 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     close(fig)
     print(name+"_"+dt.strftime("%H-%M-%S")+".png")
 
-  dt = datetime.now()
+  #dt = datetime.now()
   #print(dt-start)
 
   return pOutsideBoxes[0], Imax, coreMeanI
 
-def converter(hIn):
+def converter(hIn,saveHist,name):
     import ROOT
     import numpy as np
-    import matplotlib.pyplot as plt
-    from datetime import datetime
-    start = datetime.now()
+    #from datetime import datetime
+    #start = datetime.now()
 
     #Get X axis from ROOT
     xax = np.zeros(hIn.GetXaxis().GetNbins()+1)
@@ -801,9 +782,6 @@ def converter(hIn):
         yax[i] = hIn.GetYaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     yax[-1] = hIn.GetYaxis().GetBinUpEdge(hIn.GetYaxis().GetNbins())
     
-    #print(xax)
-    #print(yax)
-    
     hOut = np.zeros( (len(yax), len(xax)) ) #2D Image map
 
     #Fill Image map with 2D histogram values
@@ -814,8 +792,37 @@ def converter(hIn):
     
     #Must add Overflow options!!!
 
+    if saveHist:
+      import csv
+      with open(name+".csv",mode = 'w',newline=None) as hist_file:
+        hist_writer = csv.writer(hist_file,delimiter = ',')
+        hist_writer.writerows(hOut)
+      hist_file.close()
+      print(name+".csv")
+
+    rValue = rCompare(hOut)
+    print("The r value is: ",rValue)
     #print("Coverted in",datetime.now() - start)
     return (hOut,xax,yax)
 
 
 #add function to check if ROOT file is complete, else delete and make new
+
+
+
+def rCompare(Im):
+  import numpy as np
+  Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+  print(Iref[492,494])
+  lenx = np.shape(Im)[0]
+  leny = np.shape(Im)[1]
+  diff = np.zeros((leny,lenx)) #same as in converter?
+
+  for i in range(round(lenx/3),round(2*lenx/3)):
+    for j in range(round(leny/3),round(2*leny/3)):
+      diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] ) ** 2 ) / (leny * lenx) )
+  
+  print(diff[100,100],diff[494,494],diff[500,500],np.sum(diff))
+  rValue = np.sqrt(np.sum(diff))
+
+  return rValue
