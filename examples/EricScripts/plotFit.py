@@ -590,6 +590,7 @@ def numLines(filename):
 def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
   import numpy as np
   name=savename+"_"+position+"Image"
+  um = 1e-6
 
   from datetime import datetime
   #start= datetime.now()
@@ -742,7 +743,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
         ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
         ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-        ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
+        ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0]/um,Twiss[3]/um)+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
         ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4)
         ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4)
 
@@ -813,13 +814,16 @@ def converter(hIn,saveHist,name):
 def rCompare(Im):
   import numpy as np
   Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
-  print(Iref[492,494])
+  #print(Iref[492,494])
   lenx = np.shape(Im)[0]
   leny = np.shape(Im)[1]
   diff = np.zeros((leny,lenx)) #same as in converter?
+  #print(round(lenx/2)-1,round(lenx/2)+5)
 
-  for i in range(round(lenx/3),round(2*lenx/3)):
-    for j in range(round(leny/3),round(2*leny/3)):
+  for i in range(lenx):
+    for j in range(leny):
+      #print(Im[j,i],Iref[j,i])
+      if Iref[j,i] == 0: Iref[j,i] = 1e-1 #manufactured! If value==1, r goes to 0 . If value<<1, r becomes >>1. 15 Jan 23
       diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] ) ** 2 ) / (leny * lenx) )
   
   print(diff[100,100],diff[494,494],diff[500,500],np.sum(diff))

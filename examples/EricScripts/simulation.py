@@ -9,7 +9,7 @@
 #To Do:
 # -clean up if statements in baseSetup section
 
-def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
   import numpy as np
   import ROOT, os, sys
   from plotFit import calcTwiss
@@ -185,7 +185,17 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
     radLenH2O = 360.8 #[mm] liquid Water 
     #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
-    if PBIP:
+    if loadParts:
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,baseSimSetup["N"])
+      outname = beamFile+"_runW"
+    else:
+      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,thick,baseSimSetup["N"])
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
+      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
+      #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
+    
+    if options['PBIP']:
+      outname = outname + "_PBIP"
       #PBIP Magnet
       m2 = {}
       m2["pos"] = 1874.0 #[mm]
@@ -199,18 +209,6 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
       m2["keyval"]["absorberWidth"]    = 950.0 #[mm]
       m2["keyval"]["absorberHeight"]   = 950.0 #[mm]
       baseSimSetup["MAGNET"].append(m2)
-
-    if loadParts:
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,baseSimSetup["N"])
-      outname = beamFile+"_runW"
-    else:
-      outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,thick,baseSimSetup["N"])
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
-      #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
-      #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
-
-  if PBIP:
-    outname = outname + "_PBIP"
 
   if options['physList'] == "QGSP_BERT_EMZ":
     outname = outname + "_QBZ"
@@ -352,7 +350,7 @@ def simulation(N,material,beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAng
     exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
   #end of exit Distribution if
 
-  #if PBIP:
+  #if options['PBIP']:
   #  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
   #  myTree= myFile.Get("magnet_2_edeps")
 

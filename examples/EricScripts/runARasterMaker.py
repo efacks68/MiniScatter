@@ -1,5 +1,5 @@
 
-def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,dependence,csvPWD):
+def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,csvPWD,options):
   import numpy as np
   from math import pi, asin, sin
   from datetime import datetime
@@ -9,7 +9,7 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   um = 1e-6
   mm = 1e-3
 
-  #Twiss from twissDependence script
+  #Twiss 
   nemtX = Twiss[0] #[mm-mrad]
   betaX = Twiss[1] #[m]
   alphX = Twiss[2]
@@ -49,13 +49,9 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   delta_t = np.linspace(0,dt,n_tii) #[s]
   z = -10 #[mm] for z location to generate protons at in MiniScatter
 
-  if beamType == "ESS": #assume 570MeV
-    covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/(betaX/mm)]]) #[mm]
-    covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/(betaY/mm)]]) #[mm]
-
-  elif beamType == "pencil": #assume 570MeV
-    covX = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
-    covY = 7.945383034919336e-05/mm * np.asarray([[1e-2/mm,-0],[-0,(1+0**2)/1e-2/mm]]) #[mm]
+  #Assumes Protons
+  covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/(betaX/mm)]]) #[mm]
+  covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/(betaY/mm)]]) #[mm]
 
   #Calculate Envelope Center Angle
   dBPM93to94 = 3031 #[mm] from OpenXAL(?)
@@ -87,14 +83,16 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
   Top = 17
 
   i=0
-  j=0
-  k=0
+  #j=0
+  #k=0
 
   #Pick name based on beam
-  if beamType == "ESS":
+  if options['beamClass'] == "ESS":
     name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)#+dt.strftime("%H-%M-%S")
-  elif beamType == "pencil":
+  elif options['beamClass'] == "pencil":
     name = "PBW_{:.0f}MeV_pencilBeam_RMampl{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+  elif options['beamClass'] == "Twiss":
+    name = "PBW_{:.0f}MeV_eX{:.2f}um,eY{:.2f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.1e}".format(energy,nemtX/um,nemtY/um,betaX,betaY,alphX,alphY,len(totX[:,0]))
   if envXatBPM94 != 0:
     name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
   if envYatBPM94 != 0:
@@ -131,10 +129,10 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
         if edges:
           if beamletX > -Right and beamletX < Right and beamletY < Top and beamletY > -Top: #set weight depending on position
             NperBunch = 5 #decrease center NperBunch
-            j += 1
+        #    j += 1
           else:
             NperBunch = NperBunch #Edges get full NperBunch
-            k += 1
+        #    k += 1
 
         #Generate beamlet distributions
         rng = np.random.default_rng()
@@ -181,10 +179,11 @@ def runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBP
       fig.colorbar(density,label=r"Protons/mm^2")
       s1.set_xlabel("X [mm]")
       s1.set_ylabel("Y [mm]")
-      #s1.set_xlim([-200,200])
-      #s1.set_ylim([-175,175])
+      s1.set_xlim([-80,80])
+      s1.set_ylim([-50,50])
       s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
-      plt.show()
+      plt.savefig(outname+".png")
+      print(outname+".png")
       plt.close()
 
   return outname, envXAngle,envYAngle
