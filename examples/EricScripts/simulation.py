@@ -41,8 +41,13 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
   MiniScatter_path="../../MiniScatter/build/."
   sys.path.append(MiniScatter_path) #uncomment this if this is your first time running this.
   #print(os.getcwd())
-  if os.getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
-    os.chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
+  if os.uname()[1] == "tensor.uio.no":
+    if os.getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
+      os.chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
+  elif os.uname()[1] == "mbarrios-XPS-13-9300":
+    if os.getcsd() != "~/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
+      os.chdir("~/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
+  else: print("Help! Unknown build directory!, simulation.py l 50")
     #print(os.getcwd())
 
   import miniScatterDriver
@@ -226,12 +231,17 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #print("removed",outname)
 
   #Find which folder root file is in
-  if Twiss[1] >= 1:
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/ESS/")
-  elif Twiss[1] < 1:
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/pencil/")
-  else:
-    baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
+  if os.uname()[1] == "mbarrios-XPS-13-9300":
+    baseSimSetup["OUTFOLDER"] = os.path.join("~/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
+  elif os.uname()[1] == "tensor.uio.no":
+    if Twiss[1] >= 1:
+      baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/ESS/")
+    elif Twiss[1] < 1:
+      baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/pencil/")
+    else:
+      baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
+  else: print("Help! Unknown build directory!, simulation.py l 243")
+
   print(baseSimSetup["OUTFOLDER"])
   #put in Scratch2 of tensor for faster processing, as per Kyrre
 
@@ -241,8 +251,12 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
   #print(outname,"\n")
   simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
 
+####Redundant??? ----------
   #Variables for automation
-  savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
+  if os.uname()[1] == "mbarrios-XPS-13-9300":
+    savepath = "~/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+  elif os.uname()[1] == "temsor.uio.no":
+    savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
   savename=savepath+outname #base savename for plots downstream, brings directly to my directory
   savedfile=os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
 

@@ -56,8 +56,9 @@ if args.twiss:
   options['beamClass'] = "Twiss"
 if os.uname()[1] == "tensor.uio.no":
   csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
-if os.uname()[1] == "mbarrios-XPS-13-9300":
-  csvPWD = "~/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWscripts/"
+elif os.uname()[1] == "mbarrios-XPS-13-9300":
+  csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+else: print("Help! Unknown build directory!, scatterPBW.py l 61")
 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,graph,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,args.aX,args.aY,csvPWD,options)
 print(rasterBeamFile,beamXAngle,beamYAngle)

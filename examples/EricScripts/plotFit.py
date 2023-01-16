@@ -794,12 +794,14 @@ def converter(hIn,saveHist,name):
     #Must add Overflow options!!!
 
     if saveHist:
-      import csv
-      with open("/scratch2/ericdf/PBWScatter/"+name+".csv",mode = 'w',newline=None) as hist_file:
-        hist_writer = csv.writer(hist_file,delimiter = ',')
-        hist_writer.writerows(hOut)
-      hist_file.close()
-      print(name+".csv")
+      import os
+      if os.uname()[1] == "tensor.uio.no":
+        import csv
+        with open("/scratch2/ericdf/PBWScatter/"+name+".csv",mode = 'w',newline=None) as hist_file:
+          hist_writer = csv.writer(hist_file,delimiter = ',')
+          hist_writer.writerows(hOut)
+        hist_file.close()
+        print(name+".csv")
 
     rValue = rCompare(hOut)
     print("The r value is: ",rValue)
@@ -812,9 +814,10 @@ def converter(hIn,saveHist,name):
 
 
 def rCompare(Im):
-  import numpy as np
+  import numpy as np,os
   #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
-  Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+  if os.uname()[1] == "tensor.uio.no":
+    Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
   #print(Iref[492,494])
   lenx = np.shape(Im)[0]
   leny = np.shape(Im)[1]

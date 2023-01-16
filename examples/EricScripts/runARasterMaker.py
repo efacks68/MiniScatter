@@ -100,7 +100,7 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
 
   #if file found, don't make again!
   #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  #csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
   outname = csvPWD + name
   from os.path import isfile
   if isfile(outname+".csv"):
