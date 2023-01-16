@@ -86,18 +86,18 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
   #j=0
   #k=0
 
-  #Pick name based on beam
+  #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
   if options['beamClass'] == "ESS":
     name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)#+dt.strftime("%H-%M-%S")
   elif options['beamClass'] == "pencil":
     name = "PBW_{:.0f}MeV_pencilBeam_RMampl{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   elif options['beamClass'] == "Twiss":
-    name = "PBW_{:.0f}MeV_eX{:.2f}um,eY{:.2f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.1e}".format(energy,nemtX/um,nemtY/um,betaX,betaY,alphX,alphY,len(totX[:,0]))
+    name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,nemtX/um,nemtY/um,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   if envXatBPM94 != 0:
     name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
   if envYatBPM94 != 0:
     name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
-  
+
   #if file found, don't make again!
   #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
   csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!

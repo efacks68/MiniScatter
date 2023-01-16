@@ -795,7 +795,7 @@ def converter(hIn,saveHist,name):
 
     if saveHist:
       import csv
-      with open(name+".csv",mode = 'w',newline=None) as hist_file:
+      with open("/scratch2/ericdf/PBWScatter/"+name+".csv",mode = 'w',newline=None) as hist_file:
         hist_writer = csv.writer(hist_file,delimiter = ',')
         hist_writer.writerows(hOut)
       hist_file.close()
@@ -813,7 +813,8 @@ def converter(hIn,saveHist,name):
 
 def rCompare(Im):
   import numpy as np
-  Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+  #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+  Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
   #print(Iref[492,494])
   lenx = np.shape(Im)[0]
   leny = np.shape(Im)[1]
@@ -823,10 +824,10 @@ def rCompare(Im):
   for i in range(lenx):
     for j in range(leny):
       #print(Im[j,i],Iref[j,i])
-      if Iref[j,i] == 0: Iref[j,i] = 1e-1 #manufactured! If value==1, r goes to 0 . If value<<1, r becomes >>1. 15 Jan 23
-      diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] ) ** 2 ) / (leny * lenx) )
-  
-  print(diff[100,100],diff[494,494],diff[500,500],np.sum(diff))
+      if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
+      diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] - 1) ** 2 ) / (leny * lenx) )
+
+  #print(diff[494,494],diff[500,500],np.sum(diff))
   rValue = np.sqrt(np.sum(diff))
 
   return rValue

@@ -193,7 +193,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
       #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
       #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
-    
+
     if options['PBIP']:
       outname = outname + "_PBIP"
       #PBIP Magnet
