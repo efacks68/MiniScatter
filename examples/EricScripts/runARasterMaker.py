@@ -1,10 +1,9 @@
 
-def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,csvPWD,options):
+def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,csvPWD,options):
   import numpy as np
   from math import pi, asin, sin
   from datetime import datetime
   start = datetime.now()
-  #print("runARasterMaker",start)
   #distance 1e0 unit in this script is mm, so 1e3=1meter
   um = 1e-6
   mm = 1e-3
@@ -25,26 +24,21 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
   gemtY = nemtY*um / (beta_rel * gamma_rel) #[m]
 
   t_pulse = round(0.04 * 1/14 * 1e6) # mus
-  pulse_start = 10
+  pulse_start = 10 #why have a delay?
   t_end = (2* pulse_start + t_pulse) /1000# - 2#3 ms
   time_length = round(t_end * nPulses ) #number of pulses, nominal = 2.86e3
 
   t = np.linspace(0,t_end,time_length) #array of steps of length time_length
   N_t = len(t) # number of time samples
-  n_tii  = 10 
-  #print("t= ",N_t, time_length,t_end)
-
+  n_tii  = 10 #number of positions per us
   totX = np.zeros([N_t*n_tii*NperBunch,2])
   totY = np.zeros([N_t*n_tii*NperBunch,2])
-  #print(len(totX))
+  #print("t_pulse {:.2f}, t_end {:.2f}, time_length {:.2f}, N_t {:.2f}".format(t_pulse,t_end,time_length,N_t))
 
   ##Raster Constants
-  #Raster Frequency
   Fx = 39.953*1e3 #[kHz]
   Fy = 28.7051*1e3 #[kHz]
   pb = 1
-  periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
-  periodY = pb/Fy * np.ones(N_t) #[s]
   dt =  np.mean(np.diff(t)) #[s]
   delta_t = np.linspace(0,dt,n_tii) #[s]
   z = -10 #[mm] for z location to generate protons at in MiniScatter
@@ -69,10 +63,7 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
   envXCenOff = envXCenterOffset * np.ones(N_t) #[mm]
   envYCenOff = envYCenterOffset * np.ones(N_t) #[mm]
 
-  #Raster Amplitude: ax0,ay0 here produces the beamlet displacement AT the Target, as per Cyrille
-  #rasterXAmplitude0 = 54.65 #[mm] #default
-  #rasterYAmplitude0 = 18.37 #[mm]
-  #because generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
+  #Since generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
   #amplScale = 1 - dPBWtoTarg / dBPM93toTarg #double check you account for Z before PBW in MiniScatter! beam production plane in GEANT, not exact PBW center!
   amplScale = 1 #Cyrille said the RM Amplitude is already scaled
   sRasterXAmpl = rasterXAmplitude0 * amplScale * np.ones(N_t) #[mm]
@@ -81,32 +72,50 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
   #For weighting edges case (--edges argument)
   Right = 50
   Top = 17
-
-  i=0
-  #j=0
-  #k=0
+  i=0 #for Bunch number iterator
 
   #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
-  if options['beamClass'] == "ESS":
-    name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)#+dt.strftime("%H-%M-%S")
+  if options['beamClass'] == "ESS" or options['beamClass'] == "Yngve":
+    name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   elif options['beamClass'] == "pencil":
-    name = "PBW_{:.0f}MeV_pencilBeam_RMampl{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+    name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   elif options['beamClass'] == "Twiss":
-    name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,nemtX/um,nemtY/um,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+    name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,
+                  nemtX,nemtY,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
   if envXatBPM94 != 0:
     name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
   if envYatBPM94 != 0:
     name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
 
-  #if file found, don't make again!
-  #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-  #csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/" #put all CSVs in Scratch to save my disk space!
+  #Raster Magnet Failure Options
+  idcy = round(N_t * (1 - options['magFails'] / 4 )) #produces which quarter to end is 0
+  if options['failure'] == 1: #Horizontal Fail
+    sRasterXAmpl[idcy:] = 0 # no RM amplitude for magFails-th quarter of pulse
+    name = name + "_failure1-" + str(options['magFails'])+"f"
+  elif options['failure'] == 2: # Vertical Fail
+    sRasterYAmpl[idcy:] = 0
+    name = name + "_failure2-" + str(options['magFails'])+"f"
+  elif options['failure'] == 3: # H & V Fails
+    sRasterXAmpl[idcy:] = 0
+    sRasterYAmpl[idcy:] = 0
+    name = name + "_failure3-" + str(options['magFails'])+"f"
+  elif options['failure'] == 4: # Correlated Motion
+    Fy = Fx
+    name = name + "_failure4-" + str(options['magFails'])+"f"
+  if edges:
+    name = name + "_edges"
+
+  #Calculate periods  
+  periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
+  periodY = pb/Fy * np.ones(N_t) #[s]
+
+  #If file found, don't make again!
   outname = csvPWD + name
   from os.path import isfile
   if isfile(outname+".csv"):
-    print("Found CSV, continuing.")
+    print("Found: ",outname,".csv",sep="")
   else:
-    print(outname,"\nCSV not found, generating file.")
+    print("CSV not found. Making: ",outname,".csv",sep="")
     centroids = np.zeros([N_t*n_tii,2])
     for jj in range(N_t):
       for ii in range(n_tii):
@@ -129,10 +138,8 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
         if edges:
           if beamletX > -Right and beamletX < Right and beamletY < Top and beamletY > -Top: #set weight depending on position
             NperBunch = 5 #decrease center NperBunch
-        #    j += 1
           else:
             NperBunch = NperBunch #Edges get full NperBunch
-        #    k += 1
 
         #Generate beamlet distributions
         rng = np.random.default_rng()
@@ -145,7 +152,6 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
           totY[NperBunch*i+k,0] = ptsY[k,0]
           totY[NperBunch*i+k,1] = ptsY[k,1]
         i +=1
-    #print(i,j,k)
 
     #Check on output parameters
     print("Centroid X max: {:.2f}mm; Particle X max: {:.2f}mm".format(np.max(centroids[:,0]),np.max(totX[:,0])),"; Shape:",np.shape(totX))
@@ -153,8 +159,7 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
     nonzero = np.not_equal(totX[:,0],0) #be careful!
     totX = totX[nonzero]
     totY = totY[nonzero]
-    #print(np.shape(totX))
-    #print(name)
+    #print("After masking out 0s: ",np.shape(totX))
 
     import csv
     with open(outname+".csv",mode = 'w',newline=None) as part_file:
@@ -164,9 +169,9 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
     part_file.close()
 
     finish = datetime.now()
-    print(name, "; started at:",start.strftime("%H-%M-%S"), "finished in: ",finish-start)
+    print(name,"took: ",finish-start,"s")
 
-    if graph:
+    if options['saveRaster']:
       #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
       import matplotlib.pyplot as plt
       import mpl_scatter_density
@@ -179,11 +184,14 @@ def runARasterMaker(energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges
       fig.colorbar(density,label=r"Protons/mm^2")
       s1.set_xlabel("X [mm]")
       s1.set_ylabel("Y [mm]")
-      s1.set_xlim([-80,80])
+      s1.set_xlim([-100,100])
       s1.set_ylim([-50,50])
       s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
-      plt.savefig(outname+".png")
-      print(outname+".png")
+      import os
+      if os.uname()[1] == "tensor.uio.no":
+        picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+      plt.savefig(picPWD+name+".png")
+      print(picPWD+name+".png")
       plt.close()
 
   return outname, envXAngle,envYAngle

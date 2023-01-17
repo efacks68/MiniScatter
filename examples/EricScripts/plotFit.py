@@ -583,7 +583,7 @@ def numLines(filename):
     csv_file.close()
   from datetime import datetime
   dt = datetime.now()
-  print("There are ",N,"lines "+dt.strftime("%H-%M-%S"))
+  #print("There are ",N,"lines "+dt.strftime("%H-%M-%S"))
   return N
 
 
@@ -591,13 +591,14 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   import numpy as np
   name=savename+"_"+position+"Image"
   um = 1e-6
-
   from datetime import datetime
-  #start= datetime.now()
+  start= datetime.now()
   #print(start.strftime("%H-%M-%S"))
   from plotFit import converter
-
+  
+  #print(datetime.now().strftime("%H-%M-%S"))
   (Img, xax, yax) = converter(histogram2D,options['saveHist'],name) #convert from TH2D to numpy map
+  #print(datetime.now().strftime("%H-%M-%S"))
 
   #99% box #for multiple boxes, use arrays
   #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
@@ -609,7 +610,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
   widths = np.zeros(len(boxes))
   heights = np.zeros(len(boxes))
-  pLargers = np.zeros(len(boxes))
+  pLargers = np.zeros(len(boxes)) #percent larger than initial box(?)
   widths[0] = 160
   heights[0] = 64
   boxLLxs = np.zeros(len(boxes))
@@ -646,10 +647,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     pOutsideBoxes[i] = (sumTot-sumCore)/sumTot*100
     #print(sumCore,pOutsideBoxes[i])
 
-
   #Normalize to full current, see 
-  I_pulse = 62.5*1e-3 #[A]
-  C = I_pulse / parts / 1e-2 * 1e6 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
+  I_pulse = 62.5*1e3 #[uA]
+  C = I_pulse / parts / 1e-2 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
   Protmax = Img.max() #protons/mm^2
   for i in range(len(Img)):
     for j in range(len(Img[i])):
@@ -661,7 +661,12 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   coreMeanI = np.mean(coreN)
   print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI),pOutsideBoxes)
 
-  #Flat Top Current density calculations: tbd
+  #R value for algorithm. Works when use Current Density, not Nprotons
+  rValue = rCompare(Img,options['Nb'])
+  print("R = ",rValue)
+  #print("Converted in",datetime.now() - start)
+
+  #Flat Top Current density calculations
   top=0
   Itop = 30
   idxMinX = 1000
@@ -681,9 +686,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
     from matplotlib.patches import Rectangle
     from matplotlib.colors import LogNorm
-    box = True
     X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
-    close() #make sure no prior plitting messes up
+    close() #make sure no prior plotting messes up
 
     fig,ax = subplots(dpi=150,figsize=(6.4,4.8),tight_layout=True)
     ax.set_xlim([-150,150]) #for close up of beam
@@ -692,16 +696,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     
     #Set maximum value depending on the maximum current density
     from math import log10,ceil
-    a = 10
-    maxim = ceil(Imax / a) * a
+    maxim = ceil(Imax / 10) * 10
     if options['maxim'] != 0: maxim = options['maxim'] #user provided maximum
-    minMag = ceil(log10(Imin))
-    minim = 10**minMag
+    minim = 10**ceil(log10(Imin))
     cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
     cbarLabels = ["{:.0f}".format(cbarVals[0]),"{:.0f}".format(cbarVals[1]),"{:.0f}".format(cbarVals[2]),
                   "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
     cbarLabel = r"$\mu A / cm^2$"
-    #print("maxim",maxim,minim)
     #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
     #Use pcolor to show density map, use log scale
@@ -710,12 +711,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     col='k'
     fs=14
 
+    #Set Plot Properties
     ax.set_xlim([-options['xlim'],options['xlim']])
     ax.set_ylim([-options['ylim'],options['ylim']])
-    if options['xlim'] > 250:
-      lw=1
-    
-    #Set Plot Properties
     ax.set_title("Proton Beam Distribution at "+position,fontsize=fs)
     ax.set_xlabel("Horizontal [mm]")
     ax.set_ylabel("Vertical [mm]")
@@ -723,39 +721,42 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
     cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
-    #print(datetime.now().strftime("%H-%M-%S"))
+
     if position =="Target":
-      name = name+"_2212only"
+      #name = name+"_2212only"
       xlim = ax.get_xlim()
       ylim = ax.get_ylim()
       
       #Show 99% box
-      if options['box']:
+      if not options['noBox']: #for user clarity, call is noBox
         ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
 
-      if options['text']:
+      if not options['noText']: #for user clarity, call is noText
         ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
 
         #Display beam characteristics
-        ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold')
-        ax.text(xlim[1]*0.97, ylim[0]*0.95, options['physList'], fontsize = fs-4, color="k",horizontalalignment="right",verticalalignment="bottom")
-        ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-        ax.text(xlim[1]*0.97, ylim[0]*0.65, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-        ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude), fontsize=fs-4,horizontalalignment="right",verticalalignment="bottom")
-        ax.text(xlim[0]*0.97, ylim[0]*0.65, "Beam Twiss at PBW:", fontsize=fs-4)
-        ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0]/um,Twiss[3]/um)+r"$_{[mm \cdot mrad]}$", fontsize=fs-4)
-        ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4)
-        ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4)
+        bgdbox=dict(pad=2,fc='w',ec='none')
+        propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
+        ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w')
+        ax.text(xlim[0]*0.97, ylim[0]*0.60, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+        ax.text(xlim[0]*0.97, ylim[0]*0.71, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+        ax.text(xlim[0]*0.97, ylim[0]*0.83, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+        ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+        #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+        ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
+        ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+        ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude),propsR,fontsize=fs-4)
+        ax.text(xlim[1]*0.97, ylim[0]*0.96, options['physList'], propsR,fontsize=fs-4)
 
         for i in range(1,len(boxes)): #make multiple boxes
           ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
-          ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), color=cols[i], fontweight='bold',fontsize = fs-2)#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
+          ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
+                                  color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
     
     dt = datetime.now()
     #from os.path import isfile
     #if isfile(name+"*.png"):
     #  print("already present")
-    #else:
     savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
     close(fig)
     print(name+"_"+dt.strftime("%H-%M-%S")+".png")
@@ -768,8 +769,6 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
 def converter(hIn,saveHist,name):
     import ROOT
     import numpy as np
-    #from datetime import datetime
-    #start = datetime.now()
 
     #Get X axis from ROOT
     xax = np.zeros(hIn.GetXaxis().GetNbins()+1)
@@ -796,16 +795,23 @@ def converter(hIn,saveHist,name):
     if saveHist:
       import os
       if os.uname()[1] == "tensor.uio.no":
-        import csv
+        import csv,re
+        #Remove upper directories that may have come with name for appending outname to scratch folder
+        if re.search("/PBW_",name):
+          #print("\n",outname,"\n")
+          name = re.sub(".+(?=(PBW_))","",name) #substitutes "" for all preceeding PBW_
+          #print("Histogram-removed",name)
+        if re.search("/Vac_",name):
+          #print("\n",outname,"\n")
+          name = re.sub(".+(?=(Vac_))","",name) #substitutes "" for all preceeding Vac_
+          #print("Histogram-removed",name)
+
         with open("/scratch2/ericdf/PBWScatter/"+name+".csv",mode = 'w',newline=None) as hist_file:
           hist_writer = csv.writer(hist_file,delimiter = ',')
           hist_writer.writerows(hOut)
         hist_file.close()
         print(name+".csv")
 
-    rValue = rCompare(hOut)
-    print("The r value is: ",rValue)
-    #print("Coverted in",datetime.now() - start)
     return (hOut,xax,yax)
 
 
@@ -813,24 +819,25 @@ def converter(hIn,saveHist,name):
 
 
 
-def rCompare(Im):
-  import numpy as np,os
-  #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+def rCompare(Im,Nb):
+  import numpy as np, os
+
+  #Find reference files
   if os.uname()[1] == "tensor.uio.no":
-    Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
-  #print(Iref[492,494])
+    if Nb == 10:
+      Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+      #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+    elif Nb == 100:
+      Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+      #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+
   lenx = np.shape(Im)[0]
   leny = np.shape(Im)[1]
-  diff = np.zeros((leny,lenx)) #same as in converter?
-  #print(round(lenx/2)-1,round(lenx/2)+5)
+  diff = np.zeros((leny,lenx))
 
   for i in range(lenx):
     for j in range(leny):
-      #print(Im[j,i],Iref[j,i])
       if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
       diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] - 1) ** 2 ) / (leny * lenx) )
 
-  #print(diff[494,494],diff[500,500],np.sum(diff))
-  rValue = np.sqrt(np.sum(diff))
-
-  return rValue
+  return np.sqrt(np.sum(diff))

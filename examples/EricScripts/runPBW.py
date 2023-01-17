@@ -1,4 +1,4 @@
-#SimpleDemoPBWscript.py
+#runPBW.py
 #Eric Fackelman
 #5 Nov 2022
 #Uses the MiniScatter Python interface to model the ESS beam interaction with the PBW
@@ -42,7 +42,6 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
   #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
 
   mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
-  #print(mag)
 
   if ifplot:
     engplot=True
@@ -52,7 +51,6 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
   plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
   s1 = fig.add_subplot(1,2,1)
   s2 = fig.add_subplot(1,2,2)
-  #plt.show()
   fs = 14 #setting the axis label font size early
 
   #Create dictionaries for sigma and % outside of 3 Sigma for each material used
@@ -66,16 +64,14 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
   percenttexty = r"% outside 3$\sigma_y$:"
   sigmatextx = r"$\sigma_x$:"
   sigmatexty = r"$\sigma_y$:"
-
+ 
   for material in materials:
     #function for preparing the run and running miniScatterDriver functions
     #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
     savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
     if not matplot:
       continue
-    #returns the savename and the x and y distributions of particle positions 
-    #These returned arrays are from the MiniScatter detector, 5m after the PBW, ~where the ESS Target is.  
-    
+
     #Now plot the distributions with various views depending on the material
     if material == "G4_Galactic" or material == "G4_AIR":
       if ifplot:
@@ -178,8 +174,6 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     ylim1=s1.get_ylim() #dynamically get the ylimits
     s1.text(-xlim1*0.95,ylim1[1]*0.75,sigmatextx) #set the texts at 3/4 and 1/2 of ylim
     s1.text(-xlim1*0.95,ylim1[1]*0.5,percenttextx) #xlim is fixed
-    #s1.text(-xlim*0.95,ylim1[1]*0.99,)
-    #s1.text("Add Twiss Parameters! and have in savename as well!")
 
     sigvals = sigmay.values() #get values of dictionary
     xlim2 = s*max(sigvals) #use s*max as the xlim
@@ -188,7 +182,7 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     s2.set_xlabel("Y Position [mm]",fontsize=fs)
     s2.set_ylabel("Probability Density",fontsize=fs)
     s2.legend()
-    ylim2=s2.get_ylim() #dynamically get the ylimits
+    ylim2=s2.get_ylim()
     s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
     s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
     fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
@@ -196,13 +190,11 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
         rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemty,betay,alphy),fontsize=18,y=0.99) #fontweight="bold",
     #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
-    #Can date stamp the multi plot for easier tracking of changes, if necessary
     dt = datetime.now()
     name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
-    #print(name) #show so it is easy to find the file
+    #print(name)
     #fig.savefig(name,bbox_inches="tight")
-    #plt.show()
     plt.close() #be sure to close the plot
-  print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
+  #print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
 
   return targPOutBox, targImax, targCoreMeanI

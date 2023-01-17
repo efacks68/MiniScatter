@@ -5,7 +5,7 @@
 
 from datetime import datetime
 origin = datetime.now()
-print(origin,"\n")
+print(origin)
 import numpy as np
 #import matplotlib.pyplot as plt
 import os,argparse
@@ -16,33 +16,36 @@ from runPBW import runPBW
 parser = argparse.ArgumentParser()
 parser.add_argument("--beamClass",type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss")
 parser.add_argument("--l",       type=str,    help="Load Particles or not",   default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
-parser.add_argument("--t",       type=float,  default=0,     help="PBW Thickness, 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al X [mm] thick")
-parser.add_argument("--energy",  type=float,  default=570,   help="Beam Energy")
+parser.add_argument("--twiss",   type=float,  nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
+parser.add_argument("--t",       type=float,  default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick")
+parser.add_argument("--energy",  type=float,  default=570,   help="Beam Energy [MeV]")
 parser.add_argument("--Nb",      type=int,    default=10,    help="Number of macroparticles per beamlet")
 parser.add_argument("--nP",      type=float,  default=1e3,   help="Numper of beamlets in pulse")
-parser.add_argument("--rX",      type=float,  default=0,     help="X distance from beam axis")
-parser.add_argument("--rY",      type=float,  default=0,     help="Y distance from beam axis")
-parser.add_argument("--aX",      type=float,  default=54.65, help="RM X Amplitude")
-parser.add_argument("--aY",      type=float,  default=18.37, help="RM Y Amplitude")
-parser.add_argument("--xlim",    type=float,  default=450,   help="+/- value for horizontal axis of output rastered image")
-parser.add_argument("--ylim",    type=float,  default=500,   help="+/- value for vertical axis of output rastered image")
-parser.add_argument("--maxim",   type=float,  default=0  ,   help="Maximum current density value for output rastered image")
-parser.add_argument("--twiss",   type=float,  nargs=6,       help="Twiss parameters in form: NemtX,BetaX,AlphX,NemtY,BetaY,AlphY")
+parser.add_argument("--rX",      type=float,  default=0,     help="X distance from beam axis [mm]")
+parser.add_argument("--rY",      type=float,  default=0,     help="Y distance from beam axis [mm]")
+parser.add_argument("--aX",      type=float,  default=54.65, help="RM X Amplitude [mm]")
+parser.add_argument("--aY",      type=float,  default=18.37, help="RM Y Amplitude [mm]")
+parser.add_argument("--failure", type=float,  default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4.")
+parser.add_argument("--magFails",type=int,    default=2,     choices = range(0,5),  help="Number of Raster Magnets that fail, 1-4.")
+parser.add_argument("--xlim",    type=float,  default=450,   help="+/- value for horizontal axis of output rastered image [mm]")
+parser.add_argument("--ylim",    type=float,  default=500,   help="+/- value for vertical axis of output rastered image [mm]")
+parser.add_argument("--maxim",   type=float,  default=0  ,   help="Maximum current density value for output rastered imagem[uA/cm^2]")
 parser.add_argument("--edges",   action="store_true",  help="Only populate edges of raster?")
 parser.add_argument("--PBIP",    action="store_true",  default=False,   help="Is PBIP present?")
-parser.add_argument("--text",    action="store_false", default=True,    help="Print texts on images, default is True, calling means no text")
+parser.add_argument("--noText",  action="store_true",  default=False,    help="Turns off printed text when called")
 parser.add_argument("--savePics",action="store_true",  default=False,   help="Saves Rastered Image")
-parser.add_argument("--box",     action="store_false", default=True,    help="Turns off printed box")
+parser.add_argument("--noBox",   action="store_true",  default=False,   help="Turns off printed box when called")
 parser.add_argument("--saveHist",action="store_true",  default=False,   help="Saves Histogram of proton density at target")
+parser.add_argument("--saveRaster",action="store_true",default=False,   help="Saves plot of rastered beam")
 args = parser.parse_args()
 
 #Constants for running scripts
-graph       = True
 physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
 dependence  = "Twiss"
-options     = {'text':args.text, 'box':args.box, 'wide':True, 'physList':physList, 'dependence':dependence,
+options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':dependence,
                             'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
-                            'PBIP':args.PBIP, 'beamClass':args.beamClass}
+                            'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
+                            'magFails':args.magFails, 'saveRaster':args.saveRaster }
 
 # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
 if args.beamClass == 'Yngve': #smallest from Yngve
@@ -60,8 +63,8 @@ elif os.uname()[1] == "mbarrios-XPS-13-9300":
   csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
 else: print("Help! Unknown build directory!, scatterPBW.py l 61")
 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,graph,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,args.aX,args.aY,csvPWD,options)
-print(rasterBeamFile,beamXAngle,beamYAngle)
+rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,args.aX,args.aY,csvPWD,options)
+##print(rasterBeamFile,beamXAngle,beamYAngle)
 #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
 ImgPOutBox = runPBW(args.energy,rasterBeamFile,args.t,beamXAngle,beamYAngle,args.savePics,Twiss,args.aX,args.aY,options)
 
