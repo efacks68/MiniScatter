@@ -599,6 +599,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   #print(datetime.now().strftime("%H-%M-%S"))
   (Img, xax, yax) = converter(histogram2D,options['saveHist'],name) #convert from TH2D to numpy map
   #print(datetime.now().strftime("%H-%M-%S"))
+  xBinSize = xax[501]-xax[500]
+  yBinSize = yax[501]-yax[500]
 
   #99% box #for multiple boxes, use arrays
   #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
@@ -611,6 +613,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
   widths = np.zeros(len(boxes))
   heights = np.zeros(len(boxes))
   pLargers = np.zeros(len(boxes)) #percent larger than initial box(?)
+  coreImax = np.zeros(len(boxes))
+  coreMeanI = np.zeros(len(boxes))
   widths[0] = 160
   heights[0] = 64
   boxLLxs = np.zeros(len(boxes))
@@ -646,20 +650,21 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     sumCore = np.sum(core)+1
     pOutsideBoxes[i] = (sumTot-sumCore)/sumTot*100
     #print(sumCore,pOutsideBoxes[i])
+    coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+    coreImax[i] = coreN.max() #[uA/cm^2]
+    coreMeanI[i] = np.mean(coreN) #[uA/cm^2]
 
   #Normalize to full current, see 
   I_pulse = 62.5*1e3 #[uA]
-  C = I_pulse / parts / 1e-2 * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
+  C = I_pulse / parts / (xBinSize * yBinSize * 1e-2) * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
   Protmax = Img.max() #protons/mm^2
   for i in range(len(Img)):
     for j in range(len(Img[i])):
       Img[i][j] = Img[i][j] * C #[uA/cm^2]
   Imax = Img.max()
   Imin = 0.9 * C #background (0 hits) will be un-colored
-  coreN = Img[boxBIndC:boxTIndC,boxLIndC:boxRIndC]
-  coreImax = coreN.max() #[uA/cm^2]
-  coreMeanI = np.mean(coreN)
-  print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI),pOutsideBoxes)
+  print(coreMeanI*C,coreImax*C)
+  print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI[0]*C),pOutsideBoxes)
 
   #R value for algorithm. Works when use Current Density, not Nprotons
   rValue = rCompare(Img,options['Nb'])
@@ -668,7 +673,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
 
   #Flat Top Current density calculations
   top=0
-  Itop = 30
+  Itop = 40
   idxMinX = 1000
   idxMaxX = 1
   idxMinY = 1000
@@ -680,7 +685,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
       if idx[0] > idxMaxX: idxMaxX = idx[0]
       if idx[1] < idxMinY: idxMinY = idx[1]
       if idx[1] > idxMaxY: idxMaxY = idx[1]
-  print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.mean(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
+  print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
 
   if savePics:
     from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
@@ -692,7 +697,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     fig,ax = subplots(dpi=150,figsize=(6.4,4.8),tight_layout=True)
     ax.set_xlim([-150,150]) #for close up of beam
     ax.set_ylim([-75,75])
-    print(datetime.now().strftime("%H-%M-%S"))
+    #print(datetime.now().strftime("%H-%M-%S"))
     
     #Set maximum value depending on the maximum current density
     from math import log10,ceil
@@ -775,7 +780,7 @@ def converter(hIn,saveHist,name):
     for i in range(len(xax)-1):
         xax[i] = hIn.GetXaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     xax[-1] = hIn.GetXaxis().GetBinUpEdge(hIn.GetXaxis().GetNbins())
-    
+
     #Get Y axis from ROOT
     yax = np.zeros(hIn.GetYaxis().GetNbins()+1)
     for i in range(len(yax)-1):

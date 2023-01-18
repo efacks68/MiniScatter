@@ -28,7 +28,7 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     materials = ["G4_Al"]
   elif thick == 0.1:
     materials = ["G4_Galactic"]
-  boxes = [0]#,0.125,0.25,0.375] #make an args for 24.11.22
+  boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
   ifplot=False
   #Twiss from twissDependence script
