@@ -43,7 +43,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     if os.getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
       os.chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
   elif os.uname()[1] == "mbarrios-XPS-13-9300":
-    if os.getcsd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
+    if os.getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
       os.chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
   else: print("Help! Unknown build directory!, simulation.py l 50")
     #print(os.getcwd())

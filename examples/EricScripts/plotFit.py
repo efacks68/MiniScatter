@@ -764,10 +764,14 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #  print("already present")
     savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
     close(fig)
+    close()
     print(name+"_"+dt.strftime("%H-%M-%S")+".png")
 
   #dt = datetime.now()
   #print(dt-start)
+
+  from plotFit import findEdges
+  findEdges(Img,Imax,savename,xax,yax)
 
   return pOutsideBoxes[0], Imax, coreMeanI
 
@@ -846,3 +850,35 @@ def rCompare(Im,Nb):
       diff[j,i] = ( ( ( Im[j,i] / Iref[j,i] - 1) ** 2 ) / (leny * lenx) )
 
   return np.sqrt(np.sum(diff))
+
+def findEdges(Img,Imax,savename,xax,yax):
+  import numpy as np
+  from scipy.signal import convolve2d as sciSigConv2d
+  #does it need to be normalized?
+
+  Gradxx = np.array([[1,0,-1],[2,0,-2],[1,0,-1]])
+  Gradyy = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
+
+  Gradx = sciSigConv2d(Img,Gradxx,'same')
+  Grady = sciSigConv2d(Img,Gradyy,'same')
+
+  Gradient = np.sqrt(Gradx ** 2 + Grady ** 2)
+
+  import matplotlib.pyplot as plt
+  plt.close()
+  X,Y = np.meshgrid(xax,yax)
+  fig = plt.figure(figsize=(15,5))
+  plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
+  ax1 = fig.add_subplot(1,3,1)
+  ax2 = fig.add_subplot(1,3,2)
+  ax3 = fig.add_subplot(1,3,3)
+  ax1.pcolor(X,Y,Gradx,shading='auto')
+  ax2.pcolor(X,Y,Grady,shading='auto')
+  ax3.pcolor(X,Y,Gradient,shading='auto')
+  plt.setp(ax1,xlim=(-100,100),ylim=(-100,100))
+  plt.setp(ax2,xlim=(-100,100),ylim=(-100,100))
+  plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
+  #plt.savefig(savename+"_GradPics.png")
+  print(savename,"_GradPics.png",sep="")
+  plt.close()
+
