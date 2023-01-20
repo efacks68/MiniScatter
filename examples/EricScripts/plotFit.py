@@ -770,8 +770,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #dt = datetime.now()
     #print(dt-start)
 
-    from plotFit import findEdges
-    findEdges(Img,Imax,savename,xax,yax)
+    #Add Flag for this
+    #from plotFit import findEdges
+    #findEdges(Img,Imax,savename,xax,yax)
 
     return pOutsideBoxes[0], Imax, coreMeanI
 
@@ -833,12 +834,12 @@ def rCompare(Im,Nb):
 
     #Find reference files
     if os.uname()[1] == "tensor.uio.no":
-    if Nb == 10:
-          Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
-          #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
-    elif Nb == 100:
-          Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
-          #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+        if Nb == 10:
+            Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+            #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+        elif Nb == 100:
+              Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+            #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
 
     lenx = np.shape(Im)[0]
     leny = np.shape(Im)[1]
@@ -882,6 +883,6 @@ def findEdges(Img,Imax,savename,xax,yax):
     print(savename,"_GradPics.png",sep="")
     plt.close()
 
-def fitGaussians(Img):
-    import numpy as np, ROOT
+#def fitGaussians(Img):
+#    import numpy as np, ROOT
 
