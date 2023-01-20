@@ -49,19 +49,22 @@ options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList'
 
 # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
 if args.beamClass == 'Yngve': #smallest from Yngve
-  Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
+    Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
 elif args.beamClass == 'ESS': #from my OpenXAL calculation
-  Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
+    Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
 elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
-  Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+    Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+
 if args.twiss:
-  Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
-  options['beamClass'] = "Twiss"
+    Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
+    options['beamClass'] = "Twiss"
+
 if os.uname()[1] == "tensor.uio.no":
-  csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
+    csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
 elif os.uname()[1] == "mbarrios-XPS-13-9300":
-  csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
 else: print("Help! Unknown build directory!, scatterPBW.py l 61")
+
 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,args.aX,args.aY,csvPWD,options)
 ##print(rasterBeamFile,beamXAngle,beamYAngle)
