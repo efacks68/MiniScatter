@@ -667,8 +667,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI[0]*C),pOutsideBoxes)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    rValue = rCompare(Img,options['Nb'])
-    print("R = ",rValue)
+    if options['Nb'] == 10 or options['Nb'] == 100:
+        rValue = rCompare(Img,options['Nb'])
+        print("R = ",rValue)
     #print("Converted in",datetime.now() - start)
 
     #Flat Top Current density calculations
@@ -883,6 +884,82 @@ def findEdges(Img,Imax,savename,xax,yax):
     print(savename,"_GradPics.png",sep="")
     plt.close()
 
-#def fitGaussians(Img):
-#    import numpy as np, ROOT
+def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
+    #from Kyrre's doubleGaussian.ipynb example
+    import ROOT
+
+    #Project center slice 
+    if   axis == "y" or axis == "Y": 
+        proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
+    elif axis == "x" or axis == "X":
+        proj = hist.ProjectionX(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
+
+    #Define a gaussian function and fit it to the projection
+    f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
+    f1_res = proj.Fit(f1, 'RSQ')
+    #print(f1_res)
+    p0 = f1.GetParameter(0)
+    p1 = f1.GetParameter(1)
+    p2 = f1.GetParameter(2)
+
+    #Define function of a sum of multiple Gaussians to fit to projection
+    r=0.1
+    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
+
+    #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
+    if axis == "y" or axis == "Y":
+        f2.SetParameters(p0*(1-r),p2*2,p0*r,20,p0*(1-r*r),p2*5,p0*(1-r*r*r),p2*10)
+        f2.SetParLimits(0,p0*0.5,p0*5) #p0=8e4,7e5
+        #f2.SetParLimits(2,0,p0*0.5) #
+        f2.SetParLimits(3,p2*1.01,p2*y1) #p3=11,22
+        f2.SetParLimits(5,p2*(y1+.01),p2*y2) #p5=22,300
+        f2.SetParLimits(7,p2*(y1),p2*y2*100) #p7 =300,3000
+    elif axis == "x" or axis == "X":
+        f2.SetParameters(p0*(1-r),p2,p0*r,16,p0*(1-r*r),p2,p0*(1-r*r),p2*10)
+        f2.SetParLimits(0,p0*0.5,p0*2)
+        #f2.SetParLimits(1,p2*1.1,p2*y1)
+        #f2.SetParLimits(2,0.1,px0*0.5)
+        f2.SetParLimits(3,p2*1.01,p2*y1*2)
+        #f2.SetParLimits(4,1,px0)
+        #f2.SetParLimits(5,px2*(x1+0.1),px2*x2)
+        #f2.SetParLimits(6,0.1,px0)
+        f2.SetParLimits(7,p2*(y2+0.1),p2*y2*20)
+    f2_res = proj.Fit(f2, 'RSQ')
+    #print(f2_res)
+
+    x=500
+    if options['saveFits']:
+        c1 = ROOT.TCanvas()
+        proj.Draw()
+        f2.SetLineColor(ROOT.kBlack)
+        f2.Draw('same')
+        #f1.SetLineColor(ROOT.kRed)
+        #f1.Draw('same')
+        if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-x,x)
+        elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-x,x)
+        c1.SetLogy()
+        c1.Print(name+"_"+axis+"GaussFit"+str(x)+".pdf")
+
+        #import numpy as np
+        #w = np.zeros(maxim)
+        #diff = np.zeros(maxim)
+        #for i in range(maxim):
+        #    w[i] = i
+        #    diff[i] = projY.Integral(projY.GetXaxis().FindBin(-i),projY.GetXaxis().FindBin(i),'width')  -  fy2.Integral(-i,i)
+        #    if i == maxim-1: print(diff[i])
+        #plt.plot(diff)
+        #plt.title("Y Axis Difference")
+        #plt.yscale("log")
+        #plt.savefig(name+"Fit Difference"+".png")
+
+    difference = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
+    total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
+
+    coeffs = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
+    print(axis,difference,difference/total,coeffs)
+
+    return difference, coeffs
 

@@ -37,6 +37,7 @@ parser.add_argument("--savePics",action="store_true",  default=False,   help="Sa
 parser.add_argument("--noBox",   action="store_true",  default=False,   help="Turns off printed box when called")
 parser.add_argument("--saveHist",action="store_true",  default=False,   help="Saves Histogram of proton density at target")
 parser.add_argument("--saveRaster",action="store_true",default=False,   help="Saves plot of rastered beam")
+parser.add_argument("--saveFits", action="store_true",  default=False,   help="Saves plots of Gaussian Fitting")
 args = parser.parse_args()
 
 #Constants for running scripts
@@ -45,7 +46,7 @@ dependence  = "Twiss"
 options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':dependence,
                             'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
                             'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
-                            'magFails':args.magFails, 'saveRaster':args.saveRaster }
+                            'magFails':args.magFails, 'saveRaster':args.saveRaster, 'saveFits':args.saveFits }
 
 # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
 if args.beamClass == 'Yngve': #smallest from Yngve
@@ -71,4 +72,4 @@ rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,arg
 #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
 ImgPOutBox = runPBW(args.energy,rasterBeamFile,args.t,beamXAngle,beamYAngle,args.savePics,Twiss,args.aX,args.aY,options)
 
-print("Simulation took",datetime.now()-origin,"long")
+print("Simulation took ",datetime.now()-origin,"s long",sep="")

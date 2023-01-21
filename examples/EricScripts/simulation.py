@@ -554,10 +554,13 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #print(thick)
     #print("make plots",datetime.now().strftime("%H-%M-%S"))
     if loadParts:
-        from plotFit import plot1DRaster,rasterImage
+        from plotFit import plot1DRaster,rasterImage,gaussianFit
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
         targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+        diffy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",2,500,options,savename,2,30)
+        diffx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",2,500,options,savename,3,20)
+        
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
             initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
