@@ -42,8 +42,7 @@ args = parser.parse_args()
 
 #Constants for running scripts
 physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
-dependence  = "Twiss"
-options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':dependence,
+options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':"Twiss",
                             'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
                             'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
                             'magFails':args.magFails, 'saveRaster':args.saveRaster, 'saveFits':args.saveFits }

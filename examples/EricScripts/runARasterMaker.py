@@ -75,13 +75,16 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
     i=0 #for Bunch number iterator
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
-    if options['beamClass'] == "ESS" or options['beamClass'] == "Yngve":
-        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
-    elif options['beamClass'] == "pencil":
-        name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
-    elif options['beamClass'] == "Twiss":
-        name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,
-                    nemtX,nemtY,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+    if options['dependence'] == "RA":
+        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+    else:
+        if options['beamClass'] == "ESS" or options['beamClass'] == "Yngve":
+            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+        elif options['beamClass'] == "pencil":
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+        elif options['beamClass'] == "Twiss":
+            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
     if envXatBPM94 != 0:
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
     if envYatBPM94 != 0:
@@ -141,17 +144,17 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
                     else:
                         NperBunch = NperBunch #Edges get full NperBunch
 
-                    #Generate beamlet distributions
-                    rng = np.random.default_rng()
-                    ptsX = rng.multivariate_normal([beamletX,beamletXAngle],covX,size = NperBunch) #mean is [pos,ang]!
-                    ptsY = rng.multivariate_normal([beamletY,beamletYAngle],covY,size = NperBunch)
-                    
-                    for k in range(NperBunch): #put this beamlet into total. Could just be written, figure that out later.
-                        totX[NperBunch*i+k,0] = ptsX[k,0]
-                        totX[NperBunch*i+k,1] = ptsX[k,1]
-                        totY[NperBunch*i+k,0] = ptsY[k,0]
-                        totY[NperBunch*i+k,1] = ptsY[k,1]
-                    i+=1
+                #Generate beamlet distributions
+                rng = np.random.default_rng()
+                ptsX = rng.multivariate_normal([beamletX,beamletXAngle],covX,size = NperBunch) #mean is [pos,ang]!
+                ptsY = rng.multivariate_normal([beamletY,beamletYAngle],covY,size = NperBunch)
+
+                for k in range(NperBunch): #put this beamlet into total. Could just be written, figure that out later.
+                    totX[NperBunch*i+k,0] = ptsX[k,0]
+                    totX[NperBunch*i+k,1] = ptsX[k,1]
+                    totY[NperBunch*i+k,0] = ptsY[k,0]
+                    totY[NperBunch*i+k,1] = ptsY[k,1]
+                i+=1
 
         #Check on output parameters
         print("Centroid X max: {:.2f}mm; Particle X max: {:.2f}mm".format(np.max(centroids[:,0]),np.max(totX[:,0])),"; Shape:",np.shape(totX))
@@ -169,7 +172,7 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
         part_file.close()
 
         finish = datetime.now()
-        print(name,"took: ",finish-start,"s")
+        print(name,".csv took: ",finish-start,"s",sep="")
 
         if options['saveRaster']:
             #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib

@@ -12,83 +12,106 @@ from runPBW import runPBW
 
 #Command Line arguments for save control
 parser = argparse.ArgumentParser()
-parser.add_argument("--savePics",action="store_true",default=False)
-parser.add_argument("--saveCsv",action="store_false",default=True)
-parser.add_argument("--Twiss",type=str,help="Which Twiss set to use, the smallest from Yngve ('y') or Eric's OpenXAL calculation,('o')")
-parser.add_argument("--ampl",type=str,help="Which range of amplitudes to use, short (nominal - 10% less) or large (nominal to 70% less)")
-parser.add_argument("--eX",type=int,default=50,help="End ampl X")
-parser.add_argument("--eY",type=int,default=20,help="End ampl Y")
-parser.add_argument("--startX",type=int,default=0,help="Start ampl for X")
-parser.add_argument("--startY",type=int,default=0,help="Start ampl for Y")
-parser.add_argument("--stepX",type=int,default=11,help="N steps for X")
-parser.add_argument("--stepY",type=int,default=11,help="N steps for Y")
+parser.add_argument("--beamClass",type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss")
+parser.add_argument("--twiss",   type=float,  nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
+parser.add_argument("--t",       type=float,  default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick")
+parser.add_argument("--energy",  type=float,  default=570,   help="Beam Energy [MeV]")
+parser.add_argument("--Nb",      type=int,    default=10,    help="Number of macroparticles per beamlet")
+parser.add_argument("--nP",      type=float,  default=1e2,   help="Numper of beamlets in pulse")
+parser.add_argument("--rX",      type=float,  default=0,     help="X distance from beam axis [mm]")
+parser.add_argument("--rY",      type=float,  default=0,     help="Y distance from beam axis [mm]")
+parser.add_argument("--aX",      type=float,  default=54.65, help="RM X Amplitude [mm]")
+parser.add_argument("--aY",      type=float,  default=18.37, help="RM Y Amplitude [mm]")
+parser.add_argument("--failure", type=float,  default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4.")
+parser.add_argument("--magFails",type=int,    default=2,     choices = range(0,5),  help="Number of Raster Magnets that fail, 1-4.")
+parser.add_argument("--xlim",    type=float,  default=450,   help="+/- value for horizontal axis of output rastered image [mm]")
+parser.add_argument("--ylim",    type=float,  default=500,   help="+/- value for vertical axis of output rastered image [mm]")
+parser.add_argument("--maxim",   type=float,  default=0  ,   help="Maximum current density value for output rastered imagem[uA/cm^2]")
+parser.add_argument("--edges",   action="store_true",  help="Only populate edges of raster?")
+parser.add_argument("--PBIP",    action="store_true",  default=False,   help="Is PBIP present?")
+parser.add_argument("--noText",  action="store_true",  default=False,    help="Turns off printed text when called")
+parser.add_argument("--savePics",action="store_true",  default=False,   help="Saves Rastered Image")
+parser.add_argument("--noBox",   action="store_true",  default=False,   help="Turns off printed box when called")
+parser.add_argument("--saveHist",action="store_true",  default=False,   help="Saves Histogram of proton density at target")
+parser.add_argument("--saveRaster",action="store_true",default=False,   help="Saves plot of rastered beam")
+parser.add_argument("--saveFits", action="store_true",  default=False,   help="Saves plots of Gaussian Fitting")
+
+parser.add_argument("--ampl",   type=str,     default='map',help="Range of amplitudes to use: short(nominal-10% less) or large(nominal-70% less)")
+parser.add_argument("--eX",     type=int,     default=50,    help="End ampl X")
+parser.add_argument("--eY",     type=int,     default=20,    help="End ampl Y")
+parser.add_argument("--startX", type=int,     default=0,     help="Start ampl for X")
+parser.add_argument("--startY", type=int,     default=0,     help="Start ampl for Y")
+parser.add_argument("--NstepX",  type=int,     default=6,    help="N steps for X")
+parser.add_argument("--NstepY",  type=int,     default=6,    help="N steps for Y")
 args = parser.parse_args()
 print(args)
 
 #Constants for running scripts
-beamType    = "ESS"
-energy      = 570 #[MeV]
-graph       = False
-NperBunch   = 10
-nPulses     = 1e2
-envXatBPM94 = 0
-envYatBPM94 = 0
-edges       = False
-thick       = 0
-PBIP        = False
-physList    = "QGSP_BERT_EMZ" #"FTFP_BERT_EMZ" is alternate
-dependence  = "RasterAmplitude"
-rasterXAmplitude0 = 54.65 #[mm]
-rasterYAmplitude0 = 18.37 #[mm]
+physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
+options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':"RA",
+                            'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
+                            'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
+                            'magFails':args.magFails, 'saveRaster':args.saveRaster, 'saveFits':args.saveFits }
 
-#Twiss selection, 'y'=smallest from Yngve, 'o'= OpenXAL calculation
-if args.Twiss == 'y':
-  Twiss = [144.15027172522036,-8.184063058768368,0.3519001,88.04934327630778,-1.0382192928960423,0.3651098] #smallest from Yngve
-elif args.Twiss == 'o':
-  Twiss = [1006.80,-60.44,0.11315,129.72,-7.72,0.12155] #from my OpenXAL calculation
-elif args.Twiss == 's': #smaller beam than Yngve's smallest
-  Twiss = [50,-10,0.5,30,-5,0.5]
-elif args.Twiss == 'p': #"pencil" beam of 0 emittance
-  Twiss = [0.15,0,0.0001,0.15,0,0.0001]
+# Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
+if args.beamClass == 'Yngve': #smallest from Yngve
+    Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
+elif args.beamClass == 'ESS': #from my OpenXAL calculation
+    Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
+elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
+    Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+
+if args.twiss:
+    Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
+    options['beamClass'] = "Twiss"
+
+if os.uname()[1] == "tensor.uio.no":
+    csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
+elif os.uname()[1] == "mbarrios-XPS-13-9300":
+    csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+else: print("Help! Unknown build directory!, scatterPBW.py l 61")
 
 #For the input amplitude range selection, 'short' or 'long'
-amplRatio = rasterXAmplitude0 / rasterYAmplitude0
+amplRatio = (args.aX + 0.001) / (args.aY + 0.001) #so no /zero
+defaultRMAmplX = 54.65
+defaultRMAmplY = 18.37
 if args.ampl == 's':
-  rXAmps = np.array([rasterXAmplitude0,49,50,51,52,53,54])
-  #Make Y amplitude values based on ratio (necessary?)
-  rYAmps = np.zeros(len(rXAmps))
-  for i in range(len(rXAmps)):
-    rYAmps[i] = rXAmps[i]/amplRatio
-  rXRange = rXAmps.max() - rXAmps.min()
-  print(rXRange)
-  legloc = "center right"
-  twTloc = 0.55
-  pLloc = 0.95
+    #rXAmps = np.array([args.aX,49,50,51,52,53,54])
+    rXAmps = np.array([args.aX,49,51,53,57])
+    #Make Y amplitude values based on ratio (necessary?)
+    rYAmps = np.zeros(len(rXAmps))
+    for i in range(len(rXAmps)):
+        rYAmps[i] = rXAmps[i]/amplRatio
+    rXRange = rXAmps.max() - rXAmps.min()
+    print(rXRange)
+    legloc = "center right"
+    twTloc = 0.55
+    pLloc = 0.95
 elif args.ampl == 'l':
-  #rXAmps = np.array([rasterXAmplitude0,15,25,30,35,40,45,50])
-  rXAmps = np.array([rasterXAmplitude0,0.001,15,25,35])
-  #Make Y amplitude values based on ratio (necessary?)
-  rYAmps = np.zeros(len(rXAmps))
-  for i in range(len(rXAmps)):
-    rYAmps[i] = rXAmps[i]/amplRatio
-  rXRange = rXAmps.max() - rXAmps.min()
-  print(rXRange)
-  legloc = "center left"
-  twTloc = 0.85
-  pLloc = 0.85
+    #rXAmps = np.array([args.aX,15,25,30,35,40,45,50])
+    rXAmps = np.array([args.aX,0.001,15,25,35])
+    #Make Y amplitude values based on ratio (necessary?)
+    rYAmps = np.zeros(len(rXAmps))
+    for i in range(len(rXAmps)):
+        rYAmps[i] = rXAmps[i]/amplRatio
+    rXRange = rXAmps.max() - rXAmps.min()
+    print(rXRange)
+    legloc = "center left"
+    twTloc = 0.85
+    pLloc = 0.85
 elif args.ampl == 'srcy': #Short Range Constant Y amplitude
-  rXAmps = np.array([rasterXAmplitude0,49,50,51,52,53,54])
-  rYAmps = rasterYAmplitude0*0.9 * np.ones(len(rXAmps)) #90% amplitude constant
-  rXRange = rXAmps.max() - rXAmps.min()
-  print(rXRange)
-  legloc = "center right"
-  twTloc = 0.55
+    rXAmps = np.array([args.aX,49,50,51,52,53,54])
+    rYAmps = args.aY*0.9 * np.ones(len(rXAmps)) #90% amplitude constant
+    rXRange = rXAmps.max() - rXAmps.min()
+    print(rXRange)
+    legloc = "center right"
+    twTloc = 0.55
 elif args.ampl =="map":
-  rXAmps = np.linspace(args.startX,args.eX,args.stepX)
-  rYAmps = np.linspace(args.startY,args.eY,args.stepY)
-  rXRange = args.eX-args.startX
-  #print(start,end,step,"\n",rXAmps,"\n",rYAmps)
-  print("there are ",args.stepX*args.stepY,"points to plot. Expect that number of minutes.")
+    rXAmps = np.linspace(args.startX,args.eX,args.NstepX)
+    rYAmps = np.linspace(args.startY,args.eY,args.NstepY)
+    rXRange = args.eX-args.startX
+    #print(start,end,step,"\n",rXAmps,"\n",rYAmps)
+    print("there are ",args.NstepX*args.NstepY,"points to plot. Expect that number of minutes.")
 
 
 POutBoxes = np.zeros([len(rYAmps),len(rXAmps)])
@@ -98,67 +121,68 @@ coreMeans = np.zeros([len(rYAmps),len(rXAmps)])
 #VacPOutBoxes = np.zeros(len(rXAmps))
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications
-csvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
+mapCsvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
 name = "RasterAmplDependence_POutBox,Imax_bX{:.1f}m_R{:.1f},{:.1f}mm".format(Twiss[0],rXRange,args.eY-args.startY)
-if os.path.isfile(csvPWD+name+".csv"):
-  print("Found data! Reading in!",name)
-  #from plotFit import numLines
-  #nLines = numLines(csvPWD+name)
-  #print(nLines)
-  with open(csvPWD+name+".csv") as csv_file:
-    csv_reader = csv.reader(csv_file, delimiter=',')
-    i = 0
-    j = 0
-    k = 0
-    z=1
-    for row in csv_reader:
-      if i == 0 and j ==0: #Header line
-        i += 1
-        j += 1
-      else:
-        rXAmps[i-z] = row[0]
-        rYAmps[j-z] = row[1]
-        POutBoxes[j-z][i-z] = row[2]
-        Imaxes[j-z][i-z] = row[3]
-        coreMeans[j-z][i-z] = row[4]
-        #VacPOutBoxes[line_count-z] = row[3]
-        #print(i-z,j-z,rXAmps[i-z],rYAmps[j-z],POutBoxes[i-z][j-z])
-        j += 1
-        if j == len(rXAmps)+1:
-          i += 1
-          j = 0 + z
-    csv_file.close()
+if os.path.isfile(mapCsvPWD+name+".csv"):
+    print("Found data! Reading in!",name)
+    #from plotFit import numLines
+    #nLines = numLines(csvPWD+name)
+    #print(nLines)
+    with open(mapCsvPWD+name+".csv") as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        j = 0
+        k = 0
+        z=1
+        for row in csv_reader:
+            if i == 0 and j ==0: #Header line
+                i += 1
+                j += 1
+            else:
+                rXAmps[i-z] = row[0]
+                rYAmps[j-z] = row[1]
+                POutBoxes[j-z][i-z] = row[2]
+                Imaxes[j-z][i-z] = row[3]
+                coreMeans[j-z][i-z] = row[4]
+                #VacPOutBoxes[line_count-z] = row[3]
+                #print(i-z,j-z,rXAmps[i-z],rYAmps[j-z],POutBoxes[i-z][j-z])
+                j += 1
+                if j == len(rXAmps)+1:
+                    i += 1
+                    j = 0 + z
+        csv_file.close()
 else:
-  print("Run simulations!",name)
-  for i in range(len(rXAmps)):
-    for j in range(len(rYAmps)):
-      print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
-      #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-      rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(beamType,energy,graph,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rXAmps[i],rYAmps[j],dependence,csvPWD)
-      #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-      POutBoxes[j][i], Imaxes[j][i], coreMeans[j][i] = runPBW(energy,rasterBeamFile,beamType,thick,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[j],dependence)
-      #Store % value for plotting
-      #Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
-      #noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
-      #VacPOutBoxes[i] = noPBWPOutBox
-    print("time elapsed",datetime.now()-origin)
+    print("Run simulations for RA ratio",amplRatio."\t",name)
+    for i in range(len(rXAmps)):
+        for j in range(len(rYAmps)):
+            print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
+            #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
+            rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,args.nP,args.rX,args.rY,args.edges,Twiss,rXAmps[i],rYAmps[j],csvPWD,options)
+            #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
+            POutBoxes[j][i], Imaxes[j][i], coreMeans[j][i] = runPBW(args.energy,rasterBeamFile,args.t,beamXAngle,beamYAngle,args.savePics,Twiss,rXAmps[i],rYAmps[j],options)
+            #Store % value for plotting
+            #Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
+            #noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
+            #VacPOutBoxes[i] = noPBWPOutBox
+            print(datetime.now().strftime("%H-%M-%S"))
+        print("time elapsed",datetime.now()-origin)
 
        #Save values for future quick use
-  if args.saveCsv:
+    #if args.saveCsv:
     print("Writing CSV")
     with open(csvPWD+name+".csv",mode = 'w') as csv_file:
-      csv_writer = csv.writer(csv_file,delimiter = ',')
-      csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","IMaxes [uA/mm2]","CoreIMeans [uA/mm2]"])
-      for i in range(len(rXAmps)):
-        for j in range(len(rYAmps)):
-          csv_writer.writerow([rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i],coreMeans[j][i]])#,VacPOutBoxes[i]])
-      csv_file.close()
-      print("CSV written",csvPWD+name)
-  print("time elapsed",datetime.now()-origin)
+        csv_writer = csv.writer(csv_file,delimiter = ',')
+        csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","IMaxes [uA/mm2]","CoreIMeans [uA/mm2]"])
+        for i in range(len(rXAmps)):
+            for j in range(len(rYAmps)):
+                csv_writer.writerow([rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i],coreMeans[j][i]])#,VacPOutBoxes[i]])
+        csv_file.close()
+    print("CSV written",csvPWD+name)
+    print("time elapsed",datetime.now()-origin)
 
 for i in range(len(rXAmps)):
-  for j in range(len(rYAmps)):
-    print(rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i])
+    for j in range(len(rYAmps)):
+        print(rXAmps[i],rYAmps[j],POutBoxes[j][i],Imaxes[j][i])
 
 #Plot for parameter search analysis
 fs=14
@@ -204,9 +228,17 @@ cbar2.set_label(cbarLabel2,labelpad=2,fontsize=fs-2)
 #cbar2.set_ticks(cbarVals2)
 cbar2.set_ticklabels(cbarLabels2)
 from math import floor,ceil
-ax1.hlines(rasterYAmplitude0,floor(rasterXAmplitude0*0.5),ceil(rasterXAmplitude0*0.5),color='m')
-ax1.vlines(rasterXAmplitude0*0.5,floor(rasterYAmplitude0),ceil(rasterYAmplitude0),color='m')
-ax1.text(rasterXAmplitude0*0.5+1,rasterYAmplitude0+1,"Nominal Y, Half Nominal X")
+xlim1 = ax1.get_xlim()
+ylim1 = ax1.get_ylim()
+#22Jan-you are adjusting the nominal markers, then runnning several different maps
+#try to find an optimal ampl.
+#also, you have to adjust the original values in the Gaussian fitting as it keeps throwing 
+#  the "lower/upper bounds outside current parameter value." error which is about the initial
+#  value being outside the SetParamterLimit bounds
+
+ax1.hlines(defaultRMAmplX,floor(defaultRMAmplX*0.5),ceil(defaultRMAmplX*0.5),color='m')
+ax1.vlines(defaultRMAmplX*0.5,defaultRMAmplY*xlim1[1],ceil(defaultRMAmplY),color='m')
+ax1.text(defaultRMAmplX*0.5+1,defaultRMAmplY+1,"Nominal Y, Half Nominal X")
 ##Set up texts to include with relevant info
 #xlim = plt.xlim()
 #ylim = plt.ylim()

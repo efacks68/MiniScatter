@@ -234,8 +234,12 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     elif os.uname()[1] == "tensor.uio.no":
         if Twiss[1] >= 1:
             baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/ESS/")
+            if options['dependence'] == "RA":
+                baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
         elif Twiss[1] < 1:
             baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/pencil/")
+            if options['dependence'] == "RA":
+                baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
         else:
             baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
     else: print("Help! Unknown build directory!, simulation.py l 243")

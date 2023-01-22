@@ -827,8 +827,19 @@ def converter(hIn,saveHist,name):
 
 
 #add function to check if ROOT file is complete, else delete and make new
+def findRoot(savename):
+    from os.path import isfile
+    locations = ["/scratch2/ericdf/PBWScatter/ESS/","/scratch2/ericdf/PBWScatter/pencil/","/scratch2/ericdf/PBWScatter/2Dmaps/"]
+    pwd="/scratch2/ericdf/PBWScatter/"
+    for i in range(len(locations)):
+        if isfile(locations[i]+savename+".root"):
+            pwd = locations[i]
+        else: 
+            print("Root file not found in",locations[i])
+    print(pwd,savename,".root",sep="")
 
-
+    #need to add completeness check
+    return pwd
 
 def rCompare(Im,Nb):
     import numpy as np, os
@@ -959,7 +970,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
 
     coeffs = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis,difference,difference/total,coeffs)
+    print(axis,difference,total,difference/total)#,coeffs)
 
     return difference, coeffs
 
