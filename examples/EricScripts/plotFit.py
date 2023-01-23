@@ -688,6 +688,14 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             if idx[1] > idxMaxY: idxMaxY = idx[1]
     print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
 
+    #print("start",datetime.now().strftime("%H-%M-%S"))
+    if options['findEdges']:
+        #Not great, may need to reshape and average. Not sure how to do that...
+        from plotFit import findEdges
+        edges = findEdges(Img,Imax,False,savename,xax,yax)
+        print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
+
     if savePics:
         from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
         from matplotlib.patches import Rectangle
@@ -758,7 +766,15 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
                 ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
                 ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
                                   color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
-    
+
+        if options['findEdges']:
+            edgeCol = 'k'
+            ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
+            ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
+            ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
+            ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
+            #print("Edges printed!!")
+
         dt = datetime.now()
         #from os.path import isfile
         #if isfile(name+"*.png"):
@@ -771,29 +787,25 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #dt = datetime.now()
     #print(dt-start)
 
-    #Add Flag for this
-    #from plotFit import findEdges
-    #findEdges(Img,Imax,savename,xax,yax)
-
     return pOutsideBoxes[0], Imax, coreMeanI
 
 def converter(hIn,saveHist,name):
     import ROOT
-    import numpy as np
+    from numpy import zeros
 
     #Get X axis from ROOT
-    xax = np.zeros(hIn.GetXaxis().GetNbins()+1)
+    xax = zeros(hIn.GetXaxis().GetNbins()+1)
     for i in range(len(xax)-1):
         xax[i] = hIn.GetXaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     xax[-1] = hIn.GetXaxis().GetBinUpEdge(hIn.GetXaxis().GetNbins())
 
     #Get Y axis from ROOT
-    yax = np.zeros(hIn.GetYaxis().GetNbins()+1)
+    yax = zeros(hIn.GetYaxis().GetNbins()+1)
     for i in range(len(yax)-1):
         yax[i] = hIn.GetYaxis().GetBinLowEdge(i+1) #Set elements as bin edges
     yax[-1] = hIn.GetYaxis().GetBinUpEdge(hIn.GetYaxis().GetNbins())
     
-    hOut = np.zeros( (len(yax), len(xax)) ) #2D Image map
+    hOut = zeros( (len(yax), len(xax)) ) #2D Image map
 
     #Fill Image map with 2D histogram values
     for xi in range(hIn.GetXaxis().GetNbins()):
@@ -804,8 +816,8 @@ def converter(hIn,saveHist,name):
     #Must add Overflow options!!!
 
     if saveHist:
-        import os
-        if os.uname()[1] == "tensor.uio.no":
+        from os import uname
+        if uname()[1] == "tensor.uio.no":
             import csv,re
             #Remove upper directories that may have come with name for appending outname to scratch folder
             if re.search("/PBW_",name):
@@ -842,10 +854,11 @@ def findRoot(savename):
     return pwd
 
 def rCompare(Im,Nb):
-    import numpy as np, os
+    import numpy as np
+    from os import uname
 
     #Find reference files
-    if os.uname()[1] == "tensor.uio.no":
+    if uname()[1] == "tensor.uio.no":
         if Nb == 10:
             Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
@@ -864,36 +877,105 @@ def rCompare(Im,Nb):
 
     return np.sqrt(np.sum(diff))
 
-def findEdges(Img,Imax,savename,xax,yax):
-    import numpy as np
-    from scipy.signal import convolve2d as sciSigConv2d
+def findEdges(Img,Imax,graph,savename,xax,yax):
+    from numpy import array
+    from scipy.signal import convolve2d as scipySigConv2d
     #does it need to be normalized?
 
-    Gradxx = np.array([[1,0,-1],[2,0,-2],[1,0,-1]])
-    Gradyy = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
+    gradXX = array([[1,0,-1],[2,0,-2],[1,0,-1]])
+    gradYY = array([[1,2,1],[0,0,0],[-1,-2,-1]])
 
-    Gradx = sciSigConv2d(Img,Gradxx,'same')
-    Grady = sciSigConv2d(Img,Gradyy,'same')
+    gradX = scipySigConv2d(Img,gradXX,'same')
+    gradY = scipySigConv2d(Img,gradYY,'same')
 
-    Gradient = np.sqrt(Gradx ** 2 + Grady ** 2)
+    if graph:
+        import matplotlib.pyplot as plt
+        from numpy import meshgrid
+        plt.close()
+        X,Y = meshgrid(xax,yax)
+        fig = plt.figure(figsize=(15,5))
+        plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
+        ax1 = fig.add_subplot(1,2,1)
+        ax2 = fig.add_subplot(1,2,2)
+        #ax3 = fig.add_subplot(1,3,3)
+        a = ax1.pcolor(X,Y,gradX,shading='auto')
+        b = ax2.pcolor(X,Y,gradY,shading='auto')
+        #ax3.pcolor(X,Y,gradient,shading='auto')
+        plt.setp(ax1,xlim=(-100,100),ylim=(-100,100))
+        plt.setp(ax2,xlim=(-100,100),ylim=(-100,100))
+        fig.colorbar(a, ax=ax1,pad=0.01)
+        fig.colorbar(a, ax=ax2,pad=0.01)
+        #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
+        #add cbars!!!
+        plt.savefig(savename+"_GradPics.png")
+        print(savename,"_GradPics.png",sep="")
+        plt.close()
 
-    import matplotlib.pyplot as plt
-    plt.close()
-    X,Y = np.meshgrid(xax,yax)
-    fig = plt.figure(figsize=(15,5))
-    plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
-    ax1 = fig.add_subplot(1,3,1)
-    ax2 = fig.add_subplot(1,3,2)
-    ax3 = fig.add_subplot(1,3,3)
-    ax1.pcolor(X,Y,Gradx,shading='auto')
-    ax2.pcolor(X,Y,Grady,shading='auto')
-    ax3.pcolor(X,Y,Gradient,shading='auto')
-    plt.setp(ax1,xlim=(-100,100),ylim=(-100,100))
-    plt.setp(ax2,xlim=(-100,100),ylim=(-100,100))
-    plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
-    #plt.savefig(savename+"_GradPics.png")
-    print(savename,"_GradPics.png",sep="")
-    plt.close()
+    #Prominence of gradient to determine if actual edge or not
+    promX = 0.20
+    promY = 0.60
+
+    edges = localExtrema(gradX,promX,gradY,promY)
+    #print(edges)
+
+    #Only do check for Top and Left?
+    if edges[0] == 0:
+        promY -= 0.20
+        print("Not strongly defined beam on Top",promY)
+        edges = localExtrema(gradX,promX,gradY,promY)
+        if edges[1] == 0:
+            promY -= 0.10
+            print("Not strongly defined beam on Top",promY)
+            edges = localExtrema(gradX,promX,gradY,promY)
+            if edges[1] == 0:
+                promY -= 0.22
+                print("Not strongly defined beam on Top",promY)
+                edges = localExtrema(gradX,promX,gradY,promY)
+    if edges[2] == 0:
+        promX -= 0.15
+        print("Not strongly defined beam on Left",promX)
+        edges = localExtrema(gradX,promX,gradY,promY)
+        if edges[1] == 0:
+            print("Major Error Left Edge")
+
+    return edges
+
+def localExtrema(gradX,promX,gradY,promY):
+    #Finds Edge Indices from Gradient maps
+    from numpy import amax,amin#,ndenumerate
+
+    #Set conspicuous initial values in case not found
+    lMaxX = 0
+    lMinX = 0
+    lMaxY = 0
+    lMinY = 0
+
+    lMaxX = max(amax(gradX,axis=1,initial=promX))
+    lMinX = min(amin(gradX,axis=1,initial=-promX))
+    lMaxY = max(amax(gradY,axis=0,initial=promY))
+    lMinY = min(amin(gradY,axis=0,initial=-promY))
+    #print(lMaxX,lMinX,lMaxY,lMinY)
+
+    #plot wants x values, not hist indices like matlab!
+    #Set conspicuous initial values in case not found
+    #topInd = 0
+    #botInd = 0
+    #lefInd = 0
+    #rigInd = 0
+
+    #Find indices of values, may or may not be fastest
+    #for idx,val in ndenumerate(gradX):
+    #    if val == lMaxX:
+    #        lefInd = idx[1]
+    #    elif val == lMinX:
+    #        rigInd = idx[1]
+    #for idx,val in ndenumerate(gradY):
+    #    if val == lMaxY:
+    #        topInd = idx[0]
+    #    elif val == lMinY:
+    #        botInd = idx[0]
+    
+    return [lMaxX,lMinX,lMaxY,lMinY] #[topInd,botInd,lefInd,rigInd]
 
 def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     #from Kyrre's doubleGaussian.ipynb example
@@ -912,6 +994,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     p0 = f1.GetParameter(0)
     p1 = f1.GetParameter(1)
     p2 = f1.GetParameter(2)
+    #print(p0,p1,p2)
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
@@ -922,23 +1005,30 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
     if axis == "y" or axis == "Y":
-        f2.SetParameters(p0*(1-r),p2*2,p0*r,20,p0*(1-r*r),p2*5,p0*(1-r*r*r),p2*10)
-        f2.SetParLimits(0,p0*0.5,p0*5) #p0=8e4,7e5
-        #f2.SetParLimits(2,0,p0*0.5) #
-        f2.SetParLimits(3,p2*1.01,p2*y1) #p3=11,22
-        f2.SetParLimits(5,p2*(y1+.01),p2*y2) #p5=22,300
-        f2.SetParLimits(7,p2*(y1),p2*y2*100) #p7 =300,3000
+        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2)
+        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+        f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
+        f2.SetParLimits(1,p2*0.25,p0*y1) #
+        f2.SetParLimits(2,p1, p0*r*2) #
+        f2.SetParLimits(3,p2, p2*y1) #p3=11,22
+        f2.SetParLimits(4,p2, p2*y2) #p5=22,300
+        f2.SetParLimits(5,p2, p2*y2) #p5=22,300
+        #f2.SetParLimits(6,p2,p2*y2) #p5=22,300
+        f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
     elif axis == "x" or axis == "X":
-        f2.SetParameters(p0*(1-r),p2,p0*r,16,p0*(1-r*r),p2,p0*(1-r*r),p2*10)
-        f2.SetParLimits(0,p0*0.5,p0*2)
-        #f2.SetParLimits(1,p2*1.1,p2*y1)
-        #f2.SetParLimits(2,0.1,px0*0.5)
-        f2.SetParLimits(3,p2*1.01,p2*y1*2)
-        #f2.SetParLimits(4,1,px0)
-        #f2.SetParLimits(5,px2*(x1+0.1),px2*x2)
-        #f2.SetParLimits(6,0.1,px0)
-        f2.SetParLimits(7,p2*(y2+0.1),p2*y2*20)
+        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2)
+        #print(9532,16.3,395,36.5,6511,14,2,334)
+        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+        f2.SetParLimits(0,p0*r,p0*y1)
+        f2.SetParLimits(1,p2*0.25,p2*y1)
+        f2.SetParLimits(2,p2, p0*r*2)
+        f2.SetParLimits(3,p2, p2*y1)
+        f2.SetParLimits(4,p2, p2*y2)
+        f2.SetParLimits(5,p2, p2*y2)
+        #f2.SetParLimits(6,0.1,p0)
+        f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
     f2_res = proj.Fit(f2, 'RSQ')
+    #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
     #print(f2_res)
 
     x=500
@@ -970,7 +1060,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
 
     coeffs = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis,difference,total,difference/total)#,coeffs)
+    print(axis,difference,total,difference/total)#,"\n")#,coeffs)
 
     return difference, coeffs
 

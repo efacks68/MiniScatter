@@ -564,6 +564,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
         diffy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",2,500,options,savename,2,30)
         diffx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",2,500,options,savename,3,20)
+        #add minimize function for these
         
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
