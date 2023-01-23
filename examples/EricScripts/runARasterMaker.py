@@ -190,9 +190,12 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
             s1.set_xlim([-100,100])
             s1.set_ylim([-50,50])
             s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
-            import os
-            if os.uname()[1] == "tensor.uio.no":
+            from os import uname
+            if uname()[1] == "tensor.uio.no":
                 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+            elif uname()[1] == "mbarrios-XPS-13-9300":
+                picPWD = csvPWD
+            else: picPWD = input("What directory would you like to save files to? ")
             plt.savefig(picPWD+name+".png")
             print(picPWD+name+".png")
             plt.close()

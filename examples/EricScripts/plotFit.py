@@ -663,14 +663,15 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             Img[i][j] = Img[i][j] * C #[uA/cm^2]
     Imax = Img.max()
     Imin = 0.9 * C #background (0 hits) will be un-colored
-    print(coreMeanI*C,coreImax*C)
-    print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,Imin,coreMeanI[0]*C),pOutsideBoxes)
+    #print(coreMeanI*C,coreImax*C)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
     if options['Nb'] == 10 or options['Nb'] == 100:
         rValue = rCompare(Img,options['Nb'])
-        print("R = ",rValue)
+        #print("R = ",rValue)
     #print("Converted in",datetime.now() - start)
+
+    print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, R {:.3f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,rValue,Imin,coreMeanI[0]*C),pOutsideBoxes)
 
     #Flat Top Current density calculations
     top=0
@@ -695,7 +696,11 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         edges = findEdges(Img,Imax,False,savename,xax,yax)
         print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
     #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
-
+    
+    diffy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",2,500,options,savename,2,30)
+    diffx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",2,500,options,savename,3,20)
+    #add minimize function for these
+        
     if savePics:
         from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
         from matplotlib.patches import Rectangle
@@ -1060,7 +1065,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
 
     coeffs = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis,difference,total,difference/total)#,"\n")#,coeffs)
+    print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(difference,total,difference/total*100))#,"\n")#,coeffs)
 
     return difference, coeffs
 

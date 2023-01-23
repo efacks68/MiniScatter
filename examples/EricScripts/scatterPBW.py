@@ -65,7 +65,8 @@ if os.uname()[1] == "tensor.uio.no":
     csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
 elif os.uname()[1] == "mbarrios-XPS-13-9300":
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-else: print("Help! Unknown build directory!, scatterPBW.py l 61")
+else:
+    csvPWD = input("Path from home to direction you like to save files to: ")
 
 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,args.nP,args.rX,args.rY,args.edgeRaster,Twiss,args.aX,args.aY,csvPWD,options)

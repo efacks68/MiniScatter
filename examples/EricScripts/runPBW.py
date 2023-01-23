@@ -23,28 +23,16 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
 
     if beamFile != "":
             loadParts = True
-
     if thick == 0:
             materials = ["G4_Al"]
     elif thick == 0.1:
         materials = ["G4_Galactic"]
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
-
     ifplot=False
-    #Twiss from twissDependence script
-    nemtX = Twiss[0] #[mm-mrad]
-    betaX = Twiss[1] #[m]
-    alphX = Twiss[2]
-    nemtY = Twiss[3] #[mm-mrad]
-    betaY = Twiss[3] #[m]
-    alphY = Twiss[5]
-
     #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
-
     mag=math.floor(math.log10(N)) #for dynamically scaling the halo plots
-
     if ifplot:
-            engplot=True
+        engplot=True
 
     #Create the fig before the loop with 2 plots side by side
     fig = plt.figure(figsize=(15,8))
@@ -186,8 +174,8 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
         s2.text(-xlim2*0.95,ylim2[1]*0.75,sigmatexty) #set the texts at 3/4 and 1/2 of ylim
         s2.text(-xlim2*0.95,ylim2[1]*0.5,percenttexty) #x position is fixed
         fig.suptitle(rf"Distributions at ESS Target of 10$^{{:d}}$ Protons".format(mag)+" Through Various Material PBWs\n"+
-                rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(nemtX,betaX,alphX) +
-            rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(nemtY,betaY,alphY),fontsize=18,y=0.99) #fontweight="bold",
+                rf"Initial beam of $\epsilon_x={{:.1e}}, \beta_x={{:.0e}}, \alpha_x={{:.1f}}$, ".format(Twiss[0],Twiss[1],Twiss[2]) +
+            rf" $\epsilon_y={{:.1e}}, \beta_y={{:.0e}}, \alpha_y={{:.1f}}$ ".format(Twiss[3],Twiss[4],Twiss[5]),fontsize=18,y=0.99) #fontweight="bold",
         #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
         dt = datetime.now()

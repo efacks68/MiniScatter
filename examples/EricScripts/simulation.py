@@ -6,57 +6,27 @@
 # and output the position X and Y arrays at ESS Target location.
 # Also can plot the Energy Distribution if requested.
 
-#To Do:
-# -clean up if statements in baseSetup section
+#First function is setup of run which is called in 2nd function, simulation.
 
-def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
-    import numpy as np
-    import ROOT, os, sys
-    from plotFit import calcTwiss
-    from datetime import datetime
-
-    #constants for below use
-    QUIET     = False #Reduced output, doesn't show events
-    saveParts = False
-
-    #particle characteristic values
-    if beam == "proton":
-        partA = 938.27209 #[MeV/c2]
-        partZ = 1
-    elif beam == "electron":
-        partA = 0.511 #[MeV/c2]
-        partZ = 1
-    c = 2.99792e8 #[m/s]
-    MeV = 1e6*1.602e-19 
-    um = 1e-6 #[m] #need to convert to real units as the equations use real units.
-    m = 1 #[m]
-    mm = 1e-3 #[m]
-    ummrad = um*1e-3
-    gamma_rel = 1 + energy/partA #from PrintTwissParameters
-    beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
+def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+    from numpy import cos,sin#,arctan
+    #import ROOT
+    from os import uname,getcwd,chdir,path as osPath
+    from sys import path as sysPath
+    #from datetime import datetime
 
     #Setup MiniScatter -- modify the path to where you built MiniScatter!
     MiniScatter_path="../../MiniScatter/build/."
-    sys.path.append(MiniScatter_path) #uncomment this if this is your first time running this.
-    #print(os.getcwd())
-    if os.uname()[1] == "tensor.uio.no":
-        if os.getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
-            os.chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-    elif os.uname()[1] == "mbarrios-XPS-13-9300":
-        if os.getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
-            os.chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-    else: print("Help! Unknown build directory!, simulation.py l 50")
-        #print(os.getcwd())
-
-    import miniScatterDriver
-    #import miniScatterScanner
-    #import miniScatterPlots
-
-    ### Basic simulation parameters ###
-    TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
-    NUM_THREADS = 8 #Number of parallel threads to use for scans
-    #Where to store temporary data for scans (a fast file system, NOT EOS/AFS)
-    TMPFOLDER = "/tmp/miniScatter/SimpleDemo_thicknessScan"
+    sysPath.append(MiniScatter_path) #uncomment this if this is your first time running this.
+    #print(getcwd())
+    if uname()[1] == "tensor.uio.no":
+        if getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
+            chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
+    elif uname()[1] == "mbarrios-XPS-13-9300":
+        if getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
+            chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
+    else: chdir(input("What directory would you like to save files to? "))
+    #print(getcwd())
 
     #When making multiple scans, it's nice to first create a `baseSimSetup` and then modify it for each simulation
     # Note: each argument here corresponds roughly to a command line argument.
@@ -71,16 +41,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #Where to start the beam [mm]
     #baseSimSetup["ZOFFSET_BACKTRACK"] = True
     baseSimSetup["N"]         = N #need N regardless of beam origin
-    baseSimSetup["ZOFFSET"]   = zoff
-
-    #Use a distribution defined by Twiss parameters for ESS beam ~where PBW is
-    # 3 variables = symmetric, 6 variables = asymetric
-    EPSX   = Twiss[0] #[um]
-    BETAX  = Twiss[1] #[m]
-    ALPHAX = Twiss[2] #[mm-mrad]
-    EPSY   = Twiss[3] #[um]
-    BETAY  = Twiss[4] #[m]
-    ALPHAY = Twiss[5] #[mm-mrad]
+    baseSimSetup["ZOFFSET"]   = zoff #Check
 
     #For loading particles
     if loadParts == True:
@@ -94,11 +55,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     else:
         baseSimSetup["BEAM"]    = beam
         baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
-        baseSimSetup["COVAR"] = (EPSX,BETAX,ALPHAX,EPSY,BETAY,ALPHAY) #only for without "--beamFile"
-
-    #Get rid of Normalized Emittance!
-    Igemtx = EPSX/(beta_rel*gamma_rel)
-    Igemty = EPSY/(beta_rel*gamma_rel)
+        baseSimSetup["COVAR"] = (Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5]) #only for without "--beamFile"
 
     #Beam particle type
     Rcut = 1000.0
@@ -109,9 +66,9 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #Defined by the beam size at BPM94 (TBD) compared to size at BPM93 (~0)
     if beamXAngle != 0 or beamYAngle != 0:
         dBPM93to94 = 3031 #[mm]
-        #beamAngle = np.arctan(sizeAtBPM94/dBPM93to94) #rad?
-        modXThick = thick / np.cos(beamXAngle) 
-        modYThick = thick / np.sin(beamYAngle)
+        #beamAngle = arctan(sizeAtBPM94/dBPM93to94) #rad?
+        modXThick = thick / cos(beamXAngle) 
+        modYThick = thick / sin(beamYAngle)
         print(beamXAngle,modXThick,beamYAngle,modYThick)
     #Some more output settings
     baseSimSetup["QUICKMODE"] = False #Include slow plots
@@ -189,10 +146,10 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
         if loadParts:
-            #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,baseSimSetup["N"])
+            #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
             outname = beamFile+"_runW"
         else:
-            outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(baseSimSetup["ENERGY"],EPSX*1e3,EPSY*1e3,BETAX,BETAY,ALPHAX,ALPHAY,thick,baseSimSetup["N"])
+            outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],thick,parts)
             #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
             #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
             #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
@@ -229,19 +186,19 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #print("removed",outname)
 
     #Find which folder root file is in
-    if os.uname()[1] == "mbarrios-XPS-13-9300":
-        baseSimSetup["OUTFOLDER"] = os.path.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
-    elif os.uname()[1] == "tensor.uio.no":
+    if uname()[1] == "mbarrios-XPS-13-9300":
+        baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
+    elif uname()[1] == "tensor.uio.no":
         if Twiss[1] >= 1:
-            baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/ESS/")
+            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/ESS/")
             if options['dependence'] == "RA":
-                baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
+                baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
         elif Twiss[1] < 1:
-            baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/pencil/")
+            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/pencil/")
             if options['dependence'] == "RA":
-                baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
+                baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
         else:
-            baseSimSetup["OUTFOLDER"] = os.path.join("/scratch2/ericdf/PBWScatter/")
+            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/")
     else: print("Help! Unknown build directory!, simulation.py l 243")
 
     #print(baseSimSetup["OUTFOLDER"])
@@ -255,13 +212,41 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
     ####Redundant??? ----------
     #Variables for automation
-    if os.uname()[1] == "mbarrios-XPS-13-9300":
+    if uname()[1] == "mbarrios-XPS-13-9300":
         savepath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-    elif os.uname()[1] == "tensor.uio.no":
+    elif uname()[1] == "tensor.uio.no":
         #savepath = "/scratch2/ericdf/PBWScatter/"
         savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
     savename=savepath+outname #base savename for plots downstream, brings directly to my directory
-    savedfile=os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
+    savedfile=osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
+
+    return savename,savedfile,simSetup_simple1
+
+def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+    import numpy as np
+    import ROOT
+    from os import path as osPath
+    from plotFit import calcTwiss
+    from datetime import datetime
+
+    um = 1e-6 #[m] 
+    m = 1 #[m]
+    mm = 1e-3 #[m]
+
+    from simulation import setup
+    savename,savedfile,simSetup_simple1 = setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+    
+    import miniScatterDriver
+    #import miniScatterScanner
+    #import miniScatterPlots
+    #constants for below use
+    QUIET     = False #Reduced output, doesn't show events
+    saveParts = False
+    ### Basic simulation parameters ###
+    TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
+    NUM_THREADS = 8 #Number of parallel threads to use for scans
+    #Where to store temporary data for scans (a fast file system, NOT EOS/AFS)
+    TMPFOLDER = "/tmp/miniScatter/SimpleDemo_thicknessScan"
 
     #print(simSetup_simple1)
     #Run simulation or load old simulation root file!
@@ -275,7 +260,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
     if initTree:
         #If one wants to use the initial spread
-        myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+        myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
         myTree= myFile.Get("InitParts")
         #print(myTree)
         xinit = np.zeros(myTree.GetEntries())
@@ -303,10 +288,10 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
             #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
             #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
             #These are not at the ESS Target location, but are at the far side of the PBW
-            myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+            myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
             myTree= myFile.Get("TargetExit") #TrackerHits has all trackers, be sure to only have 1!
         else:
-            myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+            myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
             myTree = myFile.Get("magnet_1_ExitHits")
             thick=4.25 #[mm] set here for thickness calculations
 
@@ -372,14 +357,14 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #end of exit Distribution if
 
     #if options['PBIP']:
-    #  myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+    #  myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
     #  myTree= myFile.Get("magnet_2_edeps")
 
     xtarg_filtered_p = np.zeros(10)
     ytarg_filtered_p = np.zeros(10)
     if targetTree:
         ##Distributions at ESS Target location (the detector located 4.4m from PBW)
-        myFile = ROOT.TFile.Open(os.path.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
+        myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
         myTree= myFile.Get("TrackerHits") #TrackerHits has all trackers, be sure to only have 1!
 
         #Get the distributions at the ESS Target location
@@ -475,11 +460,27 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     if MCS:
         ##If magnet, use multiple scattering layers instead of averaging!
         from plotFit import plotTwissFit,calcEq8,calcEq16
+
+         #particle characteristic values
+        if beam == "proton":
+            partA = 938.27209 #[MeV/c2]
+            partZ = 1
+        elif beam == "electron":
+            partA = 0.511 #[MeV/c2]
+            partZ = 1
+        c = 2.99792e8 #[m/s]
+        MeV = 1e6*1.602e-19 
+        gamma_rel = 1 + energy/partA #from PrintTwissParameters
+        beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
+        #Get rid of Normalized Emittance!
+        Igemtx = Twiss[0]/(beta_rel*gamma_rel)
+        Igemty = Twiss[3]/(beta_rel*gamma_rel)
+
         #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-        TwissIx   = [BETAX,ALPHAX,Igemtx*um,((1+ALPHAX*ALPHAX)/BETAX)] #Initial Twiss
-        TwissIy   = [BETAY,ALPHAY,Igemty*um,((1+ALPHAY*ALPHAY)/BETAY)]
-        PBWTwx = [BETAX,ALPHAX,EPSX]
-        PBWTwy = [BETAY,ALPHAY,EPSY]
+        TwissIx   = [Twiss[1],Twiss[2],Igemtx*um,((1+Twiss[2]*Twiss[2])/Twiss[1])] #Initial Twiss
+        TwissIy   = [Twiss[4],Twiss[5],Igemty*um,((1+Twiss[5]*Twiss[5])/Twiss[4])]
+        PBWTwx = [Twiss[1],Twiss[2],Twiss[0]]
+        PBWTwy = [Twiss[4],Twiss[5],Twiss[3]]
 
 
         ##Highland Equation Radiation Length Calculation
@@ -561,14 +562,11 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         from plotFit import plot1DRaster,rasterImage,gaussianFit
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-        targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
-        diffy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",2,500,options,savename,2,30)
-        diffx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",2,500,options,savename,3,20)
-        #add minimize function for these
+        targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
         
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
+            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
 
     else:
         if thick == 0.1:
