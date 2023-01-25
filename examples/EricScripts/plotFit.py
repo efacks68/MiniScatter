@@ -1,10 +1,9 @@
 #plotFit.py
 #Eric Fackelman
-#29 March- 27 Sep 2022
+#29 March- Present
 
 #This holds the functions to plot the figures for the analysisScripts
 #-plotFit - 
-
 
 def plotFit(xs,ys,savename,xlim,ylim,material,thick): 
     import numpy as np
@@ -696,11 +695,11 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         edges = findEdges(Img,Imax,False,savename,xax,yax)
         print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
     #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
-    
-    diffy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",2,500,options,savename,2,30)
-    diffx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",2,500,options,savename,3,20)
+
+    diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
+    diffx,coeffsx = gaussianFit(histogram2D,"x",2,500,options,savename,3,20)
     #add minimize function for these
-        
+
     if savePics:
         from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
         from matplotlib.patches import Rectangle

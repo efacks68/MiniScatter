@@ -91,7 +91,7 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
         name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
 
     #Raster Magnet Failure Options
-    idcy = round(N_t * (1 - options['magFails'] / 4 )) #produces which quarter to end is 0
+    idcy = round(N_t * (1 - options['magFails'] / 4 )) #produces which quarter:end is 0
     if options['failure'] == 1: #Horizontal Fail
         sRasterXAmpl[idcy:] = 0 # no RM amplitude for magFails-th quarter of pulse
         name = name + "_failure1-" + str(options['magFails'])+"f"
@@ -193,7 +193,7 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
             from os import uname
             if uname()[1] == "tensor.uio.no":
                 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-            elif uname()[1] == "mbarrios-XPS-13-9300":
+            elif uname()[1] == "mbef-XPS-13-9300":
                 picPWD = csvPWD
             else: picPWD = input("What directory would you like to save files to? ")
             plt.savefig(picPWD+name+".png")

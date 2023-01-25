@@ -67,7 +67,7 @@ if args.twiss:
 
 if os.uname()[1] == "tensor.uio.no":
     csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
-elif os.uname()[1] == "mbarrios-XPS-13-9300":
+elif os.uname()[1] == "mbef-XPS-13-9300":
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
 else: print("Help! Unknown build directory!, scatterPBW.py l 61")
 
@@ -117,7 +117,6 @@ elif args.ampl =="map":
 POutBoxes = np.zeros([len(rYAmps),len(rXAmps)])
 Imaxes = np.zeros([len(rYAmps),len(rXAmps)])
 coreMeans = np.zeros([len(rYAmps),len(rXAmps)])
-
 #VacPOutBoxes = np.zeros(len(rXAmps))
 
 #Check if there is a CSV with the data already present. Speeds up plot modifications

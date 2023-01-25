@@ -10,34 +10,26 @@
 
 def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
     from numpy import cos,sin#,arctan
-    #import ROOT
     from os import uname,getcwd,chdir,path as osPath
     from sys import path as sysPath
-    #from datetime import datetime
 
-    #Setup MiniScatter -- modify the path to where you built MiniScatter!
+    #Setup MiniScatter -- modify the path to where you built MiniScatter
     MiniScatter_path="../../MiniScatter/build/."
-    sysPath.append(MiniScatter_path) #uncomment this if this is your first time running this.
+    sysPath.append(MiniScatter_path)
     #print(getcwd())
     if uname()[1] == "tensor.uio.no":
         if getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-    elif uname()[1] == "mbarrios-XPS-13-9300":
+    elif uname()[1] == "mbef-XPS-13-9300":
         if getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
     else: chdir(input("What directory would you like to save files to? "))
     #print(getcwd())
 
-    #When making multiple scans, it's nice to first create a `baseSimSetup` and then modify it for each simulation
-    # Note: each argument here corresponds roughly to a command line argument.
-    # Look inside miniScatterDriver.runScatter() to see how.
-
     baseSimSetup = {}
-    #baseSimSetup["PHYS"] = "QGSP_BERT__SS" #Use the __SS physics lists for thin foils due to checking each atom cross section
     baseSimSetup["PHYS"]  = options['physList'] #better for scattering through 1mm sheets
 
     #Particle Beam definitions
-    #baseSimSetup["BEAM_RCUT"] = 3.0
     #Where to start the beam [mm]
     #baseSimSetup["ZOFFSET_BACKTRACK"] = True
     baseSimSetup["N"]         = N #need N regardless of beam origin
@@ -45,8 +37,6 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     #For loading particles
     if loadParts == True:
-        #picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-        #beamFile = "PBW_570MeV_eX113um,eY122um_bX941m,bY120m_aX-59mm,aY-7mm_N1.4e+05_2.9e+02us_cyrille"
         from plotFit import numLines
         parts = numLines(beamFile)
         baseSimSetup["N"]        = parts #change to match file particles. Used for file name
@@ -77,6 +67,10 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
     baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
     baseSimSetup["CUTOFF_RADIUS"] = Rcut #[mm]Larger radial cutoff #Decreased 10 May
     baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
+    #Detector distance from target center [mm] Default is 50mm behind Target
+    #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
+    baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
+
     #print(baseSimSetup)
 
     #Define material nickname
@@ -108,9 +102,6 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
         #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
         #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
-        #Detector distance from target center [mm] Default is 50mm behind Target
-        #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
-        baseSimSetup["DIST"] = [4400] #Detector location. only at ESS Target location
         if loadParts:
             import re
             name = re.sub(".+(PBW)",mat,beamFile)
@@ -121,7 +112,6 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     else:
         baseSimSetup["THICK"] = 0.0
-        baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
         baseSimSetup["MAGNET"] = []
         #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
         #Specialized PBW magnet!
@@ -146,13 +136,9 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
         #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
         if loadParts:
-            #outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_N{:.0e}_mult16".format(energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
             outname = beamFile+"_runW"
         else:
             outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],thick,parts)
-            #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.0f}mmRcut".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],Rcut)
-            #outname = "PBW_{:.0f}MeV_eX{:.0f}_N{:.0e}_{:.2f}mmAl1{:.2f}mmAl2".format(baseSimSetup["ENERGY"],EPSX*1e3,baseSimSetup["N"],m1Len,m3Len)
-            #outname = "PBW_{:.0f}MeV_ESS".format(baseSimSetup["ENERGY"])
 
         if options['PBIP']:
             outname = outname + "_PBIP"
@@ -174,9 +160,8 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
         outname = outname + "_QBZ"
     elif options['physList'] == "FTFP_BERT_EMZ":
         outname = outname + "_FBZ"
-
-    #Store the .root files in a subfolder from where this script is running,
-    # normally MiniScatter/examples, in order to keep things together
+    else:
+        outname = outname + options['physList']
 
     #Remove upper directories that may have come with beamFile for appending outname to scratch folder
     import re
@@ -186,7 +171,8 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
         #print("removed",outname)
 
     #Find which folder root file is in
-    if uname()[1] == "mbarrios-XPS-13-9300":
+    #loc = findRoot(savename) #still need to work on this function
+    if uname()[1] == "mbef-XPS-13-9300":
         baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
     elif uname()[1] == "tensor.uio.no":
         if Twiss[1] >= 1:
@@ -201,18 +187,14 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
             baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/")
     else: print("Help! Unknown build directory!, simulation.py l 243")
 
-    #print(baseSimSetup["OUTFOLDER"])
-    #put in Scratch2 of tensor for faster processing, as per Kyrre
-
     #copy so it is if running multiple scans in a Jupyter notebook
     simSetup_simple1 = baseSimSetup.copy()
-
     #print(outname,"\n")
     simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
 
     ####Redundant??? ----------
     #Variables for automation
-    if uname()[1] == "mbarrios-XPS-13-9300":
+    if uname()[1] == "mbef-XPS-13-9300":
         savepath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     elif uname()[1] == "tensor.uio.no":
         #savepath = "/scratch2/ericdf/PBWScatter/"
@@ -247,12 +229,17 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     NUM_THREADS = 8 #Number of parallel threads to use for scans
     #Where to store temporary data for scans (a fast file system, NOT EOS/AFS)
     TMPFOLDER = "/tmp/miniScatter/SimpleDemo_thicknessScan"
+    #set these as place holders
+    xtarg_filtered_p = np.zeros(10)
+    ytarg_filtered_p = np.zeros(10)
 
     #print(simSetup_simple1)
     #Run simulation or load old simulation root file!
     initTree = False
     exitTree = False #slows down, may not be necessary anymore
     targetTree = False
+    MCS = False
+
     if targetTree or initTree or exitTree:
         #miniScatterDriver.runScatter(simSetup_simple1, quiet=QUIET) #this was Kyrre's, but it wasn't even trying to load old runs
         miniScatterDriver.getData_tryLoad(simSetup_simple1,quiet=QUIET)
@@ -360,8 +347,6 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     #  myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
     #  myTree= myFile.Get("magnet_2_edeps")
 
-    xtarg_filtered_p = np.zeros(10)
-    ytarg_filtered_p = np.zeros(10)
     if targetTree:
         ##Distributions at ESS Target location (the detector located 4.4m from PBW)
         myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
@@ -456,12 +441,11 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
 
     #Analytical Formula Calculations
-    MCS=False
     if MCS:
         ##If magnet, use multiple scattering layers instead of averaging!
         from plotFit import plotTwissFit,calcEq8,calcEq16
 
-         #particle characteristic values
+        #particle characteristic values
         if beam == "proton":
             partA = 938.27209 #[MeV/c2]
             partZ = 1
@@ -477,8 +461,8 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         Igemty = Twiss[3]/(beta_rel*gamma_rel)
 
         #Use list of Twiss values for simple passing of data: [beta,alpha,gemt]
-        TwissIx   = [Twiss[1],Twiss[2],Igemtx*um,((1+Twiss[2]*Twiss[2])/Twiss[1])] #Initial Twiss
-        TwissIy   = [Twiss[4],Twiss[5],Igemty*um,((1+Twiss[5]*Twiss[5])/Twiss[4])]
+        TwissIx = [Twiss[1],Twiss[2],Igemtx*um,((1+Twiss[2]*Twiss[2])/Twiss[1])] #Initial Twiss
+        TwissIy = [Twiss[4],Twiss[5],Igemty*um,((1+Twiss[5]*Twiss[5])/Twiss[4])]
         PBWTwx = [Twiss[1],Twiss[2],Twiss[0]]
         PBWTwy = [Twiss[4],Twiss[5],Twiss[3]]
 
@@ -519,8 +503,6 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
         #elif baseSimSetup["THICK"] != 0.0: #if only one layer (MiniScatter "target")
         ##Highland Equation Radiation Length Calculation
-        p = np.sqrt((energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
-        betap = beta_rel*p #Eq 5
         if beamXAngle != 0: #account for angle contribution to thickness
             thick = thick / np.cos(beamXAngle) 
         thetasq = 13.6 * partZ / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
@@ -550,14 +532,27 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #e16TargxReal = toTarget(Twisse16x,"e8XReal")
         #e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
-    #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
-    #compareTargets(xexit/mm,yexit/mm,exitxTwf,exityTwf,TwissIx,TwissIy,"PBW Exit",savename+"PBWExit",mat)
-    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat)
-    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
-    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
-    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
-    #print(thick)
-    #print("make plots",datetime.now().strftime("%H-%M-%S"))
+        #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
+        #compareTargets(xexit/mm,yexit/mm,exitxTwf,exityTwf,TwissIx,TwissIy,"PBW Exit",savename+"PBWExit",mat)
+        #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat)
+        #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
+        #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
+        #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
+        #print(thick)
+        #print("make plots",datetime.now().strftime("%H-%M-%S"))
+
+        #Target comparison plots
+        if thick == 0.1:
+            print("Vacuum")
+            compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"No PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
+        elif thick == 4.25:
+            print("PBW!")
+            compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat,PBWTwx,PBWTwy)
+            compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
+            #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
+            #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
+
+    #For Raster Images
     if loadParts:
         from plotFit import plot1DRaster,rasterImage,gaussianFit
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
@@ -567,16 +562,5 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
             initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
-
-    else:
-        if thick == 0.1:
-            print("Vacuum")
-            compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"No PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
-        elif thick == 4.25:
-            print("PBW!")
-            compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat,PBWTwx,PBWTwy)
-            compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
-        #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"Eq8",mat)
-    #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
     return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, targPOutBox, targImax, targCoreMeanI #filter by PDG only
