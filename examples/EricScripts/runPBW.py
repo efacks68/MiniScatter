@@ -11,6 +11,17 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     from simulation import simulation
     from datetime import datetime
 
+    #Define something preliminarily
+    materials = ["G4_Al"] #need to move this
+    N = 1e5 #needed?
+    if3Plot = False #for plotting the 3 graphs per material
+    engPlot = False
+    materialPlots = False
+    #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
+    mag=floor(log10(N)) #for dynamically scaling the halo plots
+    if if3Plot:
+        engPlot=True
+
     #Important things
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
     if beamFile != "":
@@ -21,20 +32,9 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
         materials = ["G4_Galactic"]
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
-    #Define something preliminarily
-    materials = ["G4_Al"] #need to move this
-    N = 1e5 #needed?
-    if3Plot = False #for plotting the 3 graphs per material
-    engPlot = False
-    materialPlots = False
-    #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
-    mag=floor(log10(N)) #for dynamically scaling the halo plots
-    if if3Plot:
-        engplot=True
-
     #Opening figure only if doing material plotting
     if not materialPlots:
-        savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+        savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,materials[0],"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
     elif materialPlots:
         import matplotlib.pyplot as plt
         #Create the fig before the loop with 2 plots side by side
@@ -58,8 +58,8 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     
         for material in materials:
             #function for preparing the run and running miniScatterDriver functions
-            #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engplot,loadParts,beamXAngle,beamYAngle,beamFile):
-            savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+            #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engPlot,loadParts,beamXAngle,beamYAngle,beamFile):
+            savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
 
             #Now plot the distributions with various views depending on the material
             if material == "G4_Galactic" or material == "G4_AIR":
