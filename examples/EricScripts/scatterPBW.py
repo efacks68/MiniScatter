@@ -34,12 +34,14 @@ parser.add_argument("--maxim",     type=float,  default=0  ,   help="Maximum cur
 parser.add_argument("--edgeRaster",action="store_true",  help="Only populate edges of raster. Default=False")
 parser.add_argument("--PBIP",      action="store_true",  default=False,   help="Is PBIP present? Default=False")
 parser.add_argument("--noText",    action="store_true",  default=False,   help="Turns off printed text when called. Default=False")
-parser.add_argument("--savePics",  action="store_true",  default=False,   help="Saves Rastered Image. Default=False")
 parser.add_argument("--noBox",     action="store_true",  default=False,   help="Turns off printed box when called. Default=False")
-parser.add_argument("--findEdges", action="store_true",  default=False,   help="Computes and prints edges of beam on Raster Images. Default=False")
+parser.add_argument("--savePics",  action="store_true",  default=False,   help="Saves Rastered Image. Default=False")
+parser.add_argument("--saveGrads", action="store_true",  default=False,   help="Plots gradients of beam at Target. Default=False")
+parser.add_argument("--saveEdges", action="store_true",  default=False,   help="Plots edges on Raster Image. Default=False")
+parser.add_argument("--gaussFit",  action="store_true",  default=False,   help="Computes sum of Gaussian fits for central axis projection. Default=False")
+parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
 parser.add_argument("--saveHist",  action="store_true",  default=False,   help="Saves Histogram of proton density at target. Default=False")
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
-parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
 args = parser.parse_args()
 
 #Constants for running scripts
@@ -48,7 +50,7 @@ options     = {'noText':args.noText, 'noBox':args.noBox, 'physList':physList, 'd
                             'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
                             'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
                             'magFails':args.magFails, 'saveRaster':args.saveRaster, 'saveFits':args.saveFits,
-                            'findEdges':args.findEdges }
+                            'saveGrads':args.saveGrads, 'saveEdges':args.saveEdges, 'gaussFit':args.gaussFit }
 
 # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
 if args.beamClass == 'Yngve': #smallest from Yngve

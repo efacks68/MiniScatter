@@ -660,8 +660,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     for i in range(len(Img)):
         for j in range(len(Img[i])):
             Img[i][j] = Img[i][j] * C #[uA/cm^2]
-    Imax = Img.max()
-    Imin = 0.9 * C #background (0 hits) will be un-colored
+    Jmax = Img.max()
+    Jmin = 0.9 * C #background (0 hits) will be un-colored
     #print(coreMeanI*C,coreImax*C)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
@@ -670,35 +670,50 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         #print("R = ",rValue)
     #print("Converted in",datetime.now() - start)
 
-    print("C {:.3f}, Proton max {:.0f}, Imax {:.1f}, R {:.3f}, Imin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Imax,rValue,Imin,coreMeanI[0]*C),pOutsideBoxes)
+    print("C {:.3f}, Proton max {:.0f}, Jmax {:.1f}, R {:.3f}, Jmin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Jmax,rValue,Jmin,coreMeanI[0]*C),pOutsideBoxes)
 
     #Flat Top Current density calculations
-    top=0
-    Itop = 40
-    idxMinX = 1000
-    idxMaxX = 1
-    idxMinY = 1000
-    idxMaxY = 1
-    for idx,val in np.ndenumerate(Img):
-        if val >= Itop:
-            top += 1
-            if idx[0] < idxMinX: idxMinX = idx[0]
-            if idx[0] > idxMaxX: idxMaxX = idx[0]
-            if idx[1] < idxMinY: idxMinY = idx[1]
-            if idx[1] > idxMaxY: idxMaxY = idx[1]
-    print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
+    #top=0
+    #Itop = 40
+    #idxMinX = 1000
+    #idxMaxX = 1
+    #idxMinY = 1000
+    #idxMaxY = 1
+    #for idx,val in np.ndenumerate(Img):
+    #    if val >= Itop:
+    #        top += 1
+    #        if idx[0] < idxMinX: idxMinX = idx[0]
+    #        if idx[0] > idxMaxX: idxMaxX = idx[0]
+    #        if idx[1] < idxMinY: idxMinY = idx[1]
+    #        if idx[1] > idxMaxY: idxMaxY = idx[1]
+    #print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
 
     #print("start",datetime.now().strftime("%H-%M-%S"))
-    if options['findEdges']:
-        #Not great, may need to reshape and average. Not sure how to do that...
-        from plotFit import findEdges
-        edges = findEdges(Img,Imax,False,savename,xax,yax)
-        print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    #Not great, may need to reshape and average. Not sure how to do that...
+    from plotFit import findEdges,PEAS
+    EI,edges = findEdges(Img,Jmax,options['saveGrads'],savename,xax,yax) #[topInd,botInd,lefInd,rigInd]
+    nomEdges = [20,-22,-66,68]
+    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
+    dispT = np.abs(edges[0]-nomEdges[0])
+    dispB = np.abs(edges[1]-nomEdges[1])
+    dispL = np.abs(edges[2]-nomEdges[2])
+    dispR = np.abs(edges[3]-nomEdges[3])
+    print("Beam moved ",dispT,",",dispB,"vertical and",dispL,",",dispR,"horizontally")
+    dispY = (dispT+dispB)/2
+    dispX = (dispL+dispR)/2
+    PEAS(Jmax,pOutsideBoxes,dispY,dispX,rValue)
     #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
+    core = Img[EI[1]:EI[0],EI[2]:EI[3]]
+    #coreJMax = core.max()
+    coreJMean = np.mean(core)
+    coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
+    print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
 
-    diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
-    diffx,coeffsx = gaussianFit(histogram2D,"x",2,500,options,savename,3,20)
-    #add minimize function for these
+    if options['gaussFit']:
+        diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
+        diffx,coeffsx = gaussianFit(histogram2D,"x",2,500,options,savename,3,20)
+        #add minimize function for these
 
     if savePics:
         from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
@@ -714,9 +729,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     
         #Set maximum value depending on the maximum current density
         from math import log10,ceil
-        maxim = ceil(Imax / 10) * 10
+        maxim = ceil(Jmax / 10) * 10
         if options['maxim'] != 0: maxim = options['maxim'] #user provided maximum
-        minim = 10**ceil(log10(Imin))
+        minim = 10**ceil(log10(Jmin))
         cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
         cbarLabels = ["{:.0f}".format(cbarVals[0]),"{:.0f}".format(cbarVals[1]),"{:.0f}".format(cbarVals[2]),
                     "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
@@ -736,7 +751,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         ax.set_xlabel("Horizontal [mm]")
         ax.set_ylabel("Vertical [mm]")
         cbar = fig.colorbar(c, ax=ax,pad=0.01)
-        cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
+        cbar.set_label(cbarLabel,labelpad=3,fontsize=fs-2)
         cbar.set_ticks(cbarVals)
         cbar.set_ticklabels(cbarLabels)
 
@@ -762,7 +777,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
-            ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Imax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Jmax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude),propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.96, options['physList'], propsR,fontsize=fs-4)
 
@@ -771,13 +786,13 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
                 ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
                                   color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
 
-        if options['findEdges']:
-            edgeCol = 'k'
-            ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
-            ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
-            ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
-            ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
-            #print("Edges printed!!")
+        #if options['saveEdges']:
+        edgeCol = 'k'
+        ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
+        ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
+        ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
+        ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
+        #print("Edges printed!!")
 
         dt = datetime.now()
         #from os.path import isfile
@@ -791,7 +806,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #dt = datetime.now()
     #print(dt-start)
 
-    return pOutsideBoxes[0], Imax, coreMeanI
+    return pOutsideBoxes[0], Jmax, coreMeanI
 
 def converter(hIn,saveHist,name):
     import ROOT
@@ -881,7 +896,7 @@ def rCompare(Im,Nb):
 
     return np.sqrt(np.sum(diff))
 
-def findEdges(Img,Imax,graph,savename,xax,yax):
+def findEdges(Img,Jmax,graph,savename,xax,yax):
     from numpy import array
     from scipy.signal import convolve2d as scipySigConv2d
     #does it need to be normalized?
@@ -892,72 +907,114 @@ def findEdges(Img,Imax,graph,savename,xax,yax):
     gradX = scipySigConv2d(Img,gradXX,'same')
     gradY = scipySigConv2d(Img,gradYY,'same')
 
-    if graph:
-        import matplotlib.pyplot as plt
-        from numpy import meshgrid
-        plt.close()
-        X,Y = meshgrid(xax,yax)
-        fig = plt.figure(figsize=(15,5))
-        plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
-        ax1 = fig.add_subplot(1,2,1)
-        ax2 = fig.add_subplot(1,2,2)
-        #ax3 = fig.add_subplot(1,3,3)
-        a = ax1.pcolor(X,Y,gradX,shading='auto')
-        b = ax2.pcolor(X,Y,gradY,shading='auto')
-        #ax3.pcolor(X,Y,gradient,shading='auto')
-        plt.setp(ax1,xlim=(-100,100),ylim=(-100,100))
-        plt.setp(ax2,xlim=(-100,100),ylim=(-100,100))
-        fig.colorbar(a, ax=ax1,pad=0.01)
-        fig.colorbar(a, ax=ax2,pad=0.01)
-        #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
-        #add cbars!!!
-        plt.savefig(savename+"_GradPics.png")
-        print(savename,"_GradPics.png",sep="")
-        plt.close()
-
     #Prominence of gradient to determine if actual edge or not
     promX = 0.20
     promY = 0.60
 
-    edges = localExtrema(gradX,promX,gradY,promY)
+    EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
     #print(edges)
 
     #Only do check for Top and Left?
     if edges[0] == 0:
         promY -= 0.20
         print("Not strongly defined beam on Top",promY)
-        edges = localExtrema(gradX,promX,gradY,promY)
+        EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
         if edges[1] == 0:
             promY -= 0.10
             print("Not strongly defined beam on Top",promY)
-            edges = localExtrema(gradX,promX,gradY,promY)
+            EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
             if edges[1] == 0:
                 promY -= 0.22
                 print("Not strongly defined beam on Top",promY)
-                edges = localExtrema(gradX,promX,gradY,promY)
+                EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
     if edges[2] == 0:
         promX -= 0.15
         print("Not strongly defined beam on Left",promX)
-        edges = localExtrema(gradX,promX,gradY,promY)
+        EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
         if edges[1] == 0:
             print("Major Error Left Edge")
 
-    return edges
+    if graph:
+        import matplotlib.pyplot as plt
+        from numpy import meshgrid, sum as npSum
+        plt.close()
+        X,Y = meshgrid(xax,yax)
+        fig = plt.figure(figsize=(12,7))
+        plt.subplots_adjust(wspace=0.35,hspace=0.35) #increase width space to not overlap
+        ax1 = fig.add_subplot(2,2,1)
+        ax2 = fig.add_subplot(2,2,3)
+        ax3 = fig.add_subplot(2,2,2)
+        ax4 = fig.add_subplot(2,2,4)
+        a = ax1.pcolor(X,Y,gradX,shading='auto')
+        b = ax2.pcolor(X,Y,gradY,shading='auto')
+        c = ax3.scatter(xax,npSum(gradX,axis=0))#,shading='auto')
+        d = ax4.scatter(yax,npSum(gradY,axis=1))#,shading='auto')
+        #[topInd,botInd,lefInd,rigInd]
+        ax3.vlines(edges[2],ax3.get_ylim()[0],ax3.get_ylim()[1],color='m')
+        ax3.vlines(edges[3],ax3.get_ylim()[0],ax3.get_ylim()[1],color='m')
+        ax4.vlines(edges[0],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
+        ax4.vlines(edges[1],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
+        plt.setp(ax1,xlim=(-100,100),ylim=(-100,100),title="Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax2,xlim=(-100,100),ylim=(-100,100),title="Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax3,xlim=(-100,100),title="Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax4,xlim=(-100,100),title="Sum of Gradient Y",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        ac = fig.colorbar(a, ax=ax1,pad=0.01)
+        ac.set_label(r"d$\bf{J}$/dx",labelpad=3,fontsize=12)
+        bc = fig.colorbar(b, ax=ax2,pad=0.01)
+        bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
+        #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
+        plt.savefig(savename+"_GradPics.png")
+        print(savename,"_GradPics.png",sep="")
+        plt.close()
 
-def localExtrema(gradX,promX,gradY,promY):
+    return EI,edges
+
+def localExtrema(gradX,promX,gradY,promY,xax,yax):
     #Finds Edge Indices from Gradient maps
-    from numpy import amax,amin#,ndenumerate
+    from numpy import sum as npSum,argpartition#,ndenumerate,argmax,argmin,amax,amin,
+    from math import ceil
 
     #Set conspicuous initial values in case not found
-    lMaxX = 0
-    lMinX = 0
-    lMaxY = 0
-    lMinY = 0
+    avgMaxSumGradX = 0
+    avgMaxSumGradY = 0
+    avgMinSumGradX = 0
+    avgMinSumGradY = 0
+    
+    sumGradX = npSum(gradX,axis=0)
+    sumGradY = npSum(gradY,axis=1)
 
-    lMaxX = max(amax(gradX,axis=1,initial=promX))
-    lMinX = min(amin(gradX,axis=1,initial=-promX))
-    lMaxY = max(amax(gradY,axis=0,initial=promY))
-    lMinY = min(amin(gradY,axis=0,initial=-promY))
+    #maxSumGradX = argmax(sumGradX)
+    #maxSumGradY = argmax(sumGradY)
+    #minSumGradX = argmin(sumGradX)
+    #minSumGradY = argmin(sumGradY)
+    #print(maxSumGradY,minSumGradY,maxSumGradX,minSumGradX)
+
+    n=5 #this gave pretty even results
+    maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
+    minSumGradXInds = argpartition(sumGradX,n)[n:]
+    maxSumGradYInds = argpartition(sumGradY,-n)[-n:]
+    minSumGradYInds = argpartition(sumGradY,n)[n:]
+    for i in range(n):
+        avgMaxSumGradX += maxSumGradXInds[i]
+        avgMaxSumGradY += maxSumGradYInds[i]
+        avgMinSumGradX += minSumGradXInds[i]
+        avgMinSumGradY += minSumGradYInds[i]
+    #print(round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
+
+    topInd = ceil(avgMinSumGradY/n) #is ceil necessary?
+    botInd = round(avgMaxSumGradY/n)
+    lefInd = round(avgMaxSumGradX/n)
+    rigInd = ceil(avgMinSumGradX/n)
+
+    lMaxX = xax[lefInd]
+    lMinX = xax[rigInd] 
+    lMaxY = yax[botInd]
+    lMinY = yax[topInd]
+
+    #lMaxX = max(amax(gradX,axis=1,initial=promX))
+    #lMinX = min(amin(gradX,axis=1,initial=-promX))
+    #lMaxY = max(amax(gradY,axis=0,initial=promY))
+    #lMinY = min(amin(gradY,axis=0,initial=-promY))
     #print(lMaxX,lMinX,lMaxY,lMinY)
 
     #plot wants x values, not hist indices like matlab!
@@ -979,7 +1036,7 @@ def localExtrema(gradX,promX,gradY,promY):
     #    elif val == lMinY:
     #        botInd = idx[0]
     
-    return [lMaxX,lMinX,lMaxY,lMinY] #[topInd,botInd,lefInd,rigInd]
+    return [topInd,botInd,lefInd,rigInd], [lMinY,lMaxY,lMaxX,lMinX] 
 
 def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     #from Kyrre's doubleGaussian.ipynb example
@@ -1036,17 +1093,17 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     #print(f2_res)
 
     x=500
-    if options['saveFits']:
-        c1 = ROOT.TCanvas()
-        proj.Draw()
-        f2.SetLineColor(ROOT.kBlack)
-        f2.Draw('same')
-        #f1.SetLineColor(ROOT.kRed)
-        #f1.Draw('same')
-        if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-x,x)
-        elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-x,x)
-        c1.SetLogy()
-        c1.Print(name+"_"+axis+"GaussFit"+str(x)+".pdf")
+    #if options['saveFits']:
+        #c1 = ROOT.TCanvas()
+        #proj.Draw()
+        #f2.SetLineColor(ROOT.kBlack)
+        #f2.Draw('same')
+        ##f1.SetLineColor(ROOT.kRed)
+        ##f1.Draw('same')
+        #if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-x,x)
+        #elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-x,x)
+        #c1.SetLogy()
+        #c1.Print(name+"_"+axis+"GaussFit"+str(x)+".pdf")
 
         #import numpy as np
         #w = np.zeros(maxim)
@@ -1068,3 +1125,21 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
 
     return difference, coeffs
 
+#Detection Algorithm!!!
+def PEAS(jMax,pOut,dispY,dispX,rValue):
+    jMaxLim = 53
+    pOutLim = 4
+    dispYLim = 11
+    dispXLim = 14
+    rValLim = 0.20
+    if jMax >= jMaxLim or pOut >= pOutLim or dispY >= dispYLim or dispX >= dispXLim or rValue >= rValLim:
+        if jMax >= jMaxLim:
+            print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
+        if pOut >= pOutLim:
+            print("% Outside Box Warning:",pOut,"%!")
+        if dispY >= dispYLim:
+            print("Vertical Displacement Warning:",dispY,"mm!")
+        if dispX >= dispXLim:
+            print("Horizontal Displacement Warning:",dispX,"mm!")
+        if rValue >= rValLim:
+            print("R Value Warning",rValue)

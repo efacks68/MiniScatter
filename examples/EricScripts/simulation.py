@@ -75,7 +75,7 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     #Define material nickname
     #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
-    print(material)
+    #print(material)
     if material == "G4_Galactic":
         mat = "Vac"
         radLen = 1e24 #[mm] basically infinity
