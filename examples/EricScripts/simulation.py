@@ -558,10 +558,10 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         from plotFit import plot1DRaster,rasterImage,gaussianFit
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-        targPOutBox,  targImax, targCoreMeanI = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+        Jmax,pOutsideBoxes,dispY,dispX,rValue = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
         
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
             initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
 
-    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, targPOutBox, targImax, targCoreMeanI #filter by PDG only
+    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,dispY,dispX,rValue #filter by PDG only

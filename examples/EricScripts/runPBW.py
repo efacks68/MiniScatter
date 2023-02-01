@@ -34,7 +34,7 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
 
     #Opening figure only if doing material plotting
     if not materialPlots:
-        savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,materials[0],"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+        savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation( N,materials[0],"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
     elif materialPlots:
         import matplotlib.pyplot as plt
         #Create the fig before the loop with 2 plots side by side
@@ -59,7 +59,7 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
         for material in materials:
             #function for preparing the run and running miniScatterDriver functions
             #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engPlot,loadParts,beamXAngle,beamYAngle,beamFile):
-            savename,xtarg,ytarg,targPOutBox, targImax, targCoreMeanI = simulation( N,material,"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation( N,material,"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
 
             #Now plot the distributions with various views depending on the material
             if material == "G4_Galactic" or material == "G4_AIR":
@@ -185,4 +185,4 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
             plt.close() #be sure to close the plot
         #print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
 
-    return targPOutBox, targImax, targCoreMeanI
+    return Jmax,pOutsideBoxes,dispY,dispX,rValue

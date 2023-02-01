@@ -806,7 +806,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #dt = datetime.now()
     #print(dt-start)
 
-    return pOutsideBoxes[0], Jmax, coreMeanI
+    return Jmax,pOutsideBoxes[0],dispY,dispX,rValue
 
 def converter(hIn,saveHist,name):
     import ROOT
@@ -983,12 +983,6 @@ def localExtrema(gradX,promX,gradY,promY,xax,yax):
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
 
-    #maxSumGradX = argmax(sumGradX)
-    #maxSumGradY = argmax(sumGradY)
-    #minSumGradX = argmin(sumGradX)
-    #minSumGradY = argmin(sumGradY)
-    #print(maxSumGradY,minSumGradY,maxSumGradX,minSumGradX)
-
     n=5 #this gave pretty even results
     maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
     minSumGradXInds = argpartition(sumGradX,n)[n:]
@@ -1010,31 +1004,6 @@ def localExtrema(gradX,promX,gradY,promY,xax,yax):
     lMinX = xax[rigInd] 
     lMaxY = yax[botInd]
     lMinY = yax[topInd]
-
-    #lMaxX = max(amax(gradX,axis=1,initial=promX))
-    #lMinX = min(amin(gradX,axis=1,initial=-promX))
-    #lMaxY = max(amax(gradY,axis=0,initial=promY))
-    #lMinY = min(amin(gradY,axis=0,initial=-promY))
-    #print(lMaxX,lMinX,lMaxY,lMinY)
-
-    #plot wants x values, not hist indices like matlab!
-    #Set conspicuous initial values in case not found
-    #topInd = 0
-    #botInd = 0
-    #lefInd = 0
-    #rigInd = 0
-
-    #Find indices of values, may or may not be fastest
-    #for idx,val in ndenumerate(gradX):
-    #    if val == lMaxX:
-    #        lefInd = idx[1]
-    #    elif val == lMinX:
-    #        rigInd = idx[1]
-    #for idx,val in ndenumerate(gradY):
-    #    if val == lMaxY:
-    #        topInd = idx[0]
-    #    elif val == lMinY:
-    #        botInd = idx[0]
     
     return [topInd,botInd,lefInd,rigInd], [lMinY,lMaxY,lMaxX,lMinX] 
 
@@ -1143,3 +1112,34 @@ def PEAS(jMax,pOut,dispY,dispX,rValue):
             print("Horizontal Displacement Warning:",dispX,"mm!")
         if rValue >= rValLim:
             print("R Value Warning",rValue)
+
+def saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue):
+    #save values in Stats CSV
+    import csv
+    from os import path as osPath
+    statsName = statsPWD+"EvalStats.csv"
+    #if not osPath.isfile(statsName): #didn't work...?
+    #    with open(statsName,mode = 'w') as csv_file:
+    #        csv_writer = csv.writer(csv_file,delimiter = ',')
+    #        csv_writer.writerow(["BeamFile","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
+    #        csv_file.close()
+    if osPath.isfile(statsName):
+        found = False
+        foundRow = 0
+        i = 0
+        with open(statsName,mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            for row in csv_reader:
+                i += 1
+                if row[0] == rasterBeamFile:
+                    found = True
+                    foundRow = i
+            csv_file.close()
+        if not found:
+            with open(statsName,mode = 'a') as csv_file:
+                csv_writer = csv.writer(csv_file,delimiter = ',')
+                csv_writer.writerow([rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue])
+                csv_file.close()
+            print(Jmax,pOutsideBoxes,dispY,dispX,rValue)
+        else:
+            print("Values already saved in row",foundRow)

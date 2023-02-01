@@ -66,15 +66,21 @@ if args.twiss:
 
 if uname()[1] == "tensor.uio.no":
     csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
+    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 elif uname()[1] == "mbef-XPS-13-9300":
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 else:
-    csvPWD = input("Path from home to direction you like to save files to: ")
+    csvPWD = input("Path from home to direction you like to save root files to: ")
+    statsPWD = "."
 
 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args.energy,args.Nb,args.nP,args.rX,args.rY,args.edgeRaster,Twiss,args.aX,args.aY,csvPWD,options)
 ##print(rasterBeamFile,beamXAngle,beamYAngle)
 #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-ImgPOutBox = runPBW(args.energy,rasterBeamFile,args.t,beamXAngle,beamYAngle,args.savePics,Twiss,args.aX,args.aY,options)
+Jmax,pOutsideBoxes,dispY,dispX,rValue = runPBW(args.energy,rasterBeamFile,args.t,beamXAngle,beamYAngle,args.savePics,Twiss,args.aX,args.aY,options)
+
+from plotFit import saveStats
+saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue)
 
 print("Simulation took ",datetime.now()-origin,"s long",sep="")
