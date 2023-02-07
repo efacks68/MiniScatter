@@ -44,6 +44,8 @@ parser.add_argument("--saveHist",  action="store_true",  default=False,   help="
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
 args = parser.parse_args()
 
+#to do: split the arg parse into the script to run which you can call scatter or map or others from?
+
 #Constants for running scripts
 physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"
 options     = {'noText':args.noText, 'noBox':args.noBox, 'physList':physList, 'dependence':"Twiss",

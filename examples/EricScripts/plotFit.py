@@ -600,6 +600,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #print(datetime.now().strftime("%H-%M-%S"))
     xBinSize = xax[501]-xax[500]
     yBinSize = yax[501]-yax[500]
+    #print(xBinSize,yBinSize)
 
     #99% box #for multiple boxes, use arrays
     #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
@@ -665,7 +666,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #print(coreMeanI*C,coreImax*C)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    if options['Nb'] == 10 or options['Nb'] == 100:
+    if options['Nb'] == 10 or options['Nb'] == 100 or options['Nb'] == 500:
         rValue = rCompare(Img,options['Nb'])
         #print("R = ",rValue)
     #print("Converted in",datetime.now() - start)
@@ -733,7 +734,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         if options['maxim'] != 0: maxim = options['maxim'] #user provided maximum
         minim = 10**ceil(log10(Jmin))
         cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
-        cbarLabels = ["{:.0f}".format(cbarVals[0]),"{:.0f}".format(cbarVals[1]),"{:.0f}".format(cbarVals[2]),
+        cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
                     "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
         cbarLabel = r"$\mu A / cm^2$"
         #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
@@ -768,7 +769,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
 
             #Display beam characteristics
-            bgdbox=dict(pad=2,fc='w',ec='none')
+            bgdbox=dict(pad=1,fc='w',ec='none')
             propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBoxes[0])+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w')
             ax.text(xlim[0]*0.97, ylim[0]*0.60, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
@@ -834,7 +835,7 @@ def converter(hIn,saveHist,name):
     
     #Must add Overflow options!!!
 
-    if saveHist:
+    if saveHist: #for rValue calculations
         from os import uname
         if uname()[1] == "tensor.uio.no":
             import csv,re
@@ -884,6 +885,8 @@ def rCompare(Im,Nb):
         elif Nb == 100:
               Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+        elif Nb == 500:
+              Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
 
     lenx = np.shape(Im)[0]
     leny = np.shape(Im)[1]
@@ -1131,15 +1134,17 @@ def saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue):
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 i += 1
-                if row[0] == rasterBeamFile:
+                if row[0] == rasterBeamFile: #No duplicates. Assumes same or better info
                     found = True
-                    foundRow = i
+                    foundRow = i 
+                    csv_writer.writerow([rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue])
+                    break
             csv_file.close()
-        if not found:
+        if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow([rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue])
                 csv_file.close()
             print(Jmax,pOutsideBoxes,dispY,dispX,rValue)
         else:
-            print("Values already saved in row",foundRow)
+            print("Values already in row",foundRow)
