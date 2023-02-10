@@ -8,7 +8,7 @@
 
 #First function is setup of run which is called in 2nd function, simulation.
 
-def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+def setup(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options):
     from numpy import cos,sin#,arctan
     from os import uname,getcwd,chdir,path as osPath
     from sys import path as sysPath
@@ -20,11 +20,22 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
     if uname()[1] == "tensor.uio.no":
         if getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-    elif uname()[1] == "mbef-XPS-13-9300":
+    elif uname()[1] == "mbef-xps-13-9300":
         if getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
     else: chdir(input("What directory would you like to save files to? "))
     #print(getcwd())
+
+    ##Important things
+    #materials = ["G4_Al"]
+    #zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
+    #if beamFile != "":
+    #        loadParts = True
+    #if args.t == 0:
+    #        materials = ["G4_Al"]
+    #elif args.t == 0.1:
+    #    materials = ["G4_Galactic"]
+    #boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     baseSimSetup = {}
     baseSimSetup["PHYS"]  = options['physList'] #better for scattering through 1mm sheets
@@ -32,41 +43,41 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
     #Particle Beam definitions
     #Where to start the beam [mm]
     #baseSimSetup["ZOFFSET_BACKTRACK"] = True
-    baseSimSetup["N"]         = N #need N regardless of beam origin
-    baseSimSetup["ZOFFSET"]   = zoff #Check
+    baseSimSetup["N"]         = args.Nb*args.nP #need N regardless of beam origin
+    baseSimSetup["ZOFFSET"]   = options["zoff"] #Check
 
     #For loading particles
-    if loadParts == True:
+    if args.beamFile != "":
         from plotFit import numLines
         parts = numLines(beamFile)
         baseSimSetup["N"]        = parts #change to match file particles. Used for file name
         baseSimSetup["BEAMFILE"] = beamFile+".csv" # number of particles >= N
-        baseSimSetup["ENERGY"]   = energy #570 #[MeV] #ESS beam energy update 15.8
+        baseSimSetup["ENERGY"]   = args.energy #570 #[MeV] #ESS beam energy update 15.8
     else:
-        baseSimSetup["BEAM"]    = beam
-        baseSimSetup["ENERGY"] = energy #570 #[MeV] #ESS beam energy update 15.8
+        baseSimSetup["BEAM"]    = args.particle
+        baseSimSetup["ENERGY"] = args.energy #570 #[MeV] #ESS beam energy update 15.8
         baseSimSetup["COVAR"] = (Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5]) #only for without "--beamFile"
 
     #Beam particle type
     Rcut = 1000.0
     Engcut = 0.9
-    baseSimSetup["WORLDSIZE"] = Rcut #[mm] Make the world wider for seeing where particles go
-    baseSimSetup["POSLIM"] = Rcut #XY histogram Position Limit for a few, check RootFileWriter.cc
+    baseSimSetup["WORLDSIZE"] = args.rCut #[mm] Make the world wider for seeing where particles go
+    baseSimSetup["POSLIM"] = args.rCut #XY histogram Position Limit for a few, check RootFileWriter.cc
     #Beam Angle
     #Defined by the beam size at BPM94 (TBD) compared to size at BPM93 (~0)
     if beamXAngle != 0 or beamYAngle != 0:
         dBPM93to94 = 3031 #[mm]
         #beamAngle = arctan(sizeAtBPM94/dBPM93to94) #rad?
-        modXThick = thick / cos(beamXAngle) 
-        modYThick = thick / sin(beamYAngle)
+        modXThick = args.t / cos(beamXAngle) 
+        modYThick = args.t / sin(beamYAngle)
         print(beamXAngle,modXThick,beamYAngle,modYThick)
     #Some more output settings
     baseSimSetup["QUICKMODE"] = False #Include slow plots
     baseSimSetup["MINIROOT"]  = False #Skip TTRees in the .root files
     baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
     baseSimSetup["EDEP_DZ"]   = 1.0 #Z bin width for energy deposit histogram
-    baseSimSetup["CUTOFF_RADIUS"] = Rcut #[mm]Larger radial cutoff #Decreased 10 May
-    baseSimSetup["CUTOFF_ENERGYFRACTION"] = Engcut #Minimum percent of full Energy to use in cutoff calculations
+    baseSimSetup["CUTOFF_RADIUS"] = args.rCut #[mm]Larger radial cutoff #Decreased 10 May
+    baseSimSetup["CUTOFF_ENERGYFRACTION"] = args.engCut #Minimum percent of full Energy to use in cutoff calculations
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
     baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
@@ -76,34 +87,34 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
     #Define material nickname
     #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
     #print(material)
-    if material == "G4_Galactic":
-        mat = "Vac"
+    if mat == "Vac":
+        material == "G4_Galactic"
         radLen = 1e24 #[mm] basically infinity
         atomZ = 0.1
         atomA = 0.1
-    elif material == "G4_Al":
-        mat = "Al"
+    elif mat == "Al":
+        material = "G4_Al"
         radLen = 88.97 #[mm]
         atomZ = 13
         atomA = 26.981
-    elif material == "G4_AIR":
-        mat = "Air"
+    elif mat == "Air":
+        material = "G4_AIR"
         radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
         atomZ = 2 #the lbl page says Z/A = 0.49919, so 2/4 is close enough
         atomA = 4
-    elif material == "G4_Au":
-        mat = "Au"
+    elif mat == "Au":
+        material = "G4_Au"
         radLen = 3.344
         atomZ = 79
         atomA = 196.966
 
-    if thick!=0.0:
-        baseSimSetup["THICK"] = thick
+    if args.t!=0.0:
+        baseSimSetup["THICK"] = args.t
         baseSimSetup["MAT"] = material
         #Valid choices: G4_Al, G4_Au, G4_C, G4_Cu, G4_Pb, G4_Ti, G4_Si, G4_W, G4_U, G4_Fe, G4_MYLAR, G4_KAPTON,
         #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
-        if loadParts:
+        if beamFile != "":
             import re
             name = re.sub(".+(PBW)",mat,beamFile)
             #print(name)
@@ -131,17 +142,17 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
         m1Len = baseSimSetup["MAGNET"][0]["keyval"]["al1Thick"]
         m3Len = baseSimSetup["MAGNET"][0]["keyval"]["al2Thick"]
-        mat = "Real"
-        radLenAl = 88.97 #[mm] Al
+        radLen = 88.97 #[mm] Al
         radLenH2O = 360.8 #[mm] liquid Water 
+        mat = "Real"
         #from https://cds.cern.ch/record/1279627/files/PH-EP-Tech-Note-2010-013.pdf
 
-        if loadParts:
+        if beamFile != "":
             outname = beamFile+"_runW"
         else:
-            outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],thick,parts)
+            outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(args.energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],args.t,parts)
 
-        if options['PBIP']:
+        if args.PBIP:
             outname = outname + "_PBIP"
             #PBIP Magnet
             m2 = {}
@@ -173,7 +184,7 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     #Find which folder root file is in
     #loc = findRoot(savename) #still need to work on this function
-    if uname()[1] == "mbef-XPS-13-9300":
+    if uname()[1] == "mbef-xps-13-9300":
         baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
     elif uname()[1] == "tensor.uio.no":
         if Twiss[1] >= 1:
@@ -195,7 +206,7 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     ####Redundant??? ----------
     #Variables for automation
-    if uname()[1] == "mbef-XPS-13-9300":
+    if uname()[1] == "mbef-xps-13-9300":
         savepath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     elif uname()[1] == "tensor.uio.no":
         #savepath = "/scratch2/ericdf/PBWScatter/"
@@ -205,10 +216,11 @@ def setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAn
 
     return savename,savedfile,simSetup_simple1
 
-def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+def simulation(args,mat,engPlot,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
     import numpy as np
     import ROOT
     from os import path as osPath
+    from sys import path as sysPath
     from plotFit import calcTwiss
     from datetime import datetime
 
@@ -216,9 +228,37 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
     m = 1 #[m]
     mm = 1e-3 #[m]
 
+    #Define material nickname
+    #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
+    #print(material)
+    radLenH2O = 360.8 #[mm] liquid Water 
+    if mat == "Vac":
+        material == "G4_Galactic"
+        radLen = 1e24 #[mm] basically infinity
+        atomZ = 0.1
+        atomA = 0.1
+    elif mat == "Al":
+        material == "G4_Al"
+        radLen = 88.97 #[mm]
+        atomZ = 13
+        atomA = 26.981
+    elif mat == "Air":
+        material = "G4_AIR"
+        radLen = 3.122e5 #[mm] -taken from 80% N2 gas(3.260e5mm) and 20% O2 gas (2.571e5mm)
+        atomZ = 2 #the lbl page says Z/A = 0.49919, so 2/4 is close enough
+        atomA = 4
+    elif mat == "Au":
+        material = "G4_Au"
+        radLen = 3.344
+        atomZ = 79
+        atomA = 196.966
+
     from simulation import setup
-    savename,savedfile,simSetup_simple1 = setup(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+    #def                                  setup(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options):
+    savename,savedfile,simSetup_simple1 = setup(args,mat,material,beamXAngle,beamYAngle,beamFile,Twiss,options)
     
+    MiniScatter_path="../../MiniScatter/build/."
+    sysPath.append(MiniScatter_path)
     import miniScatterDriver
     #import miniScatterScanner
     #import miniScatterPlots
@@ -272,7 +312,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
     ##Get the distributions from the PBW exit face
     if exitTree: #save some time by only getting when needed
-        if thick != 0:
+        if args.t != 0:
             #27.4 just added target-exit pull in and changed previous xexit arrays to target arrays!
             #Now get the "target-exit" distributions for plotting with the Formalism distribution below. 
             #These are not at the ESS Target location, but are at the far side of the PBW
@@ -281,7 +321,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         else:
             myFile = ROOT.TFile.Open(osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root")
             myTree = myFile.Get("magnet_1_ExitHits")
-            thick=4.25 #[mm] set here for thickness calculations
+            args.t=4.25 #[mm] set here for thickness calculations
 
         xexit = np.zeros(myTree.GetEntries()) #dynamic length arrays
         pxexit = np.zeros(myTree.GetEntries())
@@ -312,7 +352,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #Filter the relevant distributions
         PDGexit_filter = np.equal(PDGexit,2212) #first filter for proton PDG
         Eexit_filtered = Eexit[PDGexit_filter]
-        Eexit_filter = np.greater(Eexit_filtered,energy*Engcut/100) #then create Eng_filter that is filtered
+        Eexit_filter = np.greater(Eexit_filtered,args.energy*simSetup_simple1["CUTOFF_ENERGYFRACTION"]) #then create Eng_filter that is filtered
         Eexit_filtered = Eexit_filtered[Eexit_filter]
 
         angmax=4e-3 #[rad] one angle filter limit 
@@ -379,7 +419,7 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
         #Filter the relevant distributions
         PDGtarg_filter = np.equal(PDGtarg,2212) #first filter for proton PDG
-        Etarg_filter = np.greater(Etarg[PDGtarg_filter],energy*Engcut/100) #Engcut is % number not decimal
+        Etarg_filter = np.greater(Etarg[PDGtarg_filter],args.energy*simSetup_simple1["CUTOFF_ENERGYFRACTION"]) #Engcut is % number not decimal
         #These proton only arrays are returned to the original script!
         Etarg_filtered_p = Etarg[PDGtarg_filter]
         xtarg_filtered_p = xtarg[PDGtarg_filter]
@@ -388,9 +428,9 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #pytarg_filtered_p = pytarg[PDGtarg_filter]
 
         #For plotting Energy distribution of all species
-        if engplot:
+        if engPlot:
             import math
-            mag=math.floor(math.log10(N)) #for dynamic title name
+            mag=math.floor(math.log10(args.Nb*args.nP)) #for dynamic title name
             engname=savename+"_EnergyPlot.png" #same for each plot
             titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For All Particle Species"
 
@@ -446,16 +486,17 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         ##If magnet, use multiple scattering layers instead of averaging!
         from plotFit import plotTwissFit,calcEq8,calcEq16
 
+
         #particle characteristic values
-        if beam == "proton":
+        if args.particle == "proton":
             partA = 938.27209 #[MeV/c2]
             partZ = 1
-        elif beam == "electron":
+        elif args.particle == "electron":
             partA = 0.511 #[MeV/c2]
             partZ = 1
         c = 2.99792e8 #[m/s]
         MeV = 1e6*1.602e-19 
-        gamma_rel = 1 + energy/partA #from PrintTwissParameters
+        gamma_rel = 1 + args.energy/partA #from PrintTwissParameters
         beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
         #Get rid of Normalized Emittance!
         Igemtx = Twiss[0]/(beta_rel*gamma_rel)
@@ -469,21 +510,21 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
 
 
         ##Highland Equation Radiation Length Calculation
-        p = np.sqrt((energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
+        p = np.sqrt((args.energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
         betap = beta_rel*p #Eq 5
 
-        m1Len = baseSimSetup["MAGNET"][0]["keyval"]["al1Thick"]
+        m1Len = simSetup_simple1["MAGNET"][0]["keyval"]["al1Thick"]
         if beamXAngle != 0: #account for angle contribution to thickness
             m1Len = m1Len / np.cos(beamXAngle) 
         #Al Front contribution
-        thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLenAl) * (1 + 0.038 * np.log(m1Len/radLenAl))
+        thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLen) * (1 + 0.038 * np.log(m1Len/radLen))
         Twisse8xAl1 = calcEq8(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
         Twisse8yAl1 = calcEq8(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
         Twisse16xAl1 = calcEq16(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
         Twisse16yAl1 = calcEq16(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
 
         #H2O contribution
-        m2Len = baseSimSetup["MAGNET"][0]["keyval"]["waterThick"]
+        m2Len = simSetup_simple1["MAGNET"][0]["keyval"]["waterThick"]
         if beamXAngle != 0: #account for angle contribution to thickness
             m2Len = m2Len / np.cos(beamXAngle) 
         thetasqH2O = 13.6 * partZ / betap * np.sqrt(m2Len/radLenH2O) * (1 + 0.038 * np.log(m2Len/radLenH2O))
@@ -493,10 +534,10 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         Twisse16yH2O = calcEq16(thetasqH2O, Twisse16yAl1,m2Len,beta_rel,gamma_rel)
 
         #Al Back contribution
-        m3Len = baseSimSetup["MAGNET"][0]["keyval"]["al2Thick"]
+        m3Len = simSetup_simple1["MAGNET"][0]["keyval"]["al2Thick"]
         if beamXAngle != 0: #account for angle contribution to thickness
             m3Len = m3Len / np.cos(beamXAngle) 
-        thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLenAl) * (1 + 0.038 * np.log(m3Len/radLenAl))
+        thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLen) * (1 + 0.038 * np.log(m3Len/radLen))
         Twisse8x = calcEq8(thetasqAl2, Twisse8xH2O,m3Len,beta_rel,gamma_rel)
         Twisse8y = calcEq8(thetasqAl2, Twisse8yH2O,m3Len,beta_rel,gamma_rel)
         Twisse16x = calcEq16(thetasqAl2, Twisse16xH2O,m3Len,beta_rel,gamma_rel)
@@ -505,24 +546,24 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #elif baseSimSetup["THICK"] != 0.0: #if only one layer (MiniScatter "target")
         ##Highland Equation Radiation Length Calculation
         if beamXAngle != 0: #account for angle contribution to thickness
-            thick = thick / np.cos(beamXAngle) 
-        thetasq = 13.6 * partZ / betap * np.sqrt(thick/radLen) * (1 + 0.038 * np.log(thick/radLen)) #from Eq 5
+            args.t = args.t / np.cos(beamXAngle) 
+        thetasq = 13.6 * partZ / betap * np.sqrt(args.t/radLen) * (1 + 0.038 * np.log(args.t/radLen)) #from Eq 5
         #print("\nradLen: {:.2f}, p: {:.3e}, gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(radLen,p,gamma_rel,beta_rel,thetasq))
 
-        Twisse8x  = calcEq8(thetasq, TwissIx,thick,beta_rel,gamma_rel) #calculated target exit Twiss
-        Twisse8y  = calcEq8(thetasq, TwissIy,thick,beta_rel,gamma_rel)
-        Twisse16x = calcEq16(thetasq,TwissIx,thick,beta_rel,gamma_rel) #calculated 2 target exit Twiss
-        Twisse16y = calcEq16(thetasq,TwissIy,thick,beta_rel,gamma_rel)
+        Twisse8x  = calcEq8(thetasq, TwissIx,args.t,beta_rel,gamma_rel) #calculated target exit Twiss
+        Twisse8y  = calcEq8(thetasq, TwissIy,args.t,beta_rel,gamma_rel)
+        Twisse16x = calcEq16(thetasq,TwissIx,args.t,beta_rel,gamma_rel) #calculated 2 target exit Twiss
+        Twisse16y = calcEq16(thetasq,TwissIy,args.t,beta_rel,gamma_rel)
 
         ##Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
         #Displays Twiss values and calculated mu and sigma
         #print("\nPre PBW Twiss")
-        #plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-        #plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
+        #plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
+        #plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
         #print("\nPBW Exit Twiss Calculated")
-        #plotTwissFit(xexit/mm,pxexit,savename+"texitHalo",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-        #plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",thick,thetasq,beta_rel,gamma_rel,TwissIx)
-        #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",thick,thetasq,beta_rel,gamma_rel,TwissIy)
+        #plotTwissFit(xexit/mm,pxexit,savename+"texitHalo",mat,"PBW Exit","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
+        #plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
+        #plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
 
         #Extension to Target. Needed for compareTargets!
         from plotFit import toTarget,compareTargets
@@ -539,14 +580,14 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
         #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit",savename,mat)
         #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8Targx,e8Targy,"Eq 8",savename,mat)
         #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16Targx,e16Targy,"Eq 16",savename,mat)
-        #print(thick)
+        #print(args.t)
         #print("make plots",datetime.now().strftime("%H-%M-%S"))
 
         #Target comparison plots
-        if thick == 0.1:
+        if args.t == 0.1:
             print("Vacuum")
             compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"No PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
-        elif thick == 4.25:
+        elif args.t == 4.25:
             print("PBW!")
             compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,initTargx,initTargy,"No PBW",savename+"NoPBW",mat,PBWTwx,PBWTwy)
             compareTargets(xtarg_filtered_p/mm,ytarg_filtered_p/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Real PBW, Eq 8",savename+"HaloPDGFiltered_Eq8",mat,PBWTwx,PBWTwy)
@@ -554,14 +595,14 @@ def simulation(N,material,beam,thick,energy,zoff,engplot,loadParts,beamXAngle,be
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16",savename,mat)
 
     #For Raster Images
-    if loadParts:
-        from plotFit import plot1DRaster,rasterImage,gaussianFit
+    if beamFile != "":
+        from plotFit import plot1DRaster,rasterImage
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-        Jmax,pOutsideBoxes,dispY,dispX,rValue = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
+        Jmax,pOutsideBoxes,dispY,dispX,rValue = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
         
         if initTree:
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options)
+            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],args,Twiss,options,boxes)
 
     return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,dispY,dispX,rValue #filter by PDG only

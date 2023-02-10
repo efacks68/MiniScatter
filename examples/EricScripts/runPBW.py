@@ -3,10 +3,10 @@
 #5 Nov 2022
 #Uses the MiniScatter Python interface to model the ESS beam interaction with the PBW
 # 2nd layer for parameter searches
-def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options):
+def runPBW(args,beamFile,Twiss,options,boxes):
     #Code setup
     import numpy as np
-    from math import floor,log10 
+    from math import floor,log10,ceil
     from plotFit import plotFit,findFit
     from simulation import simulation
     from datetime import datetime
@@ -16,26 +16,26 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     N = 1e5 #needed?
     if3Plot = False #for plotting the 3 graphs per material
     engPlot = False
-    materialPlots = False
     #print("You've entered: {:f}mm thick".format(thick),materials,", {:.0e} protons, ".format(N),betax,alphx,nemtx,betay,alphy,nemty)
     mag=floor(log10(N)) #for dynamically scaling the halo plots
     if if3Plot:
         engPlot=True
 
-    #Important things
-    zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
-    if beamFile != "":
-            loadParts = True
-    if thick == 0:
-            materials = ["G4_Al"]
-    elif thick == 0.1:
-        materials = ["G4_Galactic"]
-    boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
+    ##Important things
+    #zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
+    #if beamFile != "":
+    #        loadParts = True
+    #if thick == 0:
+    #        materials = ["G4_Al"]
+    #elif thick == 0.1:
+    #    materials = ["G4_Galactic"]
+    #boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     #Opening figure only if doing material plotting
-    if not materialPlots:
-        savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation( N,materials[0],"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
-    elif materialPlots:
+    if not args.matPlots:
+        savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation(args,material,engPlot,args.rX,args.rY,beamFile,Twiss,options,boxes)
+    elif args.matPlots:
+        materials = ["G4_Galactic","G4_Al","G4_Au"] #,"G4_AIR"full list as of 1.4.22
         import matplotlib.pyplot as plt
         #Create the fig before the loop with 2 plots side by side
         fig = plt.figure(figsize=(15,8))
@@ -58,36 +58,35 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
     
         for material in materials:
             #function for preparing the run and running miniScatterDriver functions
-            #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI = simulation( N,material,    beam,thick,energy,zoff,PBIP,engPlot,loadParts,beamXAngle,beamYAngle,beamFile):
-            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation( N,material,"proton",thick,energy,zoff,engPlot,loadParts,beamXAngle,beamYAngle,beamFile,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes)
-
+            #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI =  simulation(args,mat,engPlot,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes)
+            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation(args,mat,engPlot,   args.rX,   args.rY,beamFile,Twiss,options,boxes)
             #Now plot the distributions with various views depending on the material
             if material == "G4_Galactic" or material == "G4_AIR":
                 if if3Plot:
                     print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
-                    xmax = math.ceil(np.max(xtarg)/100)*100
+                    xmax = ceil(np.max(xtarg)/100)*100
                     #For plotting x,y plots for core view and halo zoom-ins
                     #plotFit(xs,    ys, savename,xlim,   ylim,material)
                     #xlim<=10 => [-xlim*sigma,xlim*sigma]; xlim>10 => [-xlim,xlim]
                     #ylim==0 => with plot; ylim!=0 => [0,ylim] (5 particles /(mag of N) is for halo)
                     #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
-                    plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo, with dynamic halo zoom
+                    plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,args.t) #full range halo, with dynamic halo zoom
             elif material == "G4_Al":
                 if if3Plot:
                     print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
-                    xmax = math.ceil(np.max(xtarg)/100)*100
+                    xmax = ceil(np.max(xtarg)/100)*100
                     print(xmax)
                     #plotFit(xs,    ys, savename,xlim,   ylim,material)
                     #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
-                    plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,thick) #full range halo
+                    plotFit(xtarg,ytarg,savename, xmax,5/(10**(mag+0)),material,args.t) #full range halo
                     #plotFit(xtarg,ytarg,savename,  10,10/(10**(mag+0)),material,thick) #10 sigma range halo
             elif material == "G4_Au":
                 if if3Plot:
                     print("Max in x: {:.3f} and in y: {:.3f}".format(np.max(xtarg),np.max(ytarg)))
-                    xmax = math.ceil(np.max(xtarg)/100)*100
+                    xmax = ceil(np.max(xtarg)/100)*100
                     #plotFit(xs,    ys, savename,xlim,   ylim,material) 
                     #plotFit(xtarg,ytarg,savename,  3,      0,material,thick) #3 sigma core
-                    plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material,thick) #full range halo
+                    plotFit(xtarg,ytarg,savename, xmax,15/(10**(mag+0)),material,args.t) #full range halo
                     #plotFit(xtarg,ytarg,savename,  10,15/(10**(mag+0)),material,thick) #10 sigma range halo
         
             #Multi-Material Plot section, continues the material loop to plot data.
@@ -185,4 +184,4 @@ def runPBW(energy,beamFile,thick,beamXAngle,beamYAngle,savePics,Twiss,rasterXAmp
             plt.close() #be sure to close the plot
         #print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
 
-    return Jmax,pOutsideBoxes,dispY,dispX,rValue
+    #return Jmax,pOutsideBoxes,dispY,dispX,rValue

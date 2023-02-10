@@ -586,7 +586,7 @@ def numLines(filename):
     return N
 
 
-def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplitude,rasterYAmplitude,options,boxes):
+def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     import numpy as np
     name=savename+"_"+position+"Image"
     um = 1e-6
@@ -596,7 +596,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     from plotFit import converter
   
     #print(datetime.now().strftime("%H-%M-%S"))
-    (Img, xax, yax) = converter(histogram2D,options['saveHist'],name) #convert from TH2D to numpy map
+    (Img, xax, yax) = converter(histogram2D,args.saveHist,name) #convert from TH2D to numpy map
     #print(datetime.now().strftime("%H-%M-%S"))
     xBinSize = xax[501]-xax[500]
     yBinSize = yax[501]-yax[500]
@@ -650,9 +650,9 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         sumCore = np.sum(core)+1
         pOutsideBoxes[i] = (sumTot-sumCore)/sumTot*100
         #print(sumCore,pOutsideBoxes[i])
-        coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd]
-        coreImax[i] = coreN.max() #[uA/cm^2]
-        coreMeanI[i] = np.mean(coreN) #[uA/cm^2]
+        #coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd] #why a 2nd?
+        coreImax[i] = core.max() #[uA/cm^2]
+        coreMeanI[i] = np.mean(core) #[uA/cm^2]
 
     #Normalize to full current, see 
     I_pulse = 62.5*1e3 #[uA]
@@ -666,8 +666,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #print(coreMeanI*C,coreImax*C)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    if options['Nb'] == 10 or options['Nb'] == 100 or options['Nb'] == 500:
-        rValue = rCompare(Img,options['Nb'])
+    if args.Nb == 10 or args.Nb == 100 or args.Nb == 500:
+        rValue = rCompare(Img,args.Nb)
         #print("R = ",rValue)
     #print("Converted in",datetime.now() - start)
 
@@ -692,7 +692,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     #print("start",datetime.now().strftime("%H-%M-%S"))
     #Not great, may need to reshape and average. Not sure how to do that...
     from plotFit import findEdges,PEAS
-    EI,edges = findEdges(Img,Jmax,options['saveGrads'],savename,xax,yax) #[topInd,botInd,lefInd,rigInd]
+    EI,edges = findEdges(Img,Jmax,args.saveGrads,savename,xax,yax) #[topInd,botInd,lefInd,rigInd]
     nomEdges = [20,-22,-66,68]
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
     print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
@@ -711,12 +711,12 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
     coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
     print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
 
-    if options['gaussFit']:
+    if args.gaussFit:
         diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
         diffx,coeffsx = gaussianFit(histogram2D,"x",2,500,options,savename,3,20)
         #add minimize function for these
 
-    if savePics:
+    if args.savePics:
         from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
         from matplotlib.patches import Rectangle
         from matplotlib.colors import LogNorm
@@ -731,7 +731,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         #Set maximum value depending on the maximum current density
         from math import log10,ceil
         maxim = ceil(Jmax / 10) * 10
-        if options['maxim'] != 0: maxim = options['maxim'] #user provided maximum
+        if args.maxim != 0: maxim = args.maxim #user provided maximum
         minim = 10**ceil(log10(Jmin))
         cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
         cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
@@ -746,8 +746,8 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
         fs=14
 
         #Set Plot Properties
-        ax.set_xlim([-options['xlim'],options['xlim']])
-        ax.set_ylim([-options['ylim'],options['ylim']])
+        ax.set_xlim([-args.xlim,args.xlim])
+        ax.set_ylim([-args.ylim,args.ylim])
         ax.set_title("Proton Beam Distribution at "+position,fontsize=fs)
         ax.set_xlabel("Horizontal [mm]")
         ax.set_ylabel("Vertical [mm]")
@@ -762,10 +762,10 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             ylim = ax.get_ylim()
             
         #Show 99% box
-        if not options['noBox']: #for user clarity, call is noBox
+        if not args.noBox: #for user clarity, call is noBox
             ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
 
-        if not options['noText']: #for user clarity, call is noText
+        if not args.noText: #for user clarity, call is noText
             ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
 
             #Display beam characteristics
@@ -779,7 +779,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
             #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
             ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Jmax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(rasterXAmplitude,rasterYAmplitude),propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(args.aX,args.aY),propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.96, options['physList'], propsR,fontsize=fs-4)
 
             for i in range(1,len(boxes)): #make multiple boxes
@@ -787,7 +787,7 @@ def rasterImage(savename,position,histogram2D,parts,savePics,Twiss,rasterXAmplit
                 ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
                                   color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
 
-        #if options['saveEdges']:
+        #if args.saveEdges:
         edgeCol = 'k'
         ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
         ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
@@ -887,6 +887,8 @@ def rCompare(Im,Nb):
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         elif Nb == 500:
               Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+    elif uname()[1] == "mbef-xps-13-9300":
+        Iref = np.genfromtxt(open("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
 
     lenx = np.shape(Im)[0]
     leny = np.shape(Im)[1]
@@ -1065,7 +1067,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     #print(f2_res)
 
     x=500
-    #if options['saveFits']:
+    #if args.saveFits: #if uncommented it opens a canvas even if false...?
         #c1 = ROOT.TCanvas()
         #proj.Draw()
         #f2.SetLineColor(ROOT.kBlack)
@@ -1134,15 +1136,14 @@ def saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue):
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 i += 1
-                if row[0] == rasterBeamFile: #No duplicates. Assumes same or better info
+                if row[0] == rasterBeamFile: #No duplicates
                     found = True
                     foundRow = i 
-                    csv_writer.writerow([rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue])
                     break
             csv_file.close()
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
-                csv_writer = csv.writer(csv_file,delimiter = ',')
+                csv_writer = csv.writer(csv_file, delimiter = ',')
                 csv_writer.writerow([rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue])
                 csv_file.close()
             print(Jmax,pOutsideBoxes,dispY,dispX,rValue)

@@ -1,5 +1,5 @@
 
-def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss,rasterXAmplitude0,rasterYAmplitude0,csvPWD,options):
+def runARasterMaker(args,Twiss,csvPWD,options):
     import numpy as np
     from math import pi, asin, sin
     from datetime import datetime
@@ -18,7 +18,7 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
     #Calculate Geometric Emittance for Covariance Matrix
     partA = 938.27209 #[MeV/c2]
     partZ = 1
-    gamma_rel = 1 + energy / partA #from PrintTwissParameters
+    gamma_rel = 1 + args.energy / partA #from PrintTwissParameters
     beta_rel = np.sqrt(gamma_rel * gamma_rel - 1 ) / gamma_rel
     gemtX = nemtX*um / (beta_rel * gamma_rel) #[m]
     gemtY = nemtY*um / (beta_rel * gamma_rel) #[m]
@@ -26,13 +26,13 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
     t_pulse = round(0.04 * 1/14 * 1e6) # mus
     pulse_start = 10 #why have a delay?
     t_end = (2* pulse_start + t_pulse) /1000# - 2#3 ms
-    time_length = round(t_end * nPulses ) #number of pulses, nominal = 2.86e3
+    time_length = round(t_end * args.nP) #number of pulses, nominal = 2.86e3
 
     t = np.linspace(0,t_end,time_length) #array of steps of length time_length
     N_t = len(t) # number of time samples
     n_tii  = 10 #number of positions per us
-    totX = np.zeros([N_t*n_tii*NperBunch,2])
-    totY = np.zeros([N_t*n_tii*NperBunch,2])
+    totX = np.zeros([N_t*n_tii*args.Nb,2])
+    totY = np.zeros([N_t*n_tii*args.Nb,2])
     #print("t_pulse {:.2f}, t_end {:.2f}, time_length {:.2f}, N_t {:.2f}".format(t_pulse,t_end,time_length,N_t))
 
     ##Raster Constants
@@ -52,8 +52,8 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
     dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
     dBPM93toTarg = 21222 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
     dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
-    envXAngle = envXatBPM94 / dBPM93to94 #x' = distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
-    envYAngle = envYatBPM94 / dBPM93to94 #y' not radians, as per Kyrre 2.11.22
+    envXAngle = args.rX / dBPM93to94 #x' = distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
+    envYAngle = args.rY / dBPM93to94 #y' not radians, as per Kyrre 2.11.22
     beamletXAngle = 0 #default
     beamletYAngle = 0 #default
 
@@ -66,8 +66,8 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
     #Since generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
     #amplScale = 1 - dPBWtoTarg / dBPM93toTarg #double check you account for Z before PBW in MiniScatter! beam production plane in GEANT, not exact PBW center!
     amplScale = 1 #Cyrille said the RM Amplitude is already scaled
-    sRasterXAmpl = rasterXAmplitude0 * amplScale * np.ones(N_t) #[mm]
-    sRasterYAmpl = rasterYAmplitude0 * amplScale * np.ones(N_t) #[mm]
+    sRasterXAmpl = args.aX * amplScale * np.ones(N_t) #[mm]
+    sRasterYAmpl = args.aY * amplScale * np.ones(N_t) #[mm]
 
     #For weighting edges case (--edges argument)
     Right = 50
@@ -76,36 +76,36 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
-        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
+        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)
     else:
-        if options['beamClass'] == "ESS" or options['beamClass'] == "Yngve":
-            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,betaX,betaY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
-        elif options['beamClass'] == "pencil":
-            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(energy,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
-        elif options['beamClass'] == "Twiss":
-            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(energy,
-                        nemtX,nemtY,betaX,betaY,alphX,alphY,rasterXAmplitude0,rasterYAmplitude0,len(totX[:,0]),NperBunch,nPulses)
-    if envXatBPM94 != 0:
+        if args.beamClass == "ESS" or args.beamClass == "Yngve":
+            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+        elif args.beamClass == "pencil":
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+        elif args.beamClass == "Twiss":
+            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+    if args.rX != 0:
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
-    if envYatBPM94 != 0:
+    if args.rY != 0:
         name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
 
     #Raster Magnet Failure Options
-    idcy = round(N_t * (1 - options['magFails'] / 4 )) #produces which quarter:end is 0
-    if options['failure'] == 1: #Horizontal Fail
+    idcy = round(N_t * (1 - args.magFails / 4 )) #produces which quarter:end is 0
+    if args.failure == 1: #Horizontal Fail
         sRasterXAmpl[idcy:] = 0 # no RM amplitude for magFails-th quarter of pulse
-        name = name + "_failure1-" + str(options['magFails'])+"f"
-    elif options['failure'] == 2: # Vertical Fail
+        name = name + "_failure1-" + str(args.magFails)+"f"
+    elif args.failure == 2: # Vertical Fail
         sRasterYAmpl[idcy:] = 0
-        name = name + "_failure2-" + str(options['magFails'])+"f"
-    elif options['failure'] == 3: # H & V Fails
+        name = name + "_failure2-" + str(args.magFails)+"f"
+    elif args.failure == 3: # H & V Fails
         sRasterXAmpl[idcy:] = 0
         sRasterYAmpl[idcy:] = 0
-        name = name + "_failure3-" + str(options['magFails'])+"f"
-    elif options['failure'] == 4: # Correlated Motion
+        name = name + "_failure3-" + str(args.magFails)+"f"
+    elif args.failure == 4: # Correlated Motion
         Fy = Fx
-        name = name + "_failure4-" + str(options['magFails'])+"f"
-    if edges:
+        name = name + "_failure4-" + str(args.magFails)+"f"
+    if args.edgeRaster:
         name = name + "_edges"
 
     #Calculate periods  
@@ -135,25 +135,25 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
                 #save total beamlet position
                 centroids[i,0] = beamletX
                 centroids[i,1] = beamletY
-                NperBunch = NperBunch
+                args.Nb = args.Nb
 
                 #In case of weighting edges of raster 
-                if edges:
+                if args.edgeRaster:
                     if beamletX > -Right and beamletX < Right and beamletY < Top and beamletY > -Top: #set weight depending on position
-                        NperBunch = 5 #decrease center NperBunch
+                        args.Nb = 5 #decrease center args.Nb
                     else:
-                        NperBunch = NperBunch #Edges get full NperBunch
+                        args.Nb = args.Nb #Edges get full args.Nb
 
                 #Generate beamlet distributions
                 rng = np.random.default_rng()
-                ptsX = rng.multivariate_normal([beamletX,beamletXAngle],covX,size = NperBunch) #mean is [pos,ang]!
-                ptsY = rng.multivariate_normal([beamletY,beamletYAngle],covY,size = NperBunch)
+                ptsX = rng.multivariate_normal([beamletX,beamletXAngle],covX,size = args.Nb) #mean is [pos,ang]!
+                ptsY = rng.multivariate_normal([beamletY,beamletYAngle],covY,size = args.Nb)
 
-                for k in range(NperBunch): #put this beamlet into total. Could just be written, figure that out later.
-                    totX[NperBunch*i+k,0] = ptsX[k,0]
-                    totX[NperBunch*i+k,1] = ptsX[k,1]
-                    totY[NperBunch*i+k,0] = ptsY[k,0]
-                    totY[NperBunch*i+k,1] = ptsY[k,1]
+                for k in range(args.Nb): #put this beamlet into total. Could just be written, figure that out later.
+                    totX[args.Nb*i+k,0] = ptsX[k,0]
+                    totX[args.Nb*i+k,1] = ptsX[k,1]
+                    totY[args.Nb*i+k,0] = ptsY[k,0]
+                    totY[args.Nb*i+k,1] = ptsY[k,1]
                 i+=1
 
         #Check on output parameters
@@ -168,13 +168,13 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
         with open(outname+".csv",mode = 'w',newline=None) as part_file:
             part_writer = csv.writer(part_file,delimiter = ',')
             for i in range(len(totX)):
-                part_writer.writerow(["proton", totX[i,0], totX[i,1], totY[i,0], totY[i,1], z, energy])
+                part_writer.writerow(["proton", totX[i,0], totX[i,1], totY[i,0], totY[i,1], z, args.energy])
         part_file.close()
 
         finish = datetime.now()
         print(name,".csv took: ",finish-start,"s",sep="")
 
-        if options['saveRaster']:
+        if args.saveRaster:
             #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
             import matplotlib.pyplot as plt
             import mpl_scatter_density
@@ -193,7 +193,7 @@ def runARasterMaker(energy,NperBunch,nPulses,envXatBPM94,envYatBPM94,edges,Twiss
             from os import uname
             if uname()[1] == "tensor.uio.no":
                 picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-            elif uname()[1] == "mbef-XPS-13-9300":
+            elif uname()[1] == "mbef-xps-13-9300":
                 picPWD = csvPWD
             else: picPWD = input("What directory would you like to save files to? ")
             plt.savefig(picPWD+name+".png")
