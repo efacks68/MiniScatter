@@ -88,7 +88,7 @@ def setup(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options):
     #radiation lengths are from https://pdg.lbl.gov/2019/AtomicNuclearProperties/
     #print(material)
     if mat == "Vac":
-        material == "G4_Galactic"
+        material = "G4_Galactic"
         radLen = 1e24 #[mm] basically infinity
         atomZ = 0.1
         atomA = 0.1
@@ -213,8 +213,9 @@ def setup(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options):
         savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
     savename=savepath+outname #base savename for plots downstream, brings directly to my directory
     savedfile=osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
+    #print(savename, savedfile)
 
-    return savename,savedfile,simSetup_simple1
+    return savename,simSetup_simple1
 
 def simulation(args,mat,engPlot,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
     import numpy as np
@@ -255,7 +256,7 @@ def simulation(args,mat,engPlot,beamXAngle,beamYAngle,beamFile,Twiss,options,box
 
     from simulation import setup
     #def                                  setup(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options):
-    savename,savedfile,simSetup_simple1 = setup(args,mat,material,beamXAngle,beamYAngle,beamFile,Twiss,options)
+    savename,simSetup_simple1 = setup(args,mat,material,beamXAngle,beamYAngle,beamFile,Twiss,options)
     
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)

@@ -87,7 +87,7 @@ def scatterPBW(args,Twiss):
     
     from simulation import setup
     #def                                  setup(args,material,     beamXAngle,beamYAngle,      beamFile,Twiss,options):
-    savename,savedfile,simSetup_simple1 = setup(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options)
+    savename,simSetup_simple1 = setup(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options)
     from sys import path as sysPath
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)

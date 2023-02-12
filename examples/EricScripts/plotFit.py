@@ -591,8 +591,6 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     name=savename+"_"+position+"Image"
     um = 1e-6
     from datetime import datetime
-    start= datetime.now()
-    #print(start.strftime("%H-%M-%S"))
     from plotFit import converter
   
     #print(datetime.now().strftime("%H-%M-%S"))
@@ -602,14 +600,27 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     yBinSize = yax[501]-yax[500]
     #print(xBinSize,yBinSize)
 
+    from plotFit import PEAS
+    sPEAS=datetime.now()#.strftime("%H-%M-%S"))
+    Jmax,pOutsideBoxes,rValue,edges,EI,dispX,dispY = PEAS(Img,args,parts,xax,yax,name) #,dispY,dispX
+    print("finished PEAS in",datetime.now()-sPEAS)#.strftime("%H-%M-%S"))
+
+    #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
+    core = Img[EI[1]:EI[0],EI[2]:EI[3]]
+    #coreJMax = core.max()
+    coreJMean = np.mean(core)
+    coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
+    print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
+
+    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
+    print("Beam moved",dispY,"vertical and",dispX,"horizontally")
+
     #99% box #for multiple boxes, use arrays
     #From Dmitriy Work on https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
     #  np.ndenumerate scales the best of the methods compared to 10^4 elements.
     #Find % outside the 99% Box area
     sumTot = np.sum(Img)+1 #so no 'divide by 0 errors'
-    Pprotons2 = sumTot / parts * 100
-    #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
-    #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
     widths = np.zeros(len(boxes))
     heights = np.zeros(len(boxes))
     pLargers = np.zeros(len(boxes)) #percent larger than initial box(?)
@@ -640,11 +651,6 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
                 boxBInd = idx[0] #460
             if int(val) == boxLLys[i]+heights[i]:
                 boxTInd = idx[0] #540
-        if i == 0: #for base box case
-            boxBIndC = boxBInd #set to use later
-            boxTIndC = boxTInd
-            boxLIndC = boxLInd
-            boxRIndC = boxRInd
         #Find % outside the 99% Box area
         core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
         sumCore = np.sum(core)+1
@@ -655,22 +661,17 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
         coreMeanI[i] = np.mean(core) #[uA/cm^2]
 
     #Normalize to full current, see 
+    #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
+    #Img[boxBInd:boxTInd,boxLInd:boxRInd] = 0
     I_pulse = 62.5*1e3 #[uA]
     C = I_pulse / parts / (xBinSize * yBinSize * 1e-2) * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
     Protmax = Img.max() #protons/mm^2
-    for i in range(len(Img)):
-        for j in range(len(Img[i])):
-            Img[i][j] = Img[i][j] * C #[uA/cm^2]
-    Jmax = Img.max()
+    #for i in range(len(Img)):
+    #    for j in range(len(Img[i])):
+    #        Img[i][j] = Img[i][j] * C #[uA/cm^2]
+    #Jmax = Img.max()
     Jmin = 0.9 * C #background (0 hits) will be un-colored
     #print(coreMeanI*C,coreImax*C)
-
-    #R value for algorithm. Works when use Current Density, not Nprotons
-    if args.Nb == 10 or args.Nb == 100 or args.Nb == 500:
-        rValue = rCompare(Img,args.Nb)
-        #print("R = ",rValue)
-    #print("Converted in",datetime.now() - start)
-
     print("C {:.3f}, Proton max {:.0f}, Jmax {:.1f}, R {:.3f}, Jmin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Jmax,rValue,Jmin,coreMeanI[0]*C),pOutsideBoxes)
 
     #Flat Top Current density calculations
@@ -688,28 +689,6 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     #        if idx[1] < idxMinY: idxMinY = idx[1]
     #        if idx[1] > idxMaxY: idxMaxY = idx[1]
     #print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
-
-    #print("start",datetime.now().strftime("%H-%M-%S"))
-    #Not great, may need to reshape and average. Not sure how to do that...
-    from plotFit import findEdges,PEAS
-    EI,edges = findEdges(Img,Jmax,args.saveGrads,savename,xax,yax) #[topInd,botInd,lefInd,rigInd]
-    nomEdges = [20,-22,-66,68]
-    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
-    print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
-    dispT = np.abs(edges[0]-nomEdges[0])
-    dispB = np.abs(edges[1]-nomEdges[1])
-    dispL = np.abs(edges[2]-nomEdges[2])
-    dispR = np.abs(edges[3]-nomEdges[3])
-    print("Beam moved ",dispT,",",dispB,"vertical and",dispL,",",dispR,"horizontally")
-    dispY = (dispT+dispB)/2
-    dispX = (dispL+dispR)/2
-    PEAS(Jmax,pOutsideBoxes,dispY,dispX,rValue)
-    #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
-    core = Img[EI[1]:EI[0],EI[2]:EI[3]]
-    #coreJMax = core.max()
-    coreJMean = np.mean(core)
-    coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
-    print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
 
     if args.gaussFit:
         diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
@@ -1100,13 +1079,104 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     return difference, coeffs
 
 #Detection Algorithm!!!
-def PEAS(jMax,pOut,dispY,dispX,rValue):
+def PEAS(Img,args,parts,xax,yax,name):
+    import numpy as np
+    printEdges = True
+
+    xBinSize = xax[501]-xax[500]
+    yBinSize = yax[501]-yax[500]
+    #Normalize to full current, see 
+    I_pulse = 62.5*1e3 #[uA]
+    C = I_pulse / parts / (xBinSize * yBinSize * 1e-2) * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
+    for i in range(len(Img)):
+        for j in range(len(Img[i])):
+            Img[i][j] = Img[i][j] * C #[uA/cm^2]
+    jMax = Img.max()
+    sumTot= np.sum(Img)+1
+    #print(coreMeanI*C,coreImax*C)
+
+    #99% box
+    width = 160
+    height = 64
+    boxLLx = round(-width/2 / 2) * 2 #-90
+    boxLLy = round(-height/2 / 2) * 2 #-80
+    print(len(xax),boxLLx,boxLLy,width,height)
+    for idx, val in np.ndenumerate(xax):
+        if int(val) == boxLLx:
+            boxLInd = idx[0] #455
+        if int(val) == boxLLx+width:
+            boxRInd = idx[0] #545
+    for idx, val in np.ndenumerate(yax):
+        if int(val) == boxLLy:
+            boxBInd = idx[0] #460
+        if int(val) == boxLLy+height:
+            boxTInd = idx[0] #540
+    #Find % outside the 99% Box area
+    core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
+    sumCore = np.sum(core)+1
+    pOut = (sumTot-sumCore)/sumTot*100
+
+    #R value for algorithm. Works when use Current Density, not Nprotons
+    if args.Nb == 10 or args.Nb == 100 or args.Nb == 500:
+        rValue = rCompare(Img,args.Nb)
+        #print("R = ",rValue)
+    #print("Converted in",datetime.now() - start)
+
+#    #Doesn't work, 12 Feb
+#    from cv2 import Sobel,COLOR_BGR2GRAY
+#    nomEdges = [20,-22,-66,68]
+#    edgeImgX = Sobel(Img,-1,1,0)
+#    edgeImgY = Sobel(Img,-1,0,1)
+#    printEdges=True
+#    if printEdges:
+#        import csv
+#        G = np.sqrt(edgeImgX**2 + edgeImgY**2)
+#        with open(name+"_edges.csv",mode = 'w',newline=None) as edge_file:
+#            edge_writer = csv.writer(edge_file,delimiter = ',')
+#            edge_writer.writerows(G)
+#        edge_file.close()
+#        print(name+"_edges.csv")
+#    for idx, val in np.ndenumerate(edgeImgX):
+#        if val == 1:
+#            lefInd = idx
+#        if val == -1:
+#            rigInd = idx
+#    for idx, val in np.ndenumerate(edgeImgY):
+#        if val == 1:
+#            topInd = idx
+#        if val == -1:
+#            botInd = idx
+#    EI = [topInd,botInd,lefInd,rigInd]
+#    lEdge = xax[lefInd]
+#    rEdge = xax[rigInd] 
+#    bEdge = yax[botInd]
+#    tEdge = yax[topInd]
+#    dispT = np.abs(tEdge-nomEdges[0])
+#    dispB = np.abs(bEdge-nomEdges[1])
+#    dispL = np.abs(lEdge-nomEdges[2])
+#    dispR = np.abs(rEdge-nomEdges[3])
+#    print("Beam moved ",dispT,",",dispB,"vertical and",dispL,",",dispR,"horizontally")
+#    dispY = (dispT+dispB)/2
+#    dispX = (dispL+dispR)/2
+
+    #Edges
+    #Not great, may need to reshape and average. Not sure how to do that...
+    from plotFit import findEdges
+    EI,edges = findEdges(Img,jMax,args.saveGrads,name,xax,yax) #[topInd,botInd,lefInd,rigInd]
+    nomEdges = [20,-22,-66,68]
+    dispT = np.abs(edges[0]-nomEdges[0])
+    dispB = np.abs(edges[1]-nomEdges[1])
+    dispL = np.abs(edges[2]-nomEdges[2])
+    dispR = np.abs(edges[3]-nomEdges[3])
+    dispY = (dispT+dispB)/2
+    dispX = (dispL+dispR)/2
+
     jMaxLim = 53
     pOutLim = 4
     dispYLim = 11
     dispXLim = 14
     rValLim = 0.20
-    if jMax >= jMaxLim or pOut >= pOutLim or dispY >= dispYLim or dispX >= dispXLim or rValue >= rValLim:
+    if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
         if jMax >= jMaxLim:
             print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
         if pOut >= pOutLim:
@@ -1117,6 +1187,8 @@ def PEAS(jMax,pOut,dispY,dispX,rValue):
             print("Horizontal Displacement Warning:",dispX,"mm!")
         if rValue >= rValLim:
             print("R Value Warning",rValue)
+
+    return jMax,pOut,rValue,edges,EI,dispX,dispY
 
 def saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue):
     #save values in Stats CSV
