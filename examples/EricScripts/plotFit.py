@@ -696,7 +696,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
         #add minimize function for these
 
     if args.savePics:
-        from matplotlib.pyplot import subplots,pcolor,close,tight_layout,savefig
+        from matplotlib.pyplot import subplots,pcolormesh,close,tight_layout,savefig
         from matplotlib.patches import Rectangle
         from matplotlib.colors import LogNorm
         X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
@@ -719,7 +719,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
         #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
         #Use pcolor to show density map, use log scale
-        c = ax.pcolor(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
+        c = ax.pcolormesh(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
         lw=1
         col='k'
         fs=14
@@ -766,22 +766,22 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
                 ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
                                   color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
 
-        #if args.saveEdges:
-        edgeCol = 'k'
-        ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
-        ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
-        ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
-        ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
-        #print("Edges printed!!")
+        if args.saveEdges:
+            edgeCol = 'k'
+            ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
+            ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
+            ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
+            ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
+            #print("Edges printed!!")
 
         dt = datetime.now()
         #from os.path import isfile
         #if isfile(name+"*.png"):
         #  print("already present")
-        savefig(name+"_"+dt.strftime("%H-%M-%S")+".png")
+        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
         close(fig)
         close()
-        print(name+"_"+dt.strftime("%H-%M-%S")+".png")
+        print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
 
     #dt = datetime.now()
     #print(dt-start)
@@ -1068,7 +1068,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
         #plt.plot(diff)
         #plt.title("Y Axis Difference")
         #plt.yscale("log")
-        #plt.savefig(name+"Fit Difference"+".png")
+        #plt.savefig(name+"Fit Difference."+args.picFormat)
 
     difference = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name

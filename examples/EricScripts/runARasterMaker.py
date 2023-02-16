@@ -196,8 +196,8 @@ def runARasterMaker(args,Twiss,csvPWD,options):
             elif uname()[1] == "mbef-xps-13-9300":
                 picPWD = csvPWD
             else: picPWD = input("What directory would you like to save files to? ")
-            plt.savefig(picPWD+name+".png")
-            print(picPWD+name+".png")
+            plt.savefig(picPWD+name+"."+args.picFormat)
+            print(picPWD+name+"."+args.picFormat)
             plt.close()
 
     return outname, envXAngle,envYAngle

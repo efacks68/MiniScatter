@@ -16,6 +16,7 @@ parser.add_argument("--rY",        type=float,  default=0,     help="Y distance 
 parser.add_argument("--aX",        type=float,  default=54.65, help="RM X Amplitude [mm]. Default=54.65")
 parser.add_argument("--aY",        type=float,  default=18.37, help="RM Y Amplitude [mm]. Default=18.37")
 parser.add_argument("--edges",action="store_true")
+parser.add_argument("--picFormat", type=str,   default="png",  choices=("png","svg","pdf"),help="Whic file format extension?")
 args = parser.parse_args()
 NperBunch = args.Nb
 nPulses = args.nP
@@ -80,15 +81,18 @@ for jj in range(N_t):
 
 
 print(x.shape)
-plt.scatter(x/args.aX,y/args.aY,s=1)
-plt.xlabel(r"Horizontal Centroid Deflection / a$_X$")
-plt.ylabel(r"Vertical Centroid Deflection / a$_Y$")
-plt.gca().set_xticks([-1,-.5,0,.5,1])
-plt.gca().set_yticks([-1,-.5,0,.5,1])
-plt.title("Lissajous Pattern")
-plt.grid(which='major')
+fig,ax = plt.subplots()
+from matplotlib.patches import Ellipse
+ax.add_patch(Ellipse((0,0),width=10.6/args.aX,height=3.83/args.aY,fill=False,edgecolor="red"))
+ax.scatter(x/args.aX,y/args.aY,s=1)
+ax.set_xlabel(r"Horizontal Centroid Deflection / a$_X$")
+ax.set_ylabel(r"Vertical Centroid Deflection / a$_Y$")
+ax.set_xticks([-1,-.5,0,.5,1])
+ax.set_yticks([-1,-.5,0,.5,1])
+ax.set_title("Lissajous Pattern")
+ax.grid(which='major')
 plt.tight_layout()
-plt.savefig("lissajousPattern.png")
+plt.savefig("lissajousPattern."+args.picFormat)
 plt.close()
 ####
 n=150

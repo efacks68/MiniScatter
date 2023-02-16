@@ -178,7 +178,7 @@ def runPBW(args,beamFile,Twiss,options,boxes):
             #suptitle can have values inside math if use 2 sets of {{}} - fix from "linuxtut.com" blog post
 
             dt = datetime.now()
-            name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi.png" #update the savename to not overwrite others
+            name = savename+"_"+dt.strftime("%H-%M-%S")+"_multi."+args.picFormat #update the savename to not overwrite others
             #print(name)
             #fig.savefig(name,bbox_inches="tight")
             plt.close() #be sure to close the plot
