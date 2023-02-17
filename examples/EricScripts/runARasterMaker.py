@@ -78,7 +78,9 @@ def runARasterMaker(args,Twiss,csvPWD,options):
     if options['dependence'] == "RA":
         name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)
     else:
-        if args.beamClass == "ESS" or args.beamClass == "Yngve":
+        if args.source == "twiss":
+            name = "failure_QP"+args.qpNum
+        elif args.beamClass == "ESS" or args.beamClass == "Yngve":
             name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
         elif args.beamClass == "pencil":
             name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)

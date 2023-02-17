@@ -177,17 +177,19 @@ def setup(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options):
 
     #Remove upper directories that may have come with beamFile for appending outname to scratch folder
     import re
-    if re.search("/PBW_",outname):
+    if re.search("/CSVs/",outname):
         #print("\n",outname,"\n")
-        outname = re.sub(".+(?=(PBW_))","",outname)
-        #print("removed",outname)
+        outname = re.sub(".+(?<=(/CSVs/))","",outname) #removes all preceeding real name
+        #print("Directories removed. Now:",outname)
 
-    #Find which folder root file is in
+    #Find which folder root file is in and check if complete
     #loc = findRoot(savename) #still need to work on this function
-    if uname()[1] == "mbef-xps-13-9300":
+    if uname()[1] == "mbef-xps-13-9300": #my laptop
         baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
-    elif uname()[1] == "tensor.uio.no":
-        if Twiss[1] >= 1:
+    elif uname()[1] == "tensor.uio.no": #UiO desktop
+        if args.source == "twiss":
+            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/failures/")
+        elif args.source == "particles":
             baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/ESS/")
             if options['dependence'] == "RA":
                 baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
