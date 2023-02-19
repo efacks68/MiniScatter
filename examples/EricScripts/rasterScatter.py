@@ -7,8 +7,8 @@ from argparse import ArgumentParser
 
 #Command Line arguments for save control
 parser = ArgumentParser()
-parser.add_argument("--sim",       type=str,    default="raster",choices=("raster","map","beamlet"), help="Type of simulation to perform")
-parser.add_argument("--source",    type=str,    default="particles",     choices=("particles","twiss"), help="From load particles or Twiss?")
+parser.add_argument("--sim",       type=str,    default="raster",   choices=("raster","map","beamlet"), help="Type of simulation to perform")
+parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss"), help="From load particles or Twiss?")
 #General Beam Setup Options
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton", choices=("proton","electron"), help="Which particle to simulate?")
@@ -20,8 +20,8 @@ parser.add_argument("--t",         type=float, default=0,     help="PBW Thicknes
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
 parser.add_argument("--Nb",        type=int,   default=10,    help="Number of macroparticles per beamlet. Default=10")
 parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
-parser.add_argument("--rX",        type=float, default=0,     help="X distance from beam axis [mm]. Default=0")
-parser.add_argument("--rY",        type=float, default=0,     help="Y distance from beam axis [mm]. Default=0")
+parser.add_argument("--rX",        type=float, default=0,     help="X distance from beam axis at BPM94 [mm]. Default=0")
+parser.add_argument("--rY",        type=float, default=0,     help="Y distance from beam axis at BPM94 [mm]. Default=0")
 parser.add_argument("--aX",        type=float, default=54.65, help="RM X Amplitude [mm]. Default=54.65")
 parser.add_argument("--aY",        type=float, default=18.37, help="RM Y Amplitude [mm]. Default=18.37")
 parser.add_argument("--failure",   type=float, default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4. Default=0")
@@ -31,7 +31,8 @@ parser.add_argument("--ylim",      type=float, default=150,   help="+/- value fo
 parser.add_argument("--maxim",     type=float, default=0  ,   help="Maximum current density value for output rastered imagem[uA/cm^2]. Default=0")
 parser.add_argument("--edgeRaster",action="store_true",  help="Only populate edges of raster. Default=False")
 parser.add_argument("--PBIP",      action="store_true",  default=False,   help="Is PBIP present? Default=False")
-parser.add_argument("--material",  type=str,   default="Al",   choices=("Al","Au","C","Vac"),  help="What material PBW?")
+parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au","C","Vac"),  help="What material PBW?")
+parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
 #Output Options
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
@@ -90,10 +91,10 @@ if args.source == "twiss":
                     rowNum = 0 #to increment QP number
                     for row in csv_reader:
                         if rowNum == i: #could be done cleaner?
-                            Twiss[0] = float(row[1])
+                            Twiss[0] = float(row[1])*1e6 #[mm-mrad]
                             Twiss[1] = float(row[2])
                             Twiss[2] = float(row[3])
-                            Twiss[3] = float(row[4])
+                            Twiss[3] = float(row[4])*1e6 #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
                             print(Twiss)
@@ -117,10 +118,10 @@ if args.source == "twiss":
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for row in csv_reader:
                     if row[0] == args.qpNum:
-                        Twiss[0] = float(row[1])
+                        Twiss[0] = float(row[1])*1e6 #[mm-mrad]
                         Twiss[1] = float(row[2])
                         Twiss[2] = float(row[3])
-                        Twiss[3] = float(row[4])
+                        Twiss[3] = float(row[4])*1e6 #[mm-mrad]
                         Twiss[4] = float(row[5])
                         Twiss[5] = float(row[6])
                 print(Twiss)

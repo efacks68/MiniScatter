@@ -52,7 +52,7 @@ def runARasterMaker(args,Twiss,csvPWD,options):
     dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
     dBPM93toTarg = 21222 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
     dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
-    envXAngle = args.rX / dBPM93to94 #x' = distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
+    envXAngle = args.rX / dBPM93to94 #x' = beam x distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
     envYAngle = args.rY / dBPM93to94 #y' not radians, as per Kyrre 2.11.22
     beamletXAngle = 0 #default
     beamletYAngle = 0 #default
@@ -79,7 +79,7 @@ def runARasterMaker(args,Twiss,csvPWD,options):
         name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)
     else:
         if args.source == "twiss":
-            name = "failure_QP"+args.qpNum
+            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
             name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
         elif args.beamClass == "pencil":

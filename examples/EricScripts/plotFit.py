@@ -325,7 +325,7 @@ def toTarget(TwPm,label):
     #Twiss=[beta,alpha,gemt,gamma]
     PBWexitBetaMx = np.array([[TwPm[0],-TwPm[1]],[-TwPm[1],TwPm[3]]])
 
-    d_PBW_Targ = 5
+    d_PBW_Targ = 4.4 #[m] Is this correct?
     drift_PBW_Targ = np.array([ [1, d_PBW_Targ],[ 0, 1]])
     Calc_PBW_Targ = np.linalg.multi_dot([drift_PBW_Targ,PBWexitBetaMx,np.transpose(drift_PBW_Targ)])
     #print(label,"PBWexit:",PBWexitBetaMx,"\n",drift_PBW_Targ,"\n",Calc_PBW_Targ)
@@ -673,22 +673,6 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     Jmin = 0.9 * C #background (0 hits) will be un-colored
     #print(coreMeanI*C,coreImax*C)
     print("C {:.3f}, Proton max {:.0f}, Jmax {:.1f}, R {:.3f}, Jmin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Jmax,rValue,Jmin,coreMeanI[0]*C),pOutsideBoxes)
-
-    #Flat Top Current density calculations
-    #top=0
-    #Itop = 40
-    #idxMinX = 1000
-    #idxMaxX = 1
-    #idxMinY = 1000
-    #idxMaxY = 1
-    #for idx,val in np.ndenumerate(Img):
-    #    if val >= Itop:
-    #        top += 1
-    #        if idx[0] < idxMinX: idxMinX = idx[0]
-    #        if idx[0] > idxMaxX: idxMaxX = idx[0]
-    #        if idx[1] < idxMinY: idxMinY = idx[1]
-    #        if idx[1] > idxMaxY: idxMaxY = idx[1]
-    #print("Current above",Itop,"uA/cm^2 in",top,"mm^2",idxMaxX-idxMinX,"x",idxMaxY-idxMinY,"mm^2,","{:.2f} uA/cm^2 average".format(np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])/top))
 
     if args.gaussFit:
         diffy,coeffsy = gaussianFit(histogram2D,"y",2,500,options,savename,2,30)
@@ -1079,7 +1063,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     return difference, coeffs
 
 #Detection Algorithm!!!
-def PEAS(Img,args,parts,xax,yax,name):
+def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, would be known?
     import numpy as np
     printEdges = True
 
@@ -1187,6 +1171,8 @@ def PEAS(Img,args,parts,xax,yax,name):
             print("Horizontal Displacement Warning:",dispX,"mm!")
         if rValue >= rValLim:
             print("R Value Warning",rValue)
+    else:
+        print("No Warnings!")
 
     return jMax,pOut,rValue,edges,EI,dispX,dispY
 
