@@ -3,7 +3,7 @@
 #typical command: (no PBW, no text, no boxes, save pic of 200x200mm^2 window)
 #python3 scatterPBW.py --savePics --xlim 200 --ylim 200 --t 0.1 --noText --noBox
 
-def scatterPBW(args,Twiss):
+def scatterPBW(args,Twiss,iteration):
     from datetime import datetime
     origin = datetime.now()
     print(origin)
@@ -37,7 +37,7 @@ def scatterPBW(args,Twiss):
         statsPWD = "."
 
     #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-    rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,csvPWD,options)
+    rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,csvPWD,options,iteration)
     ##print(rasterBeamFile,beamXAngle,beamYAngle)
     #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
     #                                       simulation(args,material,   engplot,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes):

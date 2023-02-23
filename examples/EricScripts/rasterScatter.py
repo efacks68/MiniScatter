@@ -2,6 +2,106 @@
 #Takes config for scattering simulations and runs
 #Includes setup and output preferences
 
+def run(args,iteration):
+    #Get Twiss to run, depending on user configuration
+    # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
+    if args.beamClass == 'Yngve': #smallest from Yngve
+        Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
+    elif args.beamClass == 'ESS': #from my OpenXAL calculation
+        Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
+    elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
+        Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+
+    if args.twiss:
+        Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
+        args.beamClass = "Twiss"
+
+    #Tailored to OpenXAL failure input
+    if args.source == "twiss":
+        if args.twissFile != "":
+            import csv
+            from os import uname
+            i=0
+            #Find file
+            if uname()[1] == "tensor.uio.no":
+                twissPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+            elif uname()[1] == "mbef-xps-13-9300":
+                twissPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+            if args.qpNum == "all":
+                #for running all Twiss in OpenXAL Combo Sequence output CSV
+                from plotFit import numLines
+                n = numLines(twissPWD+args.twissFile)
+                for i in range(n):
+                    with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                        csv_reader = csv.reader(csv_file, delimiter=',')
+                        rowNum = 0 #to increment QP number
+                        for row in csv_reader:
+                            #if rowNum == 0:
+                            #    print("row 0")
+                            #    if type(row[1]) == str:
+                            #        print("Header skipped")
+                            #        continue
+                                    #next(csv_reader,None)
+                            if rowNum == i: #could be done cleaner?
+                                if float(row[1]) < 1e-3:
+                                    um = 1e-6 #from OpenXAL 
+                                elif float(row[1]) > 1e-3:
+                                    um = 1
+                                Twiss[0] = float(row[1])*um #[mm-mrad]
+                                Twiss[1] = float(row[2])
+                                Twiss[2] = float(row[3])
+                                Twiss[3] = float(row[4])*um #[mm-mrad]
+                                Twiss[4] = float(row[5])
+                                Twiss[5] = float(row[6])
+                                print(Twiss)
+                                #Adjusts names so the files are in order
+                                if len(row[0]) == 2: 
+                                    args.qpNum = "0"
+                                else: 
+                                    args.qpNum = ""
+                                args.qpNum += row[0]
+                                #print(i,rowNum,args.qpNum)
+                                break
+                            rowNum+=1
+                    csv_file.close()
+                    
+                    if args.sim == "raster":
+                        from scatterPBW import scatterPBW
+                        scatterPBW(args,Twiss,iteration)
+            else:
+                #for single QP fail runs
+                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    for row in csv_reader:
+                        if row[0] == args.qpNum:
+                            Twiss[0] = float(row[1])*1e6 #[mm-mrad]
+                            Twiss[1] = float(row[2])
+                            Twiss[2] = float(row[3])
+                            Twiss[3] = float(row[4])*1e6 #[mm-mrad]
+                            Twiss[4] = float(row[5])
+                            Twiss[5] = float(row[6])
+                    print(Twiss)
+                csv_file.close()
+
+    #Get full rastered for this one Twiss
+    if args.sim == "raster":
+        from scatterPBW import scatterPBW
+        scatterPBW(args,Twiss,iteration)
+
+    #Get map of % Outside Box and Current Density on Target for the range specified
+    if args.sim == "map":
+        from mapRADependence import mapRADependence
+        from os import uname
+        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+        print("it works!")
+        mapRADependence(args,Twiss,iteration)
+
+    #Examine individual beamlet of Twiss
+    if args.sim == "beamlet":
+        from beamletScatter import beamletScatter
+        beamletScatter(args,Twiss,iteration)
+
+
 from argparse import ArgumentParser
 #look into argument groups!
 
@@ -33,6 +133,7 @@ parser.add_argument("--edgeRaster",action="store_true",  help="Only populate edg
 parser.add_argument("--PBIP",      action="store_true",  default=False,   help="Is PBIP present? Default=False")
 parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au","C","Vac"),  help="What material PBW?")
 parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
+parser.add_argument("--iteration", type=int,   default=1, help="How many times to iterate this setting")
 #Output Options
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
@@ -57,100 +158,5 @@ parser.add_argument("--NstepX", type=int,     default=6,     help="N steps for X
 parser.add_argument("--NstepY", type=int,     default=6,     help="N steps for Y")
 args = parser.parse_args()
 
-#Get Twiss to run, depending on user configuration
-# Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
-if args.beamClass == 'Yngve': #smallest from Yngve
-    Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
-elif args.beamClass == 'ESS': #from my OpenXAL calculation
-    Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
-elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
-    Twiss = [0.0001,0.15,0,0.0001,0.15,0]
-
-if args.twiss:
-    Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
-    args.beamClass = "Twiss"
-
-#Tailored to OpenXAL failure input
-if args.source == "twiss":
-    if args.twissFile != "":
-        import csv
-        from os import uname
-        i=0
-        #Find file
-        if uname()[1] == "tensor.uio.no":
-            twissPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
-        elif uname()[1] == "mbef-xps-13-9300":
-            twissPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
-        if args.qpNum == "all":
-            #for running all Twiss in OpenXAL Combo Sequence output CSV
-            from plotFit import numLines
-            n = numLines(twissPWD+args.twissFile)
-            for i in range(n):
-                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
-                    csv_reader = csv.reader(csv_file, delimiter=',')
-                    rowNum = 0 #to increment QP number
-                    for row in csv_reader:
-                        #if rowNum == 0:
-                        #    print("row 0")
-                        #    if type(row[1]) == str:
-                        #        print("Header skipped")
-                        #        continue
-                                #next(csv_reader,None)
-                        if rowNum == i: #could be done cleaner?
-                            if float(row[1]) < 1e-3:
-                                um = 1e-6 #from OpenXAL 
-                            elif float(row[1]) > 1e-3:
-                                um = 1
-                            Twiss[0] = float(row[1])*um #[mm-mrad]
-                            Twiss[1] = float(row[2])
-                            Twiss[2] = float(row[3])
-                            Twiss[3] = float(row[4])*um #[mm-mrad]
-                            Twiss[4] = float(row[5])
-                            Twiss[5] = float(row[6])
-                            print(Twiss)
-                            #Adjusts names so the files are in order
-                            if len(row[0]) == 2: 
-                                args.qpNum = "0"
-                            else: 
-                                args.qpNum = ""
-                            args.qpNum += row[0]
-                            #print(i,rowNum,args.qpNum)
-                            break
-                        rowNum+=1
-                csv_file.close()
-                
-                if args.sim == "raster":
-                    from scatterPBW import scatterPBW
-                    scatterPBW(args,Twiss)
-        else:
-            #for single QP fail runs
-            with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
-                csv_reader = csv.reader(csv_file, delimiter=',')
-                for row in csv_reader:
-                    if row[0] == args.qpNum:
-                        Twiss[0] = float(row[1])*1e6 #[mm-mrad]
-                        Twiss[1] = float(row[2])
-                        Twiss[2] = float(row[3])
-                        Twiss[3] = float(row[4])*1e6 #[mm-mrad]
-                        Twiss[4] = float(row[5])
-                        Twiss[5] = float(row[6])
-                print(Twiss)
-            csv_file.close()
-
-#Get full rastered for this one Twiss
-if args.sim == "raster":
-    from scatterPBW import scatterPBW
-    scatterPBW(args,Twiss)
-
-#Get map of % Outside Box and Current Density on Target for the range specified
-if args.sim == "map":
-    from mapRADependence import mapRADependence
-    from os import uname
-    if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-    print("it works!")
-    mapRADependence(args,Twiss)
-
-#Examine individual beamlet of Twiss
-if args.sim == "beamlet":
-    from beamletScatter import beamletScatter
-    beamletScatter(args,Twiss)
+for i in range(args.iteration):
+    run(args,i)

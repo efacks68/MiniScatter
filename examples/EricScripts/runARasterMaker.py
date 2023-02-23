@@ -1,5 +1,5 @@
 
-def runARasterMaker(args,Twiss,csvPWD,options):
+def runARasterMaker(args,Twiss,csvPWD,options,iteration):
     import numpy as np
     from math import pi, asin, sin
     from datetime import datetime
@@ -74,19 +74,28 @@ def runARasterMaker(args,Twiss,csvPWD,options):
     Top = 17
     i=0 #for Bunch number iterator
 
+    #Add special endings for iterations, added for statistics
+    if args.iteration == 1: #this is the controlling variable
+        iterEnding = ""
+    else:
+        if iteration == 0:
+            iterEnding ="" #reuse the no iteration run
+        else:
+            iterEnding = "_"+str(iteration-1) #this is the variant
+
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
-        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)
+        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)+iterEnding
     else:
         if args.source == "twiss":
-            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)
+            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)+iterEnding
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
-            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
         elif args.beamClass == "pencil":
-            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
         elif args.beamClass == "Twiss":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,
-                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
     if args.rX != 0:
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
     if args.rY != 0:
