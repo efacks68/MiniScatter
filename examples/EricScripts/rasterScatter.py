@@ -90,11 +90,21 @@ if args.source == "twiss":
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     rowNum = 0 #to increment QP number
                     for row in csv_reader:
+                        #if rowNum == 0:
+                        #    print("row 0")
+                        #    if type(row[1]) == str:
+                        #        print("Header skipped")
+                        #        continue
+                                #next(csv_reader,None)
                         if rowNum == i: #could be done cleaner?
-                            Twiss[0] = float(row[1])*1e6 #[mm-mrad]
+                            if float(row[1]) < 1e-3:
+                                um = 1e-6 #from OpenXAL 
+                            elif float(row[1]) > 1e-3:
+                                um = 1
+                            Twiss[0] = float(row[1])*um #[mm-mrad]
                             Twiss[1] = float(row[2])
                             Twiss[2] = float(row[3])
-                            Twiss[3] = float(row[4])*1e6 #[mm-mrad]
+                            Twiss[3] = float(row[4])*um #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
                             print(Twiss)
@@ -143,6 +153,4 @@ if args.sim == "map":
 #Examine individual beamlet of Twiss
 if args.sim == "beamlet":
     from beamletScatter import beamletScatter
-
     beamletScatter(args,Twiss)
-    print("Need to figure this out!")

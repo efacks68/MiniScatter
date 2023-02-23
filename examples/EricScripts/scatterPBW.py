@@ -45,16 +45,16 @@ def scatterPBW(args,Twiss):
     #Returns filtered particle histograms when doing beamlet simulation, not needed here!
     
     from simulation import setup
-    #def                        setup(args,material,     beamXAngle,beamYAngle,      beamFile,Twiss,options):
-    savename,simSetup_simple1 = setup(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options)
-    
+    #def                        setup(args,material,           beamFile,Twiss,options):
+    savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options)
+
     import miniScatterDriver
     from plotFit import rasterImage
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    Jmax,pOutsideBoxes,dispY,dispX,rValue = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
+    Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
 
     from plotFit import saveStats
-    saveStats(statsPWD,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue)
+    saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

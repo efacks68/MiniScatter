@@ -50,7 +50,7 @@ def runPBW(args,beamFile,Twiss,options,boxes):
         for material in materials:
             #function for preparing the run and running miniScatterDriver functions
             #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI =  simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes)
-            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation(args,mat,   args.rX,   args.rY,beamFile,Twiss,options,boxes)
+            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff = simulation(args,mat,   args.rX,   args.rY,beamFile,Twiss,options,boxes)
             #Now plot the distributions with various views depending on the material
             if material == "G4_Galactic" or material == "G4_AIR":
                 if options['mat3Plot']:

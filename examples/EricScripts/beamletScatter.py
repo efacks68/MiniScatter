@@ -16,7 +16,7 @@ def beamletScatter(args,Twiss):
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':True,
                     'exitTree':True, 'targetTree':True, 'MCS':True, 'engPlot':False,
-                    'mat3Plot':False, 'TwissFits':False, 'compareTargs':False }
+                    'mat3Plot':False, 'TwissFits':False, 'compareTargs':True }
 
     #Important things
     if args.t == 0:
@@ -38,3 +38,5 @@ def beamletScatter(args,Twiss):
 
     #Send to runPBW to simulate with MiniScatter or opens already run data
     runPBW(args,args.beamFile,Twiss,options,boxes)
+
+    print("Simulation took ",datetime.now()-origin,"s long",sep="")
