@@ -528,8 +528,8 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
         #Displays Twiss values and calculated mu and sigma
         if options['TwissFits']:
             print("\nPre PBW Twiss")
-            plotTwissFit(xinit_filtered/mm,pxinit_filtered,savename+"init",mat,"Pre PBW","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
-            plotTwissFit(yinit_filtered/mm,pyinit_filtered,savename+"init",mat,"Pre PBW","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
+            plotTwissFit(xinit/mm,pxinit,savename+"init",mat,"Pre PBW","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
+            plotTwissFit(yinit/mm,pyinit,savename+"init",mat,"Pre PBW","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
             print("\nPBW Exit Twiss Calculated")
             plotTwissFit(xexit/mm,pxexit,savename+"texitHalo",mat,"PBW Exit","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
             plotTwissFit(xexit_filtered/mm,pxexit_filtered,savename+"texitFiltered",mat,"PBW Exit","X",args.t,thetasq,beta_rel,gamma_rel,TwissIx)
@@ -582,7 +582,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
         from plotFit import plot1DRaster,rasterImage
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-        Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
+        Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
         
         if options['initTree']:
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
@@ -608,4 +608,4 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
             diffNx,diffPx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,options,savename,3,10)
             print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
 
-    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff #filter by PDG only
+    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff #filter by PDG only

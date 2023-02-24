@@ -670,10 +670,10 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
 
     from plotFit import PEAS
     sPEAS=datetime.now()#.strftime("%H-%M-%S"))
-    Jmax,pOutsideBox,rValue,edges,EI,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name) #,dispY,dispX
+    Jmax,pOutsideBox,rValue,edges,EI,beamArea,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name) #,dispY,dispX
     print("finished PEAS in",datetime.now()-sPEAS)#.strftime("%H-%M-%S"))
 
-    #print("edgesFound",datetime.now().strftime("%H-%M-%S"))
+    print(Jmax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
     #coreJMax = core.max()
     coreJMean = np.mean(Img[EI[1]:EI[0],EI[2]:EI[3]])
@@ -681,9 +681,10 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
 
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
-    print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
-    print("Beam moved",dispY,"vertical and",dispX,"horizontally")
-    print("rDiff =",rDiff)
+    #print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
+    print("Beam Area:",beamArea,"mm^2, nominal:",128*42,"mm^2")
+    #print("Beam moved",dispY,"vertical and",dispX,"horizontally")
+    #print("rDiff =",rDiff)
 
     #Normalize to full current, see 
     #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
@@ -788,7 +789,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     #dt = datetime.now()
     #print(dt-start)
 
-    return Jmax,pOutsideBox,dispY,dispX,rValue,rDiff
+    return Jmax,pOutsideBox,beamArea,dispY,dispX,rValue,rDiff
 
 def converter(hIn,saveHist,name):
     import ROOT
@@ -876,19 +877,20 @@ def rCompare(Im,Nb):
     leny = np.shape(Im)[1]
     diff = np.zeros((leny,lenx))
     div = np.zeros((leny,lenx))
+    offset = 0 #1e-10
 
     for i in range(lenx):
         for j in range(leny):
-            Iref[j,i] += 1e-5
-            #if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            div[j,i] = ( ( ( Im[j,i] / Iref[j,i] - 1) ** 2 ) / (leny * lenx) )
+            #Iref[j,i] += offset
+            if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
+            div[j,i] = ( ( ( (Im[j,i] + offset) / (Iref[j,i] + offset) - 1) ** 2 ) / (leny * lenx) )
     rDiv = np.sqrt(np.sum(div))
 
     for i in range(lenx):
         for j in range(leny):
-            Iref[j,i] += 1e-5
-            #if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            diff[j,i] = ( ( ( Im[j,i] - Iref[j,i]) ** 2 ) / (leny * lenx) )
+            #Iref[j,i] += offset
+            if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
+            diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i]) + offset) ** 2 ) / (leny * lenx) )
     rDiff = np.sqrt(np.sum(diff))
 
     return rDiv,rDiff
@@ -997,6 +999,10 @@ def localExtrema(gradX,promX,gradY,promY,xax,yax):
     lefInd = round(avgMaxSumGradX/n)
     rigInd = ceil(avgMinSumGradX/n)
 
+    lim=600
+    if topInd > lim or botInd > lim or lefInd > lim or rigInd > lim: 
+        print("\n\nError in Gradient calculation!\n\n")
+
     lMaxX = xax[lefInd]
     lMinX = xax[rigInd] 
     lMaxY = yax[botInd]
@@ -1092,7 +1098,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     return differenceN, differenceP, coeffs
 
 #Detection Algorithm!!!
-def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, would be known?
+def PEAS(Img,args,parts,xax,yax,name):
     import numpy as np
     printEdges = True
 
@@ -1104,7 +1110,7 @@ def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, w
     height = 64
     boxLLx = round(-width/2 / 2) * 2 #-90
     boxLLy = round(-height/2 / 2) * 2 #-80
-    print(len(xax),boxLLx,boxLLy,width,height)
+    #print(len(xax),boxLLx,boxLLy,width,height)
     for idx, val in np.ndenumerate(xax):
         if int(val) == boxLLx:
             boxLInd = idx[0] #455
@@ -1120,7 +1126,7 @@ def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, w
     sumTot = np.sum(Img)+1
     sumCore = np.sum(core)+1
     pOut = (sumTot-sumCore)/sumTot*100
-    print(pOut)
+    #print(pOut)
 
     #Normalize to full current, see 
     I_pulse = 62.5*1e3 #[uA]
@@ -1135,7 +1141,7 @@ def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, w
 
     #R value for algorithm. Works when use Current Density, not Nprotons
     rValue,rDiff = rCompare(Img,args.Nb)
-    print("R = ",rValue,rDiff)
+    #print("R = ",rValue,rDiff)
     #print("Converted in",datetime.now() - start)
 
 #    #Doesn't work, 12 Feb
@@ -1180,35 +1186,39 @@ def PEAS(Img,args,parts,xax,yax,name): #should I figure out the axes here? No, w
     from plotFit import findEdges
     EI,edges = findEdges(Img,jMax,args.saveGrads,name,xax,yax) #[topInd,botInd,lefInd,rigInd]
     nomEdges = [20,-22,-66,68]
+    nomArea = (nomEdges[0]-nomEdges[1])*(nomEdges[3]-nomEdges[2])
     dispT = np.abs(edges[0]-nomEdges[0])
     dispB = np.abs(edges[1]-nomEdges[1])
     dispL = np.abs(edges[2]-nomEdges[2])
     dispR = np.abs(edges[3]-nomEdges[3])
     dispY = (dispT+dispB)/2
     dispX = (dispL+dispR)/2
+    beamArea = (edges[0]-edges[1])*(edges[3]-edges[2])
 
     jMaxLim = 53
     pOutLim = 4
     dispYLim = 11
     dispXLim = 14
     rValLim = 0.20
-    if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
-        if jMax >= jMaxLim:
-            print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
-        if pOut >= pOutLim:
-            print("% Outside Box Warning:",pOut,"%!")
-        if dispY >= dispYLim:
-            print("Vertical Displacement Warning:",dispY,"mm!")
-        if dispX >= dispXLim:
-            print("Horizontal Displacement Warning:",dispX,"mm!")
-        if rValue >= rValLim:
-            print("R Value Warning",rValue)
+    #if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
+    if jMax >= jMaxLim:
+        print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
+    elif pOut >= pOutLim:
+        print("% Outside Box Warning:",pOut,"%!")
+    elif beamArea <= nomArea:
+        print("Beam Area Warning:",beamArea,"mm^2")
+    elif dispY >= dispYLim:
+        print("Vertical Displacement Warning:",dispY,"mm!")
+    elif dispX >= dispXLim:
+        print("Horizontal Displacement Warning:",dispX,"mm!")
+    elif rValue >= rValLim:
+        print("R Value Warning",rValue)
     else:
         print("No Warnings!")
 
-    return jMax,pOut,rValue,edges,EI,dispX,dispY,rDiff
+    return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff):
+def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff):
     #save values in Stats CSV
     import csv
     from os import path as osPath
@@ -1234,8 +1244,8 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,dispY,dispX,rValu
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ',')
-                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff])
+                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff])
                 csv_file.close()
-            print(Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff)
+            print(Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff)
         else:
             print("Values already in row",foundRow)

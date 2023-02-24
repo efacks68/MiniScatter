@@ -75,7 +75,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
     i=0 #for Bunch number iterator
 
     #Add special endings for iterations, added for statistics
-    if args.iteration == 1: #this is the controlling variable
+    if args.iterations == 1: #this is the controlling variable
         iterEnding = ""
     else:
         if iteration == 0:

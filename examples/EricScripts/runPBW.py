@@ -24,7 +24,7 @@ def runPBW(args,beamFile,Twiss,options,boxes):
 
     #Opening figure only if doing material plotting
     if not args.matPlots:
-        savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue = simulation(args,args.material,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes)
+        savename,xtarg,ytarg,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue = simulation(args,args.material,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes)
     elif args.matPlots:
         materials = ["G4_Galactic","G4_Al","G4_Au"] #,"G4_AIR"full list as of 1.4.22
         import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def runPBW(args,beamFile,Twiss,options,boxes):
         for material in materials:
             #function for preparing the run and running miniScatterDriver functions
             #savename,xtarg,ytarg,targPOutBox,targImax, targCoreMeanI =  simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes)
-            savename,xtarg,ytarg,Jmax,pOutsideBoxes,dispY,dispX,rValue,rDiff = simulation(args,mat,   args.rX,   args.rY,beamFile,Twiss,options,boxes)
+            savename,xtarg,ytarg,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = simulation(args,mat,   args.rX,   args.rY,beamFile,Twiss,options,boxes)
             #Now plot the distributions with various views depending on the material
             if material == "G4_Galactic" or material == "G4_AIR":
                 if options['mat3Plot']:
