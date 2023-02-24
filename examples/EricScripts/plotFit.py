@@ -15,8 +15,9 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     fs = 14 #set the axis label font size early
 
     #Use Scipy.optimize.curve_fit in my findFit function to get mus and sigmas:
-    mux, sigmax, xinterval = findFit(xs) #dynamically gets parameters AND histogram intervals!
-    muy, sigmay, yinterval = findFit(ys)
+    guess=[0.01,0.1,1]
+    mux, sigmax, amplx, xinterval = findFit(xs,guess) #dynamically gets parameters AND histogram intervals!
+    muy, sigmay, amply, yinterval = findFit(ys)
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(xs)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -111,7 +112,7 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     #plt.show()
     plt.close() #be sure to close the plot
 
-def findFit(data):
+def findFit(data,guess):
     #with help from MSeifert in stackoverflow fit a curve to a histogram in python
     #https://stackoverflow.com/questions/35544233/fit-a-curve-to-a-histogram-in-python
     #import gaussian
@@ -121,22 +122,22 @@ def findFit(data):
 
     def gaussian(x,mu,amplitude,sigma):
         #import numpy.exp as exp
-        return amplitude * np.exp( - (x - mu) ** 2 / (2*sigma ** 2))
+        return amplitude * np.exp( - (x - mu) ** 2 / (2 * sigma ** 2))
 
     plt.close()
     bin_heights, bin_borders, _ = plt.hist(data,bins="auto",label="histogram")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=[0.01,1.,1.],bounds=(0,[1e2,1e5,1e2])) #p0 should be good start, though not what is recommended
+    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=(0,[1e2,1e5,1e5])) #p0 should be good start, though not what is recommended
     x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
-    #plt.plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
+    plt.plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
     #plt.legend()
     #plt.xlim([bin_borders[0],bin_borders[-1]])
     #plt.show()
-    plt.close() #be sure to close this or else these show up in the multi plots!
-    #print(popt)
+    #plt.close() #be sure to close this or else these show up in the multi plots!
+    print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
-    return(popt[0],abs(popt[2]),x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
+    return(popt[0],abs(popt[2]),popt[1],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
 def calcTwiss(labelx,labely,x,y):
     #use generic x,y but usually x, x' or y,y'!
@@ -225,8 +226,8 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     print("Recalculated Twiss:","Betax: {:.2f}m, alphax: {:.2f}, Geo Emitt x: {:.3e}m".format(calcTwf[0],calcTwf[1],calcTwf[2]))
 
     #Get intervals and info about distribution
-    mux,sigmax,xinterval = findFit(xs)
-    mupx,sigmapx,pxinterval = findFit(pxs) #this is a least square fit to Gaussian, so less sensitive to outliers.
+    mux,sigmax,amplx,xinterval = findFit(xs)
+    mupx,sigmapx,amply,pxinterval = findFit(pxs) #this is a least square fit to Gaussian, so less sensitive to outliers.
     print("Histogram   sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(sigmax,sigmapx/mm))
     print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
     print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
@@ -346,8 +347,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     fs = 14
 
     #Find fit to histogram
-    mux,sigmax,xinterval = findFit(targx)
-    muy,sigmay,yinterval = findFit(targy)
+    mux,sigmax,amplx,xinterval = findFit(targx)
+    muy,sigmay,amply,yinterval = findFit(targy)
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -518,8 +519,8 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     print(fitlabel,pOutBoxY,"% outside 99% box Y")
 
     #Useful to get intervals for nice plotting
-    mux,sigmax,xinterval = findFit(targx)
-    muy,sigmay,yinterval = findFit(targy)
+    mux,sigmax,amplx,xinterval = findFit(targx)
+    muy,sigmay,amply,yinterval = findFit(targy)
 
     #Create the fig with 2 plots side by side
     plt.clf()
@@ -673,18 +674,15 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     Jmax,pOutsideBox,rValue,edges,EI,beamArea,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name) #,dispY,dispX
     print("finished PEAS in",datetime.now()-sPEAS)#.strftime("%H-%M-%S"))
 
-    print(Jmax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
+    #print(Jmax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
     #coreJMax = core.max()
     coreJMean = np.mean(Img[EI[1]:EI[0],EI[2]:EI[3]])
     coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
-    print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
-
-    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    #print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
     #print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
-    print("Beam Area:",beamArea,"mm^2, nominal:",128*42,"mm^2")
+    #print("Beam Area:",beamArea,"mm^2, nominal:",128*42,"mm^2")
     #print("Beam moved",dispY,"vertical and",dispX,"horizontally")
-    #print("rDiff =",rDiff)
 
     #Normalize to full current, see 
     #print(sumTot,parts,sumCore,pOutsideBox,Img.max())
@@ -697,7 +695,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     #Jmax = Img.max()
     Jmin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
     #print(coreMeanI*C,coreImax*C)
-    print("C {:.3f}, Proton max {:.0f}, Jmax {:.1f}, R {:.3f}, Jmin {:.3f}, coreMeanI {:.1f}, pOutsideBox".format(C,Protmax,Jmax,rValue,Jmin,coreMeanI[0]*C),pOutsideBoxes)
+    print("PMAS:",datetime.now()-sPEAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox".format(Jmax,coreArea,coreJMean,128*42,rValue,rDiff,Jmin,coreMeanI[0]*C),pOutsideBoxes)
+    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
     if args.gaussFit:
         diffNy,diffPy,coeffsy = gaussianFit(histogram2D,"y",yBinSize,500,options,savename,2,30)
@@ -1216,7 +1215,7 @@ def PEAS(Img,args,parts,xax,yax,name):
     else:
         print("No Warnings!")
 
-    return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff
+    return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff #make this a list!
 
 def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff):
     #save values in Stats CSV
@@ -1244,8 +1243,81 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,di
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ',')
-                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff])
+                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff]) #add JCore
                 csv_file.close()
             print(Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff)
         else:
             print("Values already in row",foundRow)
+
+
+def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
+    import csv
+    from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
+    from numpy import greater as npGreater,zeros,mean,std
+    from plotFit import findFit
+    from scipy.stats import norm
+
+    read = zeros(args.iterations)
+    #print(readPOut.shape)
+    i=0
+    lenbreak=False
+    with open(statsPWD+"EvalStats.csv",mode='r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader)
+        for row in csv_reader:
+            if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
+                #print("found Twiss")
+                read[i] = float(row[ind]) #[mm-mrad]
+                #print(i,readPOut[i])
+                if i+1 == args.iterations:
+                    lenbreak = True
+                    break
+                i+=1
+                #print(lenbreak)
+            if lenbreak:
+                break
+    csv_file.close()
+
+    #nonzero = npGreater(read,0)
+    #read = read[nonzero]
+
+    mu, sigma, ampl,interval = findFit(read,[mean(read),std(read),args.iterations/2])
+
+    _, bins, _ = hist(read,interval) #ax =
+    y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
+    l1 = plot(bins, y1, "r--", linewidth=2)
+    title(str(args.iterations)+" Iterations of "+str(args.pOff)+"% Off Nominal")
+    xlabel("% of Beam Outside Box")
+    ylabel("Counts")
+    #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
+
+    bgdbox=dict(pad=1,fc='w',ec='none')
+    fs=14
+    delta=3e-4
+    text(xlim()[0]*(1+delta), ylim()[1]*0.95, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+delta), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    
+    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+    name=statsPWD+paramName+"Hist_"+str(args.iterations)+"x"+str(args.pOff)+"pOffNom.png"
+    savefig(name)
+    close()
+    print(paramName,mu,sigma,)
+    print(name)
+
+def spreadHist(args,Twiss):
+    from os import uname
+    from plotFit import plotSpread
+    
+    if uname()[1] == "tensor.uio.no":
+        statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    elif uname()[1] == "mbef-xps-13-9300":
+        statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+
+    paramName=["beamPOut","jMax"]
+    ind = [8,7]
+    unit=["%",r"$\mu$A/cm$^2$"]
+    for i in range(len(paramName)):
+        plotSpread(args,Twiss,statsPWD,paramName[i],ind[i],unit[i])

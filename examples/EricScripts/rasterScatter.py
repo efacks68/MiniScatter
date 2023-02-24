@@ -186,5 +186,5 @@ for i in range(args.iterations):
 print("Simulation took ",datetime.now()-origin,"s long",sep="")
 
 if args.iterations >= 2:
-    from spreadTwiss import spreadHist
-    spreadHist(args,Twiss,args.iterations)
+    from plotFit import spreadHist
+    spreadHist(args,Twiss)
