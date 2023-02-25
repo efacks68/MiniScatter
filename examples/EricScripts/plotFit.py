@@ -909,25 +909,25 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
     gradY = scipySigConv2d(Img,gradYY,'same')
 
     #Prominence of gradient to determine if actual edge or not
-    promX = 4
+    promX = 3
     promY = 4
 
     EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
     #print(edges)
 
     #Only do check for Top and Left?
-    if EI[0] == 0:
-        promY -= 1
-        print("Not strongly defined beam on Top",promY)
-        EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-        if EI[1] == 0:
-            promY -= 1
-            print("Not strongly defined beam on Top",promY)
-            EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-            if EI[1] == 0:
-                promY -= 1
-                print("Not strongly defined beam on Top",promY)
-                EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
+    #if EI[0] == 0:
+    #    promY -= 1
+    #    print("Not strongly defined beam on Top",promY)
+    #    EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
+    #    if EI[1] == 0:
+    #        promY -= 1
+    #        print("Not strongly defined beam on Top",promY)
+    #        EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
+    #        if EI[1] == 0:
+    #            promY -= 1
+    #            print("Not strongly defined beam on Top",promY)
+    #            EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
     if EI[2] == 0:
         promX -= 1
         print("Not strongly defined beam on Left",promX)
@@ -958,51 +958,71 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
         plt.setp(ax1,xlim=(-100,100),ylim=(-100,100),title="Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
         plt.setp(ax2,xlim=(-100,100),ylim=(-100,100),title="Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
         plt.setp(ax3,xlim=(-100,100),title="Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
-        plt.setp(ax4,xlim=(-100,100),title="Sum of Gradient Y",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax4,xlim=(-100,100),title="Sum of Gradient Y",xlabel="Y [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
         ac = fig.colorbar(a, ax=ax1,pad=0.01)
         ac.set_label(r"d$\bf{J}$/dx",labelpad=3,fontsize=12)
         bc = fig.colorbar(b, ax=ax2,pad=0.01)
         bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
         #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
-        plt.savefig(savename+"_GradPics.png")
-        print(savename,"_GradPics.png",sep="")
+        plt.savefig(savename+str(promY)+"_GradPics.png")
+        print(savename,promY,"_GradPics.png",sep="")
         plt.close()
 
     return EI,edges
 
 def localExtrema(gradX,nx,gradY,n,xax,yax):
     #Finds Edge Indices from Gradient maps
-    from numpy import sum as npSum,argpartition#,ndenumerate,argmax,argmin,amax,amin,
+    from numpy import sum as npSum,argpartition,max as npMax,min as npMin,ndenumerate#,ndenumerate,argmax,argmin,amax,amin,
     from math import ceil
 
-    #Set conspicuous initial values in case not found
-    avgMaxSumGradX = 0
-    avgMaxSumGradY = 0
-    avgMinSumGradX = 0
-    avgMinSumGradY = 0
+    ##Set conspicuous initial values in case not found
+    #avgMaxSumGradX = 0
+    #avgMaxSumGradY = 0
+    #avgMinSumGradX = 0
+    #avgMinSumGradY = 0
     
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
+    #print(len(sumGradY),npMin(sumGradY))
 
-    #n=6 #this gave pretty even results
-    #argpartition implemented like this selects the maximum n values
-    maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
-    minSumGradXInds = argpartition(sumGradX,n)[n:]
-    maxSumGradYInds = argpartition(sumGradY,-n)[-n:]
-    minSumGradYInds = argpartition(sumGradY,n)[n:]
-    #then those max are summed 
-    for i in range(n):
-        avgMaxSumGradX += maxSumGradXInds[i]
-        avgMaxSumGradY += maxSumGradYInds[i]
-        avgMinSumGradX += minSumGradXInds[i]
-        avgMinSumGradY += minSumGradYInds[i]
-    #print("gradCalcs",round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
+    for idx, val in ndenumerate(sumGradY):
+        if val == npMin(sumGradY):
+            topInd = idx[0]
+            #print("top",val,idx[0])
+        if val == npMax(sumGradY):
+            botInd = idx[0]
+            #print("bot",val,idx[0])
+    for idx,val in ndenumerate(sumGradX):
+        if val == npMin(sumGradX):
+            rigInd = idx[0]
+            #print("rig",val,idx[0])
+        if val == npMax(sumGradX):
+            lefInd = idx[0]
+            #print("lef",val,idx[0])
+    #print([topInd,botInd,lefInd,rigInd])
+    ##n=6 #this gave pretty even results
+    ##argpartition implemented like this selects the maximum n values
+    ##  argpartition sorts and puts the passed k in the k-th index. 
+    ##    I call the final n indices, meaning the n greater than k, 
+    #maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
+    #minSumGradXInds = argpartition(sumGradX,n)[n:]
+    #maxSumGradYInds = argpartition(sumGradY,-n)[-n:]
+    #minSumGradYInds = argpartition(sumGradY,n)[n:]
+    #print("len",len(minSumGradYInds),minSumGradYInds[-n:])
+    ##then those max are summed 
+    #for i in range(n):
+    #    avgMaxSumGradX += maxSumGradXInds[i]
+    #    avgMaxSumGradY += maxSumGradYInds[i]
+    #    avgMinSumGradX += minSumGradXInds[i]
+    #    avgMinSumGradY += minSumGradYInds[i]
+    #    print("ind",minSumGradYInds[i])
+    ##print("gradCalcs",round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
 
-    #and averaged by the number of points. Ideally this would find the peak of the gradient
-    topInd = ceil(avgMinSumGradY/n) #is ceil necessary?
-    botInd = round(avgMaxSumGradY/n)
-    lefInd = round(avgMaxSumGradX/n)
-    rigInd = ceil(avgMinSumGradX/n)
+    ##and averaged by the number of points. Ideally this would find the peak of the gradient
+    #topInd = ceil(avgMinSumGradY/n) #is ceil necessary?
+    #botInd = round(avgMaxSumGradY/n)
+    #lefInd = round(avgMaxSumGradX/n)
+    #rigInd = ceil(avgMinSumGradX/n)
 
     lim=550
     if topInd > lim:
@@ -1326,7 +1346,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
     return mu,sigma
 
 def spreadHist(args,Twiss,paths):
-    from os import uname
+    #from os import uname
     from plotFit import plotSpread
     from numpy import zeros
     
