@@ -8,7 +8,7 @@
 
 #First function is setup of run which is called in 2nd function, simulation.
 
-def setup(args,mat,beamFile,Twiss,options):
+def setup(args,mat,beamFile,Twiss,options,paths):
     from numpy import cos,sin#,arctan
     from os import uname,getcwd,chdir,path as osPath
     from sys import path as sysPath
@@ -17,7 +17,7 @@ def setup(args,mat,beamFile,Twiss,options):
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
     #print(getcwd())
-    if uname()[1] == "tensor.uio.no":
+    if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
         if getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
     elif uname()[1] == "mbef-xps-13-9300":
@@ -137,21 +137,23 @@ def setup(args,mat,beamFile,Twiss,options):
 
     #Find which folder root file is in and check if complete
     #loc = findRoot(savename) #still need to work on this function
+    #Where to save/load root and Picture files
+
     if uname()[1] == "mbef-xps-13-9300": #my laptop
         baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
-    elif uname()[1] == "tensor.uio.no": #UiO desktop
+    elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}: #UiO desktop
         if args.source == "twiss":
-            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/failures/")
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"failures/")
         elif args.source == "particles":
-            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/ESS/")
-            if options['dependence'] == "RA":
-                baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"ESS/")
         elif Twiss[1] < 1:
-            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/pencil/")
-            if options['dependence'] == "RA":
-                baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/2Dmaps/")
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"pencil/")
+        elif args.source == "csv":
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"ESS/")
+        elif options['dependence'] == "RA":
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"2Dmaps/")
         else:
-            baseSimSetup["OUTFOLDER"] = osPath.join("/scratch2/ericdf/PBWScatter/")
+            baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath'])
     else: print("Help! Unknown build directory!, simulation.py l 243")
 
     #copy so it is if running multiple scans in a Jupyter notebook
@@ -163,7 +165,7 @@ def setup(args,mat,beamFile,Twiss,options):
     #Variables for automation
     if uname()[1] == "mbef-xps-13-9300":
         savepath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-    elif uname()[1] == "tensor.uio.no":
+    elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
         #savepath = "/scratch2/ericdf/PBWScatter/"
         savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
     savename=savepath+outname #base savename for plots downstream, brings directly to my directory
@@ -172,7 +174,7 @@ def setup(args,mat,beamFile,Twiss,options):
 
     return savename,simSetup_simple1
 
-def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
+def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths):
     import numpy as np
     import ROOT
     from os import path as osPath
@@ -206,7 +208,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
 
     from simulation import setup
     #def                        setup(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options):
-    savename,simSetup_simple1 = setup(args,mat,beamFile,Twiss,options)
+    savename,simSetup_simple1 = setup(args,mat,beamFile,Twiss,options,paths)
     
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
@@ -582,12 +584,12 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes):
         from plotFit import plot1DRaster,rasterImage
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-        Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
+        Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
         
         if options['initTree']:
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
             #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],args,Twiss,options,boxes)
+            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
     else:
         Jmax = 0
         pOutsideBoxes = 0

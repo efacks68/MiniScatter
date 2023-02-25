@@ -3,7 +3,7 @@
 #typical command: (no PBW, no text, no boxes, save pic of 200x200mm^2 window)
 #python3 scatterPBW.py --savePics --xlim 200 --ylim 200 --t 0.1 --noText --noBox
 
-def scatterPBW(args,Twiss,iteration):
+def scatterPBW(args,Twiss,iteration,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin)
@@ -26,18 +26,25 @@ def scatterPBW(args,Twiss,iteration):
         args.material = "Vac"
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
-    if uname()[1] == "tensor.uio.no":
-        csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
-        statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    elif uname()[1] == "mbef-xps-13-9300":
-        csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-        statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    else:
-        csvPWD = input("Path from home to direction you like to save root files to: ")
-        statsPWD = "."
+    #Where to save CSVs and statistics
+    #if uname()[1] == "tensor.uio.no":
+    #    scratchPath = "/scratch2/ericdf/PBWScatter/"
+    #elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no"}:
+    #    scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
+        #print(scratchPath)
+
+    #if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+    #    csvPWD = scratchPath+"CSVs/"
+    #    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #elif uname()[1] == "mbef-xps-13-9300":
+    #    csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #else:
+    #    csvPWD = input("Path from home to direction you like to save root files to: ")
+    #    statsPWD = "."
 
     #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-    rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,csvPWD,options,iteration)
+    rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
     ##print(rasterBeamFile,beamXAngle,beamYAngle)
     #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
     #                                       simulation(args,material,   engplot,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes):
@@ -46,15 +53,15 @@ def scatterPBW(args,Twiss,iteration):
     
     from simulation import setup
     #def                        setup(args,material,           beamFile,Twiss,options):
-    savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options)
+    savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options,paths)
 
     import miniScatterDriver
     from plotFit import rasterImage
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes)
+    Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
     from plotFit import saveStats
-    saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff)
+    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

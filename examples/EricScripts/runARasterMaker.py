@@ -89,6 +89,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
     else:
         if args.source == "twiss":
             name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)+iterEnding
+        elif args.source == "csv":
+            name = args.beamFile
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
             name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
         elif args.beamClass == "pencil":

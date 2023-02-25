@@ -112,6 +112,12 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     #plt.show()
     plt.close() #be sure to close the plot
 
+
+def gaussian(x,mu,amplitude,sigma):
+    from numpy import exp as npExp
+    return amplitude * npExp( - (x - mu) ** 2 / (2 * sigma ** 2))
+
+
 def findFit(data,guess):
     #with help from MSeifert in stackoverflow fit a curve to a histogram in python
     #https://stackoverflow.com/questions/35544233/fit-a-curve-to-a-histogram-in-python
@@ -119,11 +125,8 @@ def findFit(data,guess):
     import numpy as np
     import matplotlib.pyplot as plt
     from scipy.optimize import curve_fit
-
-    def gaussian(x,mu,amplitude,sigma):
-        #import numpy.exp as exp
-        return amplitude * np.exp( - (x - mu) ** 2 / (2 * sigma ** 2))
-
+    from plotFit import gaussian
+    
     plt.close()
     bin_heights, bin_borders, _ = plt.hist(data,bins="auto",label="histogram")
     #print(len(bin_borders))
@@ -134,7 +137,7 @@ def findFit(data,guess):
     #plt.legend()
     #plt.xlim([bin_borders[0],bin_borders[-1]])
     #plt.show()
-    #plt.close() #be sure to close this or else these show up in the multi plots!
+    plt.close() #be sure to close this or else these show up in the multi plots!
     print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
     return(popt[0],abs(popt[2]),popt[1],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
@@ -606,7 +609,7 @@ def numLines(filename):
     return N
 
 
-def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
+def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths):
     import numpy as np
     name=savename+"_"+position+"Image"
     um = 1e-6
@@ -671,7 +674,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
 
     from plotFit import PEAS
     sPEAS=datetime.now()#.strftime("%H-%M-%S"))
-    Jmax,pOutsideBox,rValue,edges,EI,beamArea,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name) #,dispY,dispX
+    Jmax,pOutsideBox,rValue,edges,EI,beamArea,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
     print("finished PEAS in",datetime.now()-sPEAS)#.strftime("%H-%M-%S"))
 
     #print(Jmax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
@@ -788,7 +791,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes):
     #dt = datetime.now()
     #print(dt-start)
 
-    return Jmax,pOutsideBox,beamArea,dispY,dispX,rValue,rDiff
+    return Jmax,pOutsideBox,beamArea,coreJMean,dispY,dispX,rValue,rDiff
 
 def converter(hIn,saveHist,name):
     import ROOT
@@ -818,7 +821,7 @@ def converter(hIn,saveHist,name):
 
     if saveHist: #for rValue calculations
         from os import uname
-        if uname()[1] == "tensor.uio.no":
+        if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no"}:
             import csv,re
             #Remove upper directories that may have come with name for appending outname to scratch folder
             if re.search("/PBW_",name):
@@ -830,7 +833,7 @@ def converter(hIn,saveHist,name):
                 name = re.sub(".+(?=(Vac_))","",name) #substitutes "" for all preceeding Vac_
               #print("Histogram-removed",name)
 
-        with open("/scratch2/ericdf/PBWScatter/"+name+".csv",mode = 'w',newline=None) as hist_file:
+        with open(paths['scratchPath']+name+".csv",mode = 'w',newline=None) as hist_file:
             hist_writer = csv.writer(hist_file,delimiter = ',')
             hist_writer.writerows(hOut)
         hist_file.close()
@@ -840,7 +843,7 @@ def converter(hIn,saveHist,name):
 
 
 #add function to check if ROOT file is complete, else delete and make new
-def findRoot(savename):
+def findRoot(savename,paths):
     from os.path import isfile
     locations = ["/scratch2/ericdf/PBWScatter/ESS/","/scratch2/ericdf/PBWScatter/pencil/","/scratch2/ericdf/PBWScatter/2Dmaps/"]
     pwd="/scratch2/ericdf/PBWScatter/"
@@ -854,19 +857,19 @@ def findRoot(savename):
     #need to add completeness check
     return pwd
 
-def rCompare(Im,Nb):
+def rCompare(Im,Nb,paths):
     import numpy as np
     from os import uname
 
     #Find reference files
-    if uname()[1] == "tensor.uio.no":
+    if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no"}:
         if Nb == 100:
-              Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+              Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         elif Nb == 500:
-              Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+              Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
         else: #Nb=10
-            Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+            Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         
     elif uname()[1] == "mbef-xps-13-9300":
@@ -906,30 +909,30 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
     gradY = scipySigConv2d(Img,gradYY,'same')
 
     #Prominence of gradient to determine if actual edge or not
-    promX = 0.20
-    promY = 0.60
+    promX = 4
+    promY = 4
 
     EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
     #print(edges)
 
     #Only do check for Top and Left?
-    if edges[0] == 0:
-        promY -= 0.20
+    if EI[0] == 0:
+        promY -= 1
         print("Not strongly defined beam on Top",promY)
         EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-        if edges[1] == 0:
-            promY -= 0.10
+        if EI[1] == 0:
+            promY -= 1
             print("Not strongly defined beam on Top",promY)
             EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-            if edges[1] == 0:
-                promY -= 0.22
+            if EI[1] == 0:
+                promY -= 1
                 print("Not strongly defined beam on Top",promY)
                 EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-    if edges[2] == 0:
-        promX -= 0.15
+    if EI[2] == 0:
+        promX -= 1
         print("Not strongly defined beam on Left",promX)
         EI,edges = localExtrema(gradX,promX,gradY,promY,xax,yax)
-        if edges[1] == 0:
+        if EI[1] == 0:
             print("Major Error Left Edge")
 
     if graph:
@@ -967,7 +970,7 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
 
     return EI,edges
 
-def localExtrema(gradX,promX,gradY,promY,xax,yax):
+def localExtrema(gradX,nx,gradY,n,xax,yax):
     #Finds Edge Indices from Gradient maps
     from numpy import sum as npSum,argpartition#,ndenumerate,argmax,argmin,amax,amin,
     from math import ceil
@@ -981,32 +984,47 @@ def localExtrema(gradX,promX,gradY,promY,xax,yax):
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
 
-    n=5 #this gave pretty even results
+    #n=6 #this gave pretty even results
+    #argpartition implemented like this selects the maximum n values
     maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
     minSumGradXInds = argpartition(sumGradX,n)[n:]
     maxSumGradYInds = argpartition(sumGradY,-n)[-n:]
     minSumGradYInds = argpartition(sumGradY,n)[n:]
+    #then those max are summed 
     for i in range(n):
         avgMaxSumGradX += maxSumGradXInds[i]
         avgMaxSumGradY += maxSumGradYInds[i]
         avgMinSumGradX += minSumGradXInds[i]
         avgMinSumGradY += minSumGradYInds[i]
-    #print(round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
+    #print("gradCalcs",round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
 
+    #and averaged by the number of points. Ideally this would find the peak of the gradient
     topInd = ceil(avgMinSumGradY/n) #is ceil necessary?
     botInd = round(avgMaxSumGradY/n)
     lefInd = round(avgMaxSumGradX/n)
     rigInd = ceil(avgMinSumGradX/n)
 
-    lim=600
-    if topInd > lim or botInd > lim or lefInd > lim or rigInd > lim: 
-        print("\n\nError in Gradient calculation!\n\n")
+    lim=550
+    if topInd > lim:
+        topInd = 0
+        print(avgMinSumGradY,avgMinSumGradY/n,avgMaxSumGradY)
+        print("\n\nError in Gradient calculation of top Index!\n\n")
+    elif botInd > lim:
+        botInd = 0
+        print(maxSumGradYInds,avgMaxSumGradY,avgMaxSumGradY/n)
+        print("\n\nError in Gradient calculation of bottom Index!\n\n")
+    elif lefInd > lim:
+        lefInd = 0
+        print("\n\nError in Gradient calculation of left Index!\n\n")
+    elif rigInd > lim: 
+        rigInd = 0
+        print("\n\nError in Gradient calculation of right Index!\n\n")
 
     lMaxX = xax[lefInd]
     lMinX = xax[rigInd] 
     lMaxY = yax[botInd]
     lMinY = yax[topInd]
-    
+
     return [topInd,botInd,lefInd,rigInd], [lMinY,lMaxY,lMaxX,lMinX] 
 
 def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
@@ -1097,7 +1115,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     return differenceN, differenceP, coeffs
 
 #Detection Algorithm!!!
-def PEAS(Img,args,parts,xax,yax,name):
+def PEAS(Img,args,parts,xax,yax,name,paths):
     import numpy as np
     printEdges = True
 
@@ -1139,7 +1157,7 @@ def PEAS(Img,args,parts,xax,yax,name):
     #print("PEAS Sum",sumTot)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    rValue,rDiff = rCompare(Img,args.Nb)
+    rValue,rDiff = rCompare(Img,args.Nb,paths)
     #print("R = ",rValue,rDiff)
     #print("Converted in",datetime.now() - start)
 
@@ -1217,11 +1235,11 @@ def PEAS(Img,args,parts,xax,yax,name):
 
     return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff #make this a list!
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff):
+def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff):
     #save values in Stats CSV
     import csv
     from os import path as osPath
-    statsName = statsPWD+"EvalStats.csv"
+    statsName = statsPWD+"EvalStatsN.csv"
     #if not osPath.isfile(statsName): #didn't work...?
     #    with open(statsName,mode = 'w') as csv_file:
     #        csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -1243,9 +1261,9 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,dispY,di
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ',')
-                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff]) #add JCore
+                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff]) #add JCore
                 csv_file.close()
-            print(Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff)
+            print("saved",Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff)
         else:
             print("Values already in row",foundRow)
 
@@ -1254,21 +1272,20 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
     import csv
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
-    from plotFit import findFit
-    from scipy.stats import norm
+    from plotFit import findFit, gaussian
 
     read = zeros(args.iterations)
-    #print(readPOut.shape)
+    #print(paramName)
     i=0
     lenbreak=False
-    with open(statsPWD+"EvalStats.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStatsN.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
             if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
                 #print("found Twiss")
                 read[i] = float(row[ind]) #[mm-mrad]
-                #print(i,readPOut[i])
+                #print(i,read[i])
                 if i+1 == args.iterations:
                     lenbreak = True
                     break
@@ -1280,13 +1297,13 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
 
     #nonzero = npGreater(read,0)
     #read = read[nonzero]
-
+    #print(mean(read),std(read))
     mu, sigma, ampl,interval = findFit(read,[mean(read),std(read),args.iterations/2])
 
     _, bins, _ = hist(read,interval) #ax =
-    y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
-    l1 = plot(bins, y1, "r--", linewidth=2)
-    title(str(args.iterations)+" Iterations of "+str(args.pOff)+"% Off Nominal")
+    #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
+    plot(bins, gaussian(bins,mu,ampl,sigma), "r--", linewidth=2)
+    title(str(len(read))+" Iterations of "+str(args.pOff)+"% Off Nominal")
     xlabel("% of Beam Outside Box")
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -1301,23 +1318,30 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
     
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
-    name=statsPWD+paramName+"Hist_"+str(args.iterations)+"x"+str(args.pOff)+"pOffNom.png"
+    name=statsPWD+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
     savefig(name)
     close()
-    print(paramName,mu,sigma,)
+    print(len(read),paramName,mu,sigma)
     print(name)
+    return mu,sigma
 
-def spreadHist(args,Twiss):
+def spreadHist(args,Twiss,paths):
     from os import uname
     from plotFit import plotSpread
+    from numpy import zeros
     
-    if uname()[1] == "tensor.uio.no":
-        statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    elif uname()[1] == "mbef-xps-13-9300":
-        statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no"}:
+    #    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #elif uname()[1] == "mbef-xps-13-9300":
+    #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["beamPOut","jMax"]
-    ind = [8,7]
-    unit=["%",r"$\mu$A/cm$^2$"]
+    paramName=["jMax","beamPOut","coreArea","coreJMean","dispY","dispX","rValue","rDiff"] #
+    ind = [7,8,9,10,11,12,13,14] #
+    unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","rValue","rDiff"] #
+    mus = zeros(len(paramName))
+    sigmas = zeros(len(paramName))
     for i in range(len(paramName)):
-        plotSpread(args,Twiss,statsPWD,paramName[i],ind[i],unit[i])
+        mus[i], sigmas[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i])
+
+    for i in range(len(paramName)):
+        print(paramName[i],mus[i],sigmas[i])

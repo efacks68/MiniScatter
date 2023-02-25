@@ -1,7 +1,7 @@
 #beamletScatter.py
 #run running analysis on beamlet
 
-def beamletScatter(args,Twiss):
+def beamletScatter(args,Twiss,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin)

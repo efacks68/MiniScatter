@@ -43,7 +43,7 @@
 #args = parser.parse_args()
 #print(args)
 
-def mapRADependence(args,Twiss):
+def mapRADependence(args,Twiss,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin,"\n")

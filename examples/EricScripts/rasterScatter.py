@@ -9,7 +9,7 @@
     #50x nominal Twiss - 5%
 
 
-def run(args,iteration):
+def run(args,iteration,paths):
     #Get Twiss to run, depending on user configuration
     # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
     if args.beamClass == 'Yngve': #smallest from Yngve
@@ -26,6 +26,15 @@ def run(args,iteration):
         Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
         args.beamClass = "Twiss"
 
+    #For pulling from an already made CSV
+    if args.source == "csv":
+        import re
+        if re.search("beta",paths['csvPWD']+args.beamFile):
+            if re.search("RMamp",paths['csvPWD']+args.beamFile):
+                betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
+                betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
+                print(betaX,betaY)
+
     #Tailored to OpenXAL failure input
     if args.source == "twiss":
         if args.twissFile != "":
@@ -33,10 +42,11 @@ def run(args,iteration):
             from os import uname
             i=0
             #Find file
-            if uname()[1] == "tensor.uio.no":
-                twissPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+            if uname()[1] in {"tensor.uio.no" , "heplab01.uio.no", "heplab04.uio.no"} :
+                homePWD = "/uio/hume/student-u52/ericdf/"
             elif uname()[1] == "mbef-xps-13-9300":
-                twissPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+                homePWD = "/home/efackelman/"
+            twissPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
             if args.qpNum == "all":
                 #for running all Twiss in OpenXAL Combo Sequence output CSV
                 from plotFit import numLines
@@ -79,7 +89,7 @@ def run(args,iteration):
                     
                     if args.sim == "raster":
                         from scatterPBW import scatterPBW
-                        scatterPBW(args,Twiss,iteration)
+                        scatterPBW(args,Twiss,iteration,paths)
             else:
                 #for single QP fail runs
                 with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
@@ -105,7 +115,7 @@ def run(args,iteration):
     #Get full rastered for this one Twiss
     if args.sim == "raster":
         from scatterPBW import scatterPBW
-        scatterPBW(args,Twiss,iteration)
+        scatterPBW(args,Twiss,iteration,paths)
 
     #Get map of % Outside Box and Current Density on Target for the range specified
     if args.sim == "map":
@@ -113,23 +123,24 @@ def run(args,iteration):
         from os import uname
         if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
         print("it works!")
-        mapRADependence(args,Twiss,iteration)
+        mapRADependence(args,Twiss,iteration,paths)
 
     #Examine individual beamlet of Twiss
     if args.sim == "beamlet":
         from beamletScatter import beamletScatter
-        beamletScatter(args,Twiss,iteration)
+        beamletScatter(args,Twiss,iteration,paths)
     return Twiss
 
 from datetime import datetime
 origin = datetime.now()
 from argparse import ArgumentParser
+from os import uname
 #look into argument groups!
 
 #Command Line arguments for save control
 parser = ArgumentParser()
 parser.add_argument("--sim",       type=str,    default="raster",   choices=("raster","map","beamlet"), help="Type of simulation to perform")
-parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss"), help="From load particles or Twiss?")
+parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)?")
 #General Beam Setup Options
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton", choices=("proton","electron"), help="Which particle to simulate?")
@@ -156,6 +167,7 @@ parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au"
 parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
 parser.add_argument("--iterations", type=int,   default=1, help="How many times to iterate this setting")
 parser.add_argument("--pOff", type=int,default=0, help="What % off of nominal should the Twiss be?")
+parser.add_argument("--csvFile",  type=str,   help="Load Particles or not",   default="")
 #Output Options
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
@@ -180,8 +192,26 @@ parser.add_argument("--NstepX", type=int,     default=6,     help="N steps for X
 parser.add_argument("--NstepY", type=int,     default=6,     help="N steps for Y")
 args = parser.parse_args()
 
+#Where to save CSVs and statistics
+if uname()[1] == "tensor.uio.no":
+    scratchPath = "/scratch2/ericdf/PBWScatter/"
+elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no"}:
+    scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
+    #print(scratchPath)
+
+if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+    csvPWD = scratchPath+"CSVs/"
+    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+elif uname()[1] == "mbef-xps-13-9300":
+    csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+else:
+    csvPWD = input("Path from home to direction you like to save root files to: ")
+    statsPWD = "."
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
+
 for i in range(args.iterations):
-    Twiss = run(args,i)
+    Twiss = run(args,i,paths)
 
 print("Simulation took ",datetime.now()-origin,"s long",sep="")
 
