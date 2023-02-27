@@ -97,6 +97,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         m1["keyval"]["al1Thick"]   = 1.0 #[mm]
         m1["keyval"]["waterThick"] = 2.0 #[mm]
         m1["keyval"]["al2Thick"]   = 1.25 #[mm]
+        #m1["keyval"]["width"]      = 200 #[mm]
         baseSimSetup["MAGNET"].append(m1)
 
         #Start output name

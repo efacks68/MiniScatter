@@ -16,8 +16,8 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
 
     #Use Scipy.optimize.curve_fit in my findFit function to get mus and sigmas:
     guess=[0.01,0.1,1]
-    mux, sigmax, amplx, xinterval = findFit(xs,guess) #dynamically gets parameters AND histogram intervals!
-    muy, sigmay, amply, yinterval = findFit(ys)
+    mux, sigmax, amplx, xinterval = findFit(xs,guess,(0,[1e3,3e5,3e5])) #dynamically gets parameters AND histogram intervals!
+    muy, sigmay, amply, yinterval = findFit(ys,guess,(0,[1e3,3e5,3e5]))
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(xs)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -113,34 +113,70 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     plt.close() #be sure to close the plot
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 def gaussian(x,mu,amplitude,sigma):
     from numpy import exp as npExp
     return amplitude * npExp( - (x - mu) ** 2 / (2 * sigma ** 2))
 
 
-def findFit(data,guess):
+
+
+
+
+
+
+
+
+
+
+
+
+def findFit(data,guess,lims,nBins):
     #with help from MSeifert in stackoverflow fit a curve to a histogram in python
     #https://stackoverflow.com/questions/35544233/fit-a-curve-to-a-histogram-in-python
-    #import gaussian
-    import numpy as np
-    import matplotlib.pyplot as plt
+    from numpy import diff,linspace
+    from matplotlib.pyplot import hist,plot,close
     from scipy.optimize import curve_fit
     from plotFit import gaussian
-    
-    plt.close()
-    bin_heights, bin_borders, _ = plt.hist(data,bins="auto",label="histogram")
+
+    close()
+    bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     #print(len(bin_borders))
-    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=(0,[1e2,1e5,1e5])) #p0 should be good start, though not what is recommended
-    x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
-    plt.plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
+    bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
+
+    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=lims) #p0 should be good start, though not what is recommended
+    x_interval_for_fit = linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
+    plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
     #plt.legend()
     #plt.xlim([bin_borders[0],bin_borders[-1]])
     #plt.show()
-    plt.close() #be sure to close this or else these show up in the multi plots!
-    print(popt)
+    close() #be sure to close this or else these show up in the multi plots!
+    #print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
     return(popt[0],abs(popt[2]),popt[1],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
+
+
+
+
+
+
+
+
+
+
+
+
 
 def calcTwiss(labelx,labely,x,y):
     #use generic x,y but usually x, x' or y,y'!
@@ -158,6 +194,18 @@ def calcTwiss(labelx,labely,x,y):
     #nemt = gemt*beta_rel*gamma_rel
     #print(labelx,labely,":","\nGeometric Emittance: {:.3e}m, Beta: {:.3e}m, Alpha: {:.3e}\n".format(gemt,beta,alpha,gamma))
     return [beta,alpha,gemt,gamma]
+
+
+
+
+
+
+
+
+
+
+
+
 
 def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
     #import numpy as np
@@ -177,6 +225,18 @@ def calcEq8(thetasq,Twiss,thick,beta_rel,gamma_rel):
     #28.7-supposed to have thetasq*thetasq in gamma. Previously did NOT have it! Now numbers are great!
     return [e8beta,e8alph,e8gemt,e8gamma]
 
+
+
+
+
+
+
+
+
+
+
+
+
 def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
     #import numpy as np
     m=1
@@ -194,6 +254,18 @@ def calcEq16(thetasq,Twiss,thick,beta_rel,gamma_rel):
     #28.7-supposed to have thetasq*thetasq in gamma, alph and beta! Previously did NOT have it! Now numbers are great!
     return [e16beta,e16alph,e16gemt,e16gamma]
 
+
+
+
+
+
+
+
+
+
+
+
+
 def getMoments(Twiss):
     from numpy import sqrt
     mm=1e-3
@@ -202,6 +274,18 @@ def getMoments(Twiss):
     sigmapx = sqrt(Twiss[2]*Twiss[3]) #mrad actually
     #print(sigma,sigmapx,sigpx)
     return [sigma,sigmapx]
+
+
+
+
+
+
+
+
+
+
+
+
 
 def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamma_rel,TwissI):
     #16.8.22 No longer useful, as it doesn't use layer by layer #19.2.2023-?
@@ -229,8 +313,8 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     print("Recalculated Twiss:","Betax: {:.2f}m, alphax: {:.2f}, Geo Emitt x: {:.3e}m".format(calcTwf[0],calcTwf[1],calcTwf[2]))
 
     #Get intervals and info about distribution
-    mux,sigmax,amplx,xinterval = findFit(xs)
-    mupx,sigmapx,amply,pxinterval = findFit(pxs) #this is a least square fit to Gaussian, so less sensitive to outliers.
+    mux,sigmax,amplx,xinterval = findFit(xs,[0.01,1,1],(0,[1e3,3e5,3e5]))
+    mupx,sigmapx,amply,pxinterval = findFit(pxs,[0.01,1,1],(0,[1e3,3e5,3e5])) #this is a least square fit to Gaussian, so less sensitive to outliers.
     print("Histogram   sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(sigmax,sigmapx/mm))
     print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
     print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
@@ -327,6 +411,18 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     plt.close()
     print(name)
 
+
+
+
+
+
+
+
+
+
+
+
+
 def toTarget(TwPm,label):
     #Extend the distributions to the Target Location
     import numpy as np
@@ -340,6 +436,18 @@ def toTarget(TwPm,label):
 
     return [Calc_PBW_Targ[0][0],-Calc_PBW_Targ[1][0],TwPm[2],Calc_PBW_Targ[1][1]]
 
+
+
+
+
+
+
+
+
+
+
+
+
 def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,PBWTwx,PBWTwy,args):
     #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
     import numpy as np
@@ -350,8 +458,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     fs = 14
 
     #Find fit to histogram
-    mux,sigmax,amplx,xinterval = findFit(targx)
-    muy,sigmay,amply,yinterval = findFit(targy)
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]))
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]))
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -484,6 +592,18 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     print(name)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
     import csv
     from datetime import datetime
@@ -497,6 +617,18 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
             part_writer.writerow(["proton",xinit[i],pxinit[i],yinit[i],pyinit[i],z,Einit[i]])
     part_file.close()
     print(fname)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
@@ -522,8 +654,8 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     print(fitlabel,pOutBoxY,"% outside 99% box Y")
 
     #Useful to get intervals for nice plotting
-    mux,sigmax,amplx,xinterval = findFit(targx)
-    muy,sigmay,amply,yinterval = findFit(targy)
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]))
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]))
 
     #Create the fig with 2 plots side by side
     plt.clf()
@@ -595,6 +727,18 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     plt.close()
     print(name)
 
+
+
+
+
+
+
+
+
+
+
+
+
 def numLines(filename):
     import csv
     with open(filename+".csv") as csv_file:
@@ -607,6 +751,18 @@ def numLines(filename):
     #dt = datetime.now()
     #print("There are ",N,"lines "+dt.strftime("%H-%M-%S"))
     return N
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths):
@@ -793,6 +949,18 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
     return Jmax,pOutsideBox,beamArea,coreJMean,dispY,dispX,rValue,rDiff
 
+
+
+
+
+
+
+
+
+
+
+
+
 def converter(hIn,saveHist,name):
     import ROOT
     from numpy import zeros
@@ -842,6 +1010,18 @@ def converter(hIn,saveHist,name):
     return (hOut,xax,yax)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 #add function to check if ROOT file is complete, else delete and make new
 def findRoot(savename,paths):
     from os.path import isfile
@@ -856,6 +1036,20 @@ def findRoot(savename,paths):
 
     #need to add completeness check
     return pwd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def rCompare(Im,Nb,paths):
     import numpy as np
@@ -892,12 +1086,29 @@ def rCompare(Im,Nb,paths):
         for j in range(leny):
             #Iref[j,i] += offset
             if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i]) + offset) ** 2 ) / (leny * lenx) )
+            diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i] + offset) ) ** 2 ) / (leny * lenx) ) #
     rDiff = np.sqrt(np.sum(diff))
 
     return rDiv,rDiff
 
-def findEdges(Img,Jmax,graph,savename,xax,yax):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def findEdges(Img,Jmax,graph,savename,xax,yax,args):
     from numpy import array
     from scipy.signal import convolve2d as scipySigConv2d
     #does it need to be normalized?
@@ -955,10 +1166,10 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
         ax3.vlines(edges[3],ax3.get_ylim()[0],ax3.get_ylim()[1],color='m')
         ax4.vlines(edges[0],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
         ax4.vlines(edges[1],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
-        plt.setp(ax1,xlim=(-100,100),ylim=(-100,100),title="Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
-        plt.setp(ax2,xlim=(-100,100),ylim=(-100,100),title="Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
-        plt.setp(ax3,xlim=(-100,100),title="Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
-        plt.setp(ax4,xlim=(-100,100),title="Sum of Gradient Y",xlabel="Y [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax1,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax2,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax3,xlim=(-args.xlim,args.xlim),title="Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax4,xlim=(-args.xlim,args.xlim),title="Sum of Gradient Y",xlabel="Y [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
         ac = fig.colorbar(a, ax=ax1,pad=0.01)
         ac.set_label(r"d$\bf{J}$/dx",labelpad=3,fontsize=12)
         bc = fig.colorbar(b, ax=ax2,pad=0.01)
@@ -969,6 +1180,21 @@ def findEdges(Img,Jmax,graph,savename,xax,yax):
         plt.close()
 
     return EI,edges
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def localExtrema(gradX,nx,gradY,n,xax,yax):
     #Finds Edge Indices from Gradient maps
@@ -1040,12 +1266,37 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
         rigInd = 0
         print("\n\nError in Gradient calculation of right Index!\n\n")
 
+    #check the sum of the rows?
+    def indCheck(ind,arr):
+        if arr[ind+1] < arr[ind]*0.5:
+            return False
+        elif arr[ind-1] < arr[ind]*0.5:
+            return False
+        else:
+            return True
+    #Add a check in localExtrema that the gradient of the row/column on either side of the max is at least half(?) of the max. 
+        #Could also check if the index is high (<100,>900) and tell it to recalculate.
+    #ideally this would then delete the row for this reconing if False is returned and find the next highest...
+
     lMaxX = xax[lefInd]
     lMinX = xax[rigInd] 
     lMaxY = yax[botInd]
     lMinY = yax[topInd]
 
     return [topInd,botInd,lefInd,rigInd], [lMinY,lMaxY,lMaxX,lMinX] 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
     #from Kyrre's doubleGaussian.ipynb example
@@ -1134,6 +1385,16 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
 
     return differenceN, differenceP, coeffs
 
+
+
+
+
+
+
+
+
+
+
 #Detection Algorithm!!!
 def PEAS(Img,args,parts,xax,yax,name,paths):
     import numpy as np
@@ -1221,7 +1482,7 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
     #Edges
     #Not great, may need to reshape and average. Not sure how to do that...
     from plotFit import findEdges
-    EI,edges = findEdges(Img,jMax,args.saveGrads,name,xax,yax) #[topInd,botInd,lefInd,rigInd]
+    EI,edges = findEdges(Img,jMax,args.saveGrads,name,xax,yax,args) #[topInd,botInd,lefInd,rigInd]
     nomEdges = [20,-22,-66,68]
     nomArea = (nomEdges[0]-nomEdges[1])*(nomEdges[3]-nomEdges[2])
     dispT = np.abs(edges[0]-nomEdges[0])
@@ -1230,7 +1491,11 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
     dispR = np.abs(edges[3]-nomEdges[3])
     dispY = (dispT+dispB)/2
     dispX = (dispL+dispR)/2
-    beamArea = (edges[0]-edges[1])*(edges[3]-edges[2])
+    beamArea = (np.abs(edges[0])+np.abs(edges[1]))*(np.abs(edges[3])+np.abs(edges[2]))
+    #Need to displat beam Center index in X,Y, not displacement 
+    centX = edges[2] + edges[3]
+    centY = edges[0] + edges[1]
+    print("Beam Center at ",centX,",",centY)
 
     jMaxLim = 53
     pOutLim = 4
@@ -1254,6 +1519,17 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
         print("No Warnings!")
 
     return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff #make this a list!
+
+
+
+
+
+
+
+
+
+
+
 
 def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff):
     #save values in Stats CSV
@@ -1288,14 +1564,25 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMea
             print("Values already in row",foundRow)
 
 
-def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
+
+
+
+
+
+
+
+
+def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
     import csv
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
     from plotFit import findFit, gaussian
 
     read = zeros(args.iterations)
-    #print(paramName)
+    read.fill(-10) #allow better filter than nonzero
+    for i in range(len(Twiss)):
+        Twiss[i] = round(Twiss[i]*1e5)/1e5
+    #print(Twiss)
     i=0
     lenbreak=False
     with open(statsPWD+"EvalStatsN.csv",mode='r') as csv_file:
@@ -1315,22 +1602,23 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
                 break
     csv_file.close()
 
-    #nonzero = npGreater(read,0)
-    #read = read[nonzero]
-    #print(mean(read),std(read))
-    mu, sigma, ampl,interval = findFit(read,[mean(read),std(read),args.iterations/2])
+    nonEmpty = npGreater(read,-10) #remove unused elements
+    read = read[nonEmpty]
+    print("guess",paramName, mean(read),std(read),args.iterations/5,paramBins)
+    mu, sigma,ampl,interval = findFit(read,[mean(read),std(read),args.iterations/4],paramLims,paramBins)
+    #print(mu,sigma,ampl)
 
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,mu,ampl,sigma), "r--", linewidth=2)
     title(str(len(read))+" Iterations of "+str(args.pOff)+"% Off Nominal")
-    xlabel("% of Beam Outside Box")
+    xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=14
-    delta=3e-4
+    delta=1e-3
     text(xlim()[0]*(1+delta), ylim()[1]*0.95, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     text(xlim()[0]*(1+delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     text(xlim()[0]*(1+delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
@@ -1341,13 +1629,25 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit):
     name=statsPWD+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
     savefig(name)
     close()
-    print(len(read),paramName,mu,sigma)
+    print(len(read),paramName,mu,sigma,ampl)
     print(name)
-    return mu,sigma
+    return mu,sigma,ampl
+
+
+
+
+
+
+
+
+
+
+
+
 
 def spreadHist(args,Twiss,paths):
     #from os import uname
-    from plotFit import plotSpread
+    from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
     
     #if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no"}:
@@ -1355,13 +1655,226 @@ def spreadHist(args,Twiss,paths):
     #elif uname()[1] == "mbef-xps-13-9300":
     #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["jMax","beamPOut","coreArea","coreJMean","dispY","dispX","rValue","rDiff"] #
+    paramName=["jMax","beamPOut","coreArea","coreJMean","dispY","dispX","rValue","rDiff"] #len=8
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",
+                r"Core Area [mm$^2$]",r"Core Average Current Density [$\mu$A/cm$^2$]",
+                "Vertical Displacement [mm]","Horizontal Displacement [mm]","R Divide Value","R Difference Value"]
     ind = [7,8,9,10,11,12,13,14] #
     unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","rValue","rDiff"] #
+                    #mu, ampl, sigma                 ([1e3,10,10],[1e4,5e3,1e3])
+    paramLims = [(0,[100,100,100]),(0,[100,100,100]),([1e3,10,10],[1e4,5e3,1e3]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100])]
+    #paramBins = [25,25,40,25,25,25,25,25]
+    paramBins = [25,25,40,25,25,25,25,25]
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
+    ampl = zeros(len(paramName))
     for i in range(len(paramName)):
-        mus[i], sigmas[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i])
+        mus[i], sigmas[i],ampl[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
+        #mus[i], sigmas[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i])
 
     for i in range(len(paramName)):
-        print(paramName[i],mus[i],sigmas[i])
+        print(paramName[i],mus[i],sigmas[i],ampl[i])
+
+
+
+
+
+
+
+
+
+
+
+
+def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims):
+    import csv
+    from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
+    from numpy import greater as npGreater,zeros,mean,std
+    from plotFit import findFit, gaussian
+
+    read = zeros(args.iterations)
+    read.fill(-10)
+    paramLims[1][2] = 1e3 #increase
+    #for i in range(len(Twiss)):
+    #    Twiss[i] = round(Twiss[i]*1e5)/1e5
+    #print(Twiss)
+    i=0
+    lenbreak=False
+    with open(statsPWD+"EvalStatsN.csv",mode='r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader)
+        for row in csv_reader:
+            #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
+                #print("found Twiss")
+            read[i] = float(row[ind]) #[mm-mrad]
+                #print(i,read[i])
+            if i+1 == args.iterations:
+                lenbreak = True
+                break
+            i+=1
+                #print(lenbreak)
+            if lenbreak:
+                break
+    csv_file.close()
+
+    print(paramLabel,len(read))
+    nonzero = npGreater(read,-10)
+    read = read[nonzero]
+    print(len(read),mean(read),std(read),args.iterations/5)
+    mu, sigma, ampl,interval = findFit(read,[mean(read),std(read),args.iterations/4],paramLims)
+    print(mu,sigma,ampl)
+
+    _, bins, _ = hist(read,interval) #ax =
+    #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
+    plot(bins, gaussian(bins,mu,ampl,sigma), "r--", linewidth=2)
+    title(str(len(read))+r" Iterations $\pm$50% Around Nominal")
+    xlabel(paramLabel)
+    ylabel("Counts")
+    #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
+    
+    bgdbox=dict(pad=1,fc='w',ec='none')
+    fs=14
+    delta = 1e-3
+    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+    name=statsPWD+paramName+"BroadHist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
+    savefig(name)
+    close()
+    print(len(read),paramName,mu,sigma)
+    print(name)
+    return mu,sigma
+
+
+
+
+
+
+
+
+
+
+
+
+
+def getTwiss(args,iteration,paths):
+    #Get Twiss to run, depending on user configuration
+    # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
+    if args.beamClass == 'Yngve': #smallest from Yngve
+        Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
+    elif args.beamClass == 'ESS': #from my OpenXAL calculation
+        Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
+        #pOff = 0 #negative to have less than
+        Twiss[1] = Twiss[1] * (1 + args.pOff/100)
+        Twiss[4] = Twiss[4] * (1 + args.pOff/100)
+    elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
+        Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+
+    if args.twiss:
+        Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
+        args.beamClass = "Twiss"
+
+    #For pulling from an already made CSV
+    if args.source == "csv":
+        import re
+        if re.search("beta",paths['csvPWD']+args.beamFile):
+            if re.search("RMamp",paths['csvPWD']+args.beamFile):
+                betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
+                betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
+                print(betaX,betaY)
+
+    #Tailored to OpenXAL failure input
+    if args.source == "twiss":
+        if args.twissFile != "":
+            import csv
+            from os import uname
+            i=0
+            #Find file
+            if uname()[1] in {"tensor.uio.no" , "heplab01.uio.no", "heplab04.uio.no"} :
+                homePWD = "/uio/hume/student-u52/ericdf/"
+            elif uname()[1] == "mbef-xps-13-9300":
+                homePWD = "/home/efackelman/"
+            twissPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+            if args.qpNum == "all":
+                #for running all Twiss in OpenXAL Combo Sequence output CSV
+                from plotFit import numLines
+                n = numLines(twissPWD+args.twissFile)
+                for i in range(n):
+                    with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                        csv_reader = csv.reader(csv_file, delimiter=',')
+                        rowNum = 0 #to increment QP number
+                        for row in csv_reader:
+                            #if rowNum == 0:
+                            #    print("row 0")
+                            #    if type(row[1]) == str:
+                            #        print("Header skipped")
+                            #        continue
+                                    #next(csv_reader,None)
+                            if rowNum == i: #could be done cleaner?
+                                if float(row[1]) < 1e-4:
+                                    um = 1e6 #if from OpenXAL 
+                                elif float(row[1]) > 1e-4:
+                                    um = 1
+                                #print("um",um)
+                                Twiss[0] = float(row[1])*um #[mm-mrad]
+                                Twiss[1] = float(row[2])
+                                Twiss[2] = float(row[3])
+                                Twiss[3] = float(row[4])*um #[mm-mrad]
+                                Twiss[4] = float(row[5])
+                                Twiss[5] = float(row[6])
+                                print(Twiss)
+                                break
+                                #Adjusts names so the files are in order
+                                if len(row[0]) == 2: 
+                                    args.qpNum = "0"
+                                else: 
+                                    args.qpNum = ""
+                                args.qpNum += row[0]
+                                #print(i,rowNum,args.qpNum)
+                                break
+                            rowNum+=1
+                    csv_file.close()
+                    
+                    if args.sim == "raster":
+                        from scatterPBW import scatterPBW
+                        scatterPBW(args,Twiss,iteration,paths)
+            else:
+                #for single QP fail runs
+                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    for row in csv_reader:
+                        if row[0] == args.qpNum:
+                            if float(row[1]) < 1e-4:
+                                um = 1e6 #if from OpenXAL 
+                            elif float(row[1]) > 1e-4:
+                                um = 1
+                            #print("um",um)
+                            Twiss[0] = float(row[1])*um #[mm-mrad]
+                            Twiss[1] = float(row[2])
+                            Twiss[2] = float(row[3])
+                            Twiss[3] = float(row[4])*um #[mm-mrad]
+                            Twiss[4] = float(row[5])
+                            Twiss[5] = float(row[6])
+                    Twiss[1] = Twiss[1] * (1 + args.pOff/100)
+                    Twiss[4] = Twiss[4] * (1 + args.pOff/100)
+                    print(Twiss)
+                csv_file.close()
+        else: print("I need a --twissFile argument")
+
+    ##Get full rastered for this one Twiss
+    #if args.sim == "raster":
+    #    from scatterPBW import scatterPBW
+    #    scatterPBW(args,Twiss,iteration,paths)
+
+    ##Get map of % Outside Box and Current Density on Target for the range specified
+    #if args.sim == "map":
+    #    from mapRADependence import mapRADependence
+    #    from os import uname
+    #    if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+    #    print("it works!")
+    #    mapRADependence(args,Twiss,iteration,paths)
+
+    ##Examine individual beamlet of Twiss
+    #if args.sim == "beamlet":
+    #    from beamletScatter import beamletScatter
+    #    beamletScatter(args,Twiss,iteration,paths)
+    return Twiss

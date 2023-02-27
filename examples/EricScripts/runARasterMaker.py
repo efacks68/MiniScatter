@@ -31,8 +31,10 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
     t = np.linspace(0,t_end,time_length) #array of steps of length time_length
     N_t = len(t) # number of time samples
     n_tii  = 10 #number of positions per us
-    totX = np.zeros([N_t*n_tii*args.Nb,2])
-    totY = np.zeros([N_t*n_tii*args.Nb,2])
+    totX = np.zeros([1,2]) #place holder array in case to tell whether was made new or imported at saveRaster section 
+    totY = np.zeros([1,2])
+    nParts = N_t*n_tii*args.Nb
+    #print("totX",totX.shape)
     #print("t_pulse {:.2f}, t_end {:.2f}, time_length {:.2f}, N_t {:.2f}".format(t_pulse,t_end,time_length,N_t))
 
     ##Raster Constants
@@ -85,16 +87,16 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
-        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.NB,args.nP)+iterEnding
+        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.NB,args.nP)+iterEnding
     else:
         if args.source == "twiss":
             name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)+iterEnding
         elif args.source == "csv":
             name = args.beamFile
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
-            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
+            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
         elif args.beamClass == "pencil":
-            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
         elif args.beamClass == "Twiss":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,
                         nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
@@ -132,6 +134,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
         print("Found: ",outname,".csv",sep="")
     else:
         print("CSV not found. Making: ",outname,".csv",sep="")
+        totX = np.zeros([nParts,2])
+        totY = np.zeros([nParts,2])
         centroids = np.zeros([N_t*n_tii,2])
         for jj in range(N_t):
             for ii in range(n_tii):
@@ -187,31 +191,48 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
         finish = datetime.now()
         print(name,".csv took: ",finish-start,"s",sep="")
 
-        if args.saveRaster:
-            #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
-            import matplotlib.pyplot as plt
-            import mpl_scatter_density
-            plt.close()
-            fig = plt.figure()
-            s1 = fig.add_subplot(1,1,1,projection="scatter_density")
-            x=totX[:,0]
-            y=totY[:,0]
-            density = s1.scatter_density(x,y,cmap='jet')
-            fig.colorbar(density,label=r"Protons/mm^2")
-            s1.set_xlabel("X [mm]")
-            s1.set_ylabel("Y [mm]")
-            s1.set_xlim([-100,100])
-            s1.set_ylim([-50,50])
-            s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
-            from os import uname
-            if uname()[1] == "tensor.uio.no":
-                picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-            elif uname()[1] == "mbef-xps-13-9300":
-                picPWD = csvPWD
-            else: picPWD = input("What directory would you like to save files to? ")
-            plt.savefig(picPWD+name+"."+args.picFormat)
-            print(picPWD+name+"."+args.picFormat)
-            plt.close()
+    #Bit of a downside that can only get raster pattern from making new CSV...
+    if args.saveRaster:
+        import csv
+        if totX.shape == (1,2):
+            i=0
+            totX = np.zeros([nParts,2])
+            totY = np.zeros([nParts,2])
+            with open(outname+".csv",mode='r') as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                for row in csv_reader:
+                    totX[i,0] = float(row[1])
+                    totX[i,1] = float(row[2])
+                    totY[i,0] = float(row[3])
+                    totY[i,1] = float(row[4])
+                    i+=1
+                csv_file.close()
+        print(totX.shape)
+        #found the below method: https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
+        import matplotlib.pyplot as plt
+        import mpl_scatter_density
+        plt.close()
+        fig = plt.figure()
+        s1 = fig.add_subplot(1,1,1,projection="scatter_density")
+        x=totX[:,0]
+        y=totY[:,0]
+        density = s1.scatter_density(x,y,cmap='jet')
+        fig.colorbar(density,label=r"Protons/mm^2")
+        s1.set_xlabel("X [mm]")
+        s1.set_ylabel("Y [mm]")
+        s1.set_xlim([-200,200])
+        s1.set_ylim([-50,50])
+        s1.set_title("Rastered Beam Number Density\n{:.1e} protons {:.2f}ms".format(len(totX),time_length*1e-3))
+
+        from os import uname
+        if uname()[1] == "tensor.uio.no":
+            picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+        elif uname()[1] == "mbef-xps-13-9300":
+            picPWD = csvPWD
+        else: picPWD = input("What directory would you like to save files to? ")
+        plt.savefig(picPWD+name+"."+args.picFormat)
+        print(picPWD+name+"."+args.picFormat)
+        plt.close()
 
     return outname, envXAngle,envYAngle
   

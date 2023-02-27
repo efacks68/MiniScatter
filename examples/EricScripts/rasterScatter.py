@@ -8,133 +8,11 @@
 #python3 rasterScatter.py --iterations 50 --pOff -5
     #50x nominal Twiss - 5%
 
-
-def run(args,iteration,paths):
-    #Get Twiss to run, depending on user configuration
-    # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
-    if args.beamClass == 'Yngve': #smallest from Yngve
-        Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
-    elif args.beamClass == 'ESS': #from my OpenXAL calculation
-        Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
-        #pOff = 0 #negative to have less than
-        Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-        Twiss[4] = Twiss[4] * (1 + args.pOff/100)
-    elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
-        Twiss = [0.0001,0.15,0,0.0001,0.15,0]
-
-    if args.twiss:
-        Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
-        args.beamClass = "Twiss"
-
-    #For pulling from an already made CSV
-    if args.source == "csv":
-        import re
-        if re.search("beta",paths['csvPWD']+args.beamFile):
-            if re.search("RMamp",paths['csvPWD']+args.beamFile):
-                betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
-                betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
-                print(betaX,betaY)
-
-    #Tailored to OpenXAL failure input
-    if args.source == "twiss":
-        if args.twissFile != "":
-            import csv
-            from os import uname
-            i=0
-            #Find file
-            if uname()[1] in {"tensor.uio.no" , "heplab01.uio.no", "heplab04.uio.no"} :
-                homePWD = "/uio/hume/student-u52/ericdf/"
-            elif uname()[1] == "mbef-xps-13-9300":
-                homePWD = "/home/efackelman/"
-            twissPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
-            if args.qpNum == "all":
-                #for running all Twiss in OpenXAL Combo Sequence output CSV
-                from plotFit import numLines
-                n = numLines(twissPWD+args.twissFile)
-                for i in range(n):
-                    with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
-                        csv_reader = csv.reader(csv_file, delimiter=',')
-                        rowNum = 0 #to increment QP number
-                        for row in csv_reader:
-                            #if rowNum == 0:
-                            #    print("row 0")
-                            #    if type(row[1]) == str:
-                            #        print("Header skipped")
-                            #        continue
-                                    #next(csv_reader,None)
-                            if rowNum == i: #could be done cleaner?
-                                if float(row[1]) < 1e-4:
-                                    um = 1e6 #if from OpenXAL 
-                                elif float(row[1]) > 1e-4:
-                                    um = 1
-                                #print("um",um)
-                                Twiss[0] = float(row[1])*um #[mm-mrad]
-                                Twiss[1] = float(row[2])
-                                Twiss[2] = float(row[3])
-                                Twiss[3] = float(row[4])*um #[mm-mrad]
-                                Twiss[4] = float(row[5])
-                                Twiss[5] = float(row[6])
-                                print(Twiss)
-                                break
-                                #Adjusts names so the files are in order
-                                if len(row[0]) == 2: 
-                                    args.qpNum = "0"
-                                else: 
-                                    args.qpNum = ""
-                                args.qpNum += row[0]
-                                #print(i,rowNum,args.qpNum)
-                                break
-                            rowNum+=1
-                    csv_file.close()
-                    
-                    if args.sim == "raster":
-                        from scatterPBW import scatterPBW
-                        scatterPBW(args,Twiss,iteration,paths)
-            else:
-                #for single QP fail runs
-                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
-                    csv_reader = csv.reader(csv_file, delimiter=',')
-                    for row in csv_reader:
-                        if row[0] == args.qpNum:
-                            if float(row[1]) < 1e-4:
-                                um = 1e6 #if from OpenXAL 
-                            elif float(row[1]) > 1e-4:
-                                um = 1
-                            #print("um",um)
-                            Twiss[0] = float(row[1])*um #[mm-mrad]
-                            Twiss[1] = float(row[2])
-                            Twiss[2] = float(row[3])
-                            Twiss[3] = float(row[4])*um #[mm-mrad]
-                            Twiss[4] = float(row[5])
-                            Twiss[5] = float(row[6])
-                    Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-                    Twiss[4] = Twiss[4] * (1 + args.pOff/100)
-                    print(Twiss)
-                csv_file.close()
-
-    #Get full rastered for this one Twiss
-    if args.sim == "raster":
-        from scatterPBW import scatterPBW
-        scatterPBW(args,Twiss,iteration,paths)
-
-    #Get map of % Outside Box and Current Density on Target for the range specified
-    if args.sim == "map":
-        from mapRADependence import mapRADependence
-        from os import uname
-        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-        print("it works!")
-        mapRADependence(args,Twiss,iteration,paths)
-
-    #Examine individual beamlet of Twiss
-    if args.sim == "beamlet":
-        from beamletScatter import beamletScatter
-        beamletScatter(args,Twiss,iteration,paths)
-    return Twiss
-
 from datetime import datetime
 origin = datetime.now()
 from argparse import ArgumentParser
 from os import uname
+from plotFit import getTwiss
 #look into argument groups!
 
 #Command Line arguments for save control
@@ -167,7 +45,7 @@ parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au"
 parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
 parser.add_argument("--iterations", type=int,   default=1, help="How many times to iterate this setting")
 parser.add_argument("--pOff", type=int,default=0, help="What % off of nominal should the Twiss be?")
-parser.add_argument("--csvFile",  type=str,   help="Load Particles or not",   default="")
+parser.add_argument("--csvFile",  type=str,   help="Load Beam of already made csv",   default="")
 #Output Options
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
@@ -210,11 +88,30 @@ else:
     statsPWD = "."
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
+#get Twiss and run; if no iterations argment defined, will run through once.
 for i in range(args.iterations):
-    Twiss = run(args,i,paths)
+    Twiss = getTwiss(args,i,paths)
+
+    #Get full rastered for this one Twiss
+    if args.sim == "raster":
+        from scatterPBW import scatterPBW
+        scatterPBW(args,Twiss,i,paths)
+
+    #Get map of % Outside Box and Current Density on Target for the range specified
+    if args.sim == "map":
+        from mapRADependence import mapRADependence
+        from os import uname
+        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+        print("it works!")
+        mapRADependence(args,Twiss,i,paths)
+
+    #Examine individual beamlet of Twiss
+    if args.sim == "beamlet":
+        from beamletScatter import beamletScatter
+        beamletScatter(args,Twiss,i,paths)
 
 print("Simulation took ",datetime.now()-origin,"s long",sep="")
 
 if args.iterations >= 2:
     from plotFit import spreadHist
-    spreadHist(args,Twiss)
+    spreadHist(args,Twiss,paths)

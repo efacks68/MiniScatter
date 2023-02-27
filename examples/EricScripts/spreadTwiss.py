@@ -2,13 +2,34 @@
 
 from argparse import ArgumentParser
 from plotFit import spreadHist
+from os import uname
 
 parser = ArgumentParser()
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--pOff",      type=int,   default=0)
 parser.add_argument("--iterations",type=int,   default=10)
+parser.add_argument("--twissFile", type=str,   default="FailureA2T", help="Load file with Twiss, auto look in OpenXAL folder")
+parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
 args = parser.parse_args()
+
+#Where to save CSVs and statistics
+if uname()[1] == "tensor.uio.no":
+    scratchPath = "/scratch2/ericdf/PBWScatter/"
+elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no"}:
+    scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
+    #print(scratchPath)
+
+if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+    csvPWD = scratchPath+"CSVs/"
+    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+elif uname()[1] == "mbef-xps-13-9300":
+    csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+else:
+    csvPWD = input("Path from home to direction you like to save root files to: ")
+    statsPWD = "."
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
 if args.beamClass == 'Yngve': #smallest from Yngve
     Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
@@ -23,4 +44,4 @@ if args.twiss:
         Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
         args.beamClass = "Twiss"
 
-spreadHist(args,Twiss)
+spreadHist(args,Twiss,paths)
