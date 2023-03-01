@@ -585,7 +585,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         from plotFit import plot1DRaster,rasterImage
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-        Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+        Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
         
         if options['initTree']:
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
@@ -594,21 +594,28 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     else:
         Jmax = 0
         pOutsideBoxes = 0
-        dispY = 0
-        dispX = 0
+        beamArea = 0
+        coreJMean = 0
+        centX = 0
+        centY = 0
         rValue = 0
+        rDiff = 0
 
         if args.gaussFit:
-            from plotFit import converter,gaussianFit
+            from plotFit import converter,gaussianFit,voigtFit
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename) #convert from TH2D to numpy map
+            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths) #convert from TH2D to numpy map
             maxim = 500
             xBinSize = xax[maxim+1]-xax[maxim]
             yBinSize = yax[maxim+1]-yax[maxim]
 
-            diffNy,diffPy,coeffsy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,options,savename,2,25)
-            diffNx,diffPx,coeffsx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,options,savename,3,10)
-            print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
+            #gamma = 50
+            #alpha = 50
+            #voigtFit(Img,"x")#,gamma,alpha,args.xlim)
+            
+            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,options,savename,2,25,args.saveFits)
+            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,options,savename,3,10,args.saveFits)
+            #print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
 
-    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff #filter by PDG only
+    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff #filter by PDG only

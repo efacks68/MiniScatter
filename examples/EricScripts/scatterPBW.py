@@ -59,9 +59,9 @@ def scatterPBW(args,Twiss,iteration,paths):
     from plotFit import rasterImage
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+    Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
     from plotFit import saveStats
-    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff)
+    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

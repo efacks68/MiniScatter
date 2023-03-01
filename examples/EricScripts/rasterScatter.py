@@ -18,7 +18,7 @@ from plotFit import getTwiss
 #Command Line arguments for save control
 parser = ArgumentParser()
 parser.add_argument("--sim",       type=str,    default="raster",   choices=("raster","map","beamlet"), help="Type of simulation to perform")
-parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)?")
+parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
 #General Beam Setup Options
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton", choices=("proton","electron"), help="Which particle to simulate?")
@@ -37,7 +37,7 @@ parser.add_argument("--aY",        type=float, default=18.37, help="RM Y Amplitu
 parser.add_argument("--failure",   type=float, default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4. Default=0")
 parser.add_argument("--magFails",  type=int,   default=2,     choices = range(0,5),  help="Number of Raster Magnets that fail, 1-4. Default=2")
 parser.add_argument("--xlim",      type=float, default=150,   help="+/- value for horizontal axis of output rastered image [mm]. Default=150")
-parser.add_argument("--ylim",      type=float, default=150,   help="+/- value for vertical axis of output rastered image [mm]. Default=150")
+parser.add_argument("--ylim",      type=float, default=100,   help="+/- value for vertical axis of output rastered image [mm]. Default=150")
 parser.add_argument("--maxim",     type=float, default=0  ,   help="Maximum current density value for output rastered imagem[uA/cm^2]. Default=0")
 parser.add_argument("--edgeRaster",action="store_true",  help="Only populate edges of raster. Default=False")
 parser.add_argument("--PBIP",      action="store_true",  default=False,   help="Is PBIP present? Default=False")
@@ -46,7 +46,7 @@ parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet 
 parser.add_argument("--iterations", type=int,   default=1, help="How many times to iterate this setting")
 parser.add_argument("--pOff", type=int,default=0, help="What % off of nominal should the Twiss be?")
 parser.add_argument("--csvFile",  type=str,   help="Load Beam of already made csv",   default="")
-#Output Options
+#Output Options                         Lowering the rCut increases the jMax...
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
 parser.add_argument("--noText",    action="store_true",  default=False,   help="Turns off printed text when called. Default=False")
@@ -90,6 +90,7 @@ paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
 #get Twiss and run; if no iterations argment defined, will run through once.
 for i in range(args.iterations):
+    print("Iteration",i)
     Twiss = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss

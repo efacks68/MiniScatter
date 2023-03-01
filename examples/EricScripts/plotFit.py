@@ -125,7 +125,7 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
 
 
 
-def gaussian(x,mu,amplitude,sigma):
+def gaussian(x,amplitude,mu,sigma):
     from numpy import exp as npExp
     return amplitude * npExp( - (x - mu) ** 2 / (2 * sigma ** 2))
 
@@ -146,12 +146,14 @@ def findFit(data,guess,lims,nBins):
     #with help from MSeifert in stackoverflow fit a curve to a histogram in python
     #https://stackoverflow.com/questions/35544233/fit-a-curve-to-a-histogram-in-python
     from numpy import diff,linspace
-    from matplotlib.pyplot import hist,plot,close
+    from matplotlib.pyplot import hist,plot,close,savefig
     from scipy.optimize import curve_fit
     from plotFit import gaussian
 
     close()
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
+    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    savefig(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
@@ -161,10 +163,12 @@ def findFit(data,guess,lims,nBins):
     #plt.legend()
     #plt.xlim([bin_borders[0],bin_borders[-1]])
     #plt.show()
+    #pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #savefig(pwd+"fit.png")
     close() #be sure to close this or else these show up in the multi plots!
     #print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
-    return(popt[0],abs(popt[2]),popt[1],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
+    return(popt[1],abs(popt[2]),popt[0],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
 
 
@@ -458,8 +462,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     fs = 14
 
     #Find fit to histogram
-    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]))
-    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]))
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -654,8 +658,8 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     print(fitlabel,pOutBoxY,"% outside 99% box Y")
 
     #Useful to get intervals for nice plotting
-    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]))
-    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]))
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
 
     #Create the fig with 2 plots side by side
     plt.clf()
@@ -765,6 +769,292 @@ def numLines(filename):
 
 
 
+def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
+    #from Kyrre's doubleGaussian.ipynb example
+    import ROOT
+
+    #Project center slice 
+    if   axis == "y" or axis == "Y": 
+        proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
+    elif axis == "x" or axis == "X":
+        proj = hist.ProjectionX(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
+    differenceNG = 100
+    total = 100
+    differencePG = 100
+    coeffsG = [100]
+
+    #Define a gaussian function and fit it to the projection
+    f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
+    f1_res = proj.Fit(f1, 'RSQ')
+    #print(f1_res)
+    p0 = f1.GetParameter(0)
+    p1 = f1.GetParameter(1)
+    p2 = f1.GetParameter(2)
+    print(p0,p1,p2)
+    """
+    #Define function of a sum of multiple Gaussians to fit to projection
+    r=0.1
+    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
+
+    #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
+    if axis == "y" or axis == "Y":
+        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2)
+        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+        f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
+        f2.SetParLimits(1,p2*0.25,p0*y1) #
+        f2.SetParLimits(2,p1, p0*r*2) #
+        f2.SetParLimits(3,p2, p2*y1) #p3=11,22
+        f2.SetParLimits(4,p2, p2*y2) #p5=22,300
+        f2.SetParLimits(5,p2, p2*y2) #p5=22,300
+        #f2.SetParLimits(6,p2,p2*y2) #p5=22,300
+        f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
+    elif axis == "x" or axis == "X":
+        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2)
+        #print(9532,16.3,395,36.5,6511,14,2,334)
+        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+        f2.SetParLimits(0,p0*r,p0*y1)
+        f2.SetParLimits(1,p2*0.25,p2*y1)
+        f2.SetParLimits(2,p2, p0*r*2)
+        f2.SetParLimits(3,p2, p2*y1)
+        f2.SetParLimits(4,p2, p2*y2)
+        f2.SetParLimits(5,p2, p2*y2)
+        #f2.SetParLimits(6,0.1,p0)
+        f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
+    f2_res = proj.Fit(f2, 'RSQ')
+    #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+    #print(f2_res)
+
+    if saveFits: #if uncommented it opens a canvas even if false...?
+        c1 = ROOT.TCanvas()
+        proj.Draw()
+        f2.SetLineColor(ROOT.kRed)
+        f2.Draw('same')
+        #f1.SetLineColor(ROOT.kRed)
+        #f1.Draw('same')
+        if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        c1.SetLogy()
+        c1.Print(name+"_"+axis+"GaussFit"+str(maxim)+".pdf")
+
+    #    import numpy as np
+    #    import matplotlib.pyplot as plt
+    #    plt.close()
+    #    w = np.zeros(maxim)
+    #    diff = np.zeros(maxim)
+    #    for i in range(maxim):
+    #        w[i] = i
+    #        diff[i] = proj.Integral(proj.GetXaxis().FindBin(-i),proj.GetXaxis().FindBin(i),'width')  -  f2.Integral(-i,i)
+    #        if i == maxim-1: print(diff[i])
+    #    plt.plot(diff)
+    #    plt.legend()
+    #    plt.title("Y Axis Difference")
+    #    plt.yscale("log")
+    #    plt.savefig(name+"FitDifference.png")
+    #    plt.close()
+
+    differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
+    total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
+    differencePG = differenceNG/total*100
+    coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
+    print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNG,total,differencePG))#,"\n")#,coeffs)
+    """
+    
+    #Now do for Lorentzian
+    f3 = ROOT.TF1('f3','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    if axis in {"y","Y"}:
+        f3.SetParameters(p2,p2,p2,p2)
+    elif axis in {"x","X"}:
+        f3.SetParameters(p2,p2,p2,p2)
+    f3.SetParLimits(0,0,p1*y2)
+    f3.SetParLimits(1,0,p2*y1)
+    f3.SetParLimits(2,0,p0*y2*y1)
+    f3.SetParLimits(3,0,p1*y1)
+    f3_res = proj.Fit(f3, 'RSQ')
+    differenceNL = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f3.Integral(-maxim,maxim)
+    total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
+    differencePL = differenceNL/total*100
+    coeffsL = [f3.GetParameter(0),f3.GetParameter(1),f3.GetParameter(2),f3.GetParameter(3)]
+    print("Lorenztian",coeffsL)
+    print(axis," L difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNL,total,differencePL))#,"\n")#,coeffs)
+
+    if saveFits: #if uncommented it opens a canvas even if false...?
+        c2 = ROOT.TCanvas()
+        proj.Draw()
+        f3.SetLineColor(ROOT.kRed)
+        f3.Draw('same')
+        #print("hope this works")
+        #f1.SetLineColor(ROOT.kRed)
+        #f1.Draw('same')
+        #if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        #elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        c2.SetLogy()
+        c2.Print(name+"_"+axis+"LorentzFit"+str(maxim)+".pdf")
+
+    #    import numpy as np
+    #    import matplotlib.pyplot as plt
+    #    plt.close()
+    #    w = np.zeros(maxim)
+    #    diff = np.zeros(maxim)
+    #    for i in range(maxim):
+    #        w[i] = i
+    #        diff[i] = proj.Integral(proj.GetXaxis().FindBin(-i),proj.GetXaxis().FindBin(i),'width')  -  f2.Integral(-i,i)
+    #        if i == maxim-1: print(diff[i])
+    #    plt.plot(diff)
+    #    plt.legend()
+    #    plt.title("Y Axis Difference")
+    #    plt.yscale("log")
+    #    plt.savefig(name+"FitDifference.png")
+    #    plt.close()
+
+    return differenceNG, differencePG, coeffsG, differenceNL,differencePL,coeffsL
+
+
+def voigtFit(data,axis):
+    #From https://scipython.com/book/chapter-8-scipy/examples/weighted-and-non-weighted-least-squares-fitting/
+    import numpy as np
+    from scipy.optimize import curve_fit
+    from matplotlib.pyplot import hist,savefig
+    import pylab
+
+    x0, A, gamma = 12, 3, 5
+
+    n = 1001
+    x = np.linspace(-20, 20, n)
+    
+    """
+    yexact = A * gamma**2 / (gamma**2 + (x-x0)**2)
+
+    # Add some noise with a sigma of 0.5 apart from a particularly noisy region
+    # near x0 where sigma is 3
+    sigma = np.ones(n)*0.5
+    sigma[np.abs(x-x0+1)<1] = 3
+    noise = np.random.randn(n) * sigma
+    y = yexact + noise
+    """
+    def f(x, x0, A, gamma):
+        """ The Lorentzian entered at x0 with amplitude A and HWHM gamma. """
+        return A *gamma**2 / (gamma**2 + (x-x0)**2)
+
+    def rms(y, yfit):
+        return np.sqrt(np.sum((y-yfit)**2))
+
+    if axis in {"X","x"}:   
+        ind = 1
+    elif axis in {"Y","y"}:
+        ind = 0
+
+    #Get center
+    dLen = len(data[ind])
+    ind=round(dLen/2)
+    proj = data[ind]
+    #np.reshape(proj,dLen)
+    print(dLen,ind,np.mean(proj),proj.shape)
+    bin_heights, bin_borders, _ = hist(proj,bins=round(ind/10),range=(-100,100),label="histogram")
+    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    savefig(pwd+"hist.png")
+    #print(len(bin_borders))
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    
+    # Unweighted fit
+    p0 = 10, 4, 2
+    popt, pcov = curve_fit(f, bin_centers, bin_heights, p0)
+    yfit = f(x, *popt)
+    print('Unweighted fit parameters:', popt)
+    print('Covariance matrix:'); print(pcov)
+    #print('rms error in fit:', rms(yexact, yfit))
+    #print()
+
+    # Weighted fit
+    #popt2, pcov2 = curve_fit(f, x, y, p0, sigma=sigma, absolute_sigma=True)
+    #yfit2 = f(x, *popt2)
+    #print('Weighted fit parameters:', popt2)
+    #print('Covariance matrix:'); print(pcov2)
+    #print('rms error in fit:', rms(yexact, yfit2))
+
+    #pylab.plot(x, yexact, label='Exact')
+    #pylab.plot(x, y, 'o', label='Data')
+    pylab.plot(x, yfit, label='Unweighted fit')
+    #pylab.plot(x, yfit2, label='Weighted fit')
+    #pylab.ylim(-1,4)
+    pylab.legend(loc='lower center')
+    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    pylab.savefig(pwd+"Cauchy.png")
+
+    
+    ##https://scipython.com/book/chapter-8-scipy/examples/the-voigt-profile/
+    #import numpy as np
+    #from scipy.special import wofz
+    #from scipy.optimize import curve_fit
+    #from matplotlib.pyplot import hist,plot
+    #import pylab
+    
+    #def G(x, alpha):
+    #    """ Return Gaussian line shape at x with HWHM alpha """
+    #    return np.sqrt(np.log(2) / np.pi) / alpha\
+    #                            * np.exp(-(x / alpha)**2 * np.log(2))
+
+    #def L(x, gamma):
+    #    """ Return Lorentzian line shape at x with HWHM gamma """
+    #    return gamma / np.pi / (x**2 + gamma**2)
+
+    #def V(x, alpha, gamma):
+    #    """
+    #    Return the Voigt line shape at x with Lorentzian component HWHM gamma
+    #    and Gaussian component HWHM alpha.
+
+    #    """
+    #    sigma = alpha / np.sqrt(2 * np.log(2))
+
+    #    return np.real(wofz((x + 1j*gamma)/sigma/np.sqrt(2))) / sigma / np.sqrt(2*np.pi)
+
+    #if axis in {"X","x"}:   
+    #    ind = 1
+    #elif axis in {"Y","y"}:
+    #    ind = 0
+
+    ##Get center
+    #dLen = len(data[ind])
+    #proj = data[round(dLen/2):round(dLen/2)+1]
+    #print(dLen,round(dLen/2),np.mean(data[round(dLen/2)]))
+
+    #bin_heights, bin_borders, _ = hist(proj,bins='auto',label="histogram")
+    ##pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    ##savefig(pwd+"hist.png")
+    ##print(len(bin_borders))
+    #bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+
+    #a0 = [0,10,10]
+    #g0 = [0,10,10]
+    ##not working, not getting a fit.
+    """
+    alpha,_ = curve_fit(G, bin_centers, bin_heights,p0=a0)#,bounds=lims) #p0 should be good start, though not what is recommended
+    gamma,_ = curve_fit(L, bin_centers, bin_heights,p0=g0)#,bounds=lims) #p0 should be good start, though not what is recommended
+    print(alpha,gamma)
+    x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
+    plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
+    
+    #alpha, gamma = 0.1, 0.1
+    x = np.linspace(-lim,lim,dLen)
+    pylab.plot(x, G(x, alpha), ls=':', label='Gaussian')
+    pylab.plot(x, L(x, gamma), ls='--', label='Lorentzian')
+    pylab.plot(x, V(x, alpha, gamma), label='Voigt')
+    pylab.xlim(-lim,lim)
+    pylab.legend()
+    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #pylab.savefig(pwd+"Voigt.png")
+    """
+
+
+
+
+
+
+
+
 def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths):
     import numpy as np
     name=savename+"_"+position+"Image"
@@ -773,13 +1063,13 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     from plotFit import converter
 
     #print(datetime.now().strftime("%H-%M-%S"))
-    (Img, xax, yax) = converter(histogram2D,args.saveHist,name) #convert from TH2D to numpy map
+    (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths) #convert from TH2D to numpy map
     #print(datetime.now().strftime("%H-%M-%S"))
     xBinSize = xax[501]-xax[500]
     yBinSize = yax[501]-yax[500]
     sumTot=np.sum(Img)
-    ImgJ = Img #PEAS converts whole array into J, so send this one instead of making it inside PEAS.
-    #print(xBinSize,yBinSize,sumTot)
+    ImgJ = Img #PMAS converts whole array into J, so send this one instead of making it inside PMAS.
+    print(xBinSize,yBinSize,sumTot)
     I_pulse = 62.5*1e3 #[uA]
 
     #99% box #for multiple boxes, use arrays
@@ -828,12 +1118,38 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         coreImax[i] = core.max() #[uA/cm^2]
         coreMeanI[i] = np.mean(core) #[uA/cm^2]
 
-    from plotFit import PEAS
-    sPEAS=datetime.now()#.strftime("%H-%M-%S"))
-    Jmax,pOutsideBox,rValue,edges,EI,beamArea,dispX,dispY,rDiff = PEAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
-    print("finished PEAS in",datetime.now()-sPEAS)#.strftime("%H-%M-%S"))
+    from plotFit import PMAS
+    sPMAS=datetime.now()#.strftime("%H-%M-%S"))
+    jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,rDiff = PMAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
+    print("finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
 
-    #print(Jmax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
+    #Warning print is outside PMAS because it takes a long time
+    jMaxLim = 53
+    pOutLim = 4
+    centYLim = 11
+    centXLim = 14
+    rValLim = 0.20
+    #if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
+    if jMax >= jMaxLim:
+        print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
+    elif pOutsideBox >= pOutLim:
+        print("% Outside Box Warning:",pOutsideBox,"%!")
+    elif beamArea <= nomArea:
+        print("Beam Area Warning:",beamArea,"mm^2")
+    elif centY >= centYLim:
+        print("Vertical Displacement Warning:",centY - centYLim,"mm!")
+    elif centY <= -centYLim:
+        print("Vertical Displacement Warning:",centY + centYLim,"mm!")
+    elif centX >= centXLim:
+        print("Vertical Displacement Warning:",centX - centXLim,"mm!")
+    elif centX <= -centXLim:
+        print("Horizontal Displacement Warning:",centX + centXLim,"mm!")
+    elif rValue >= rValLim:
+        print("R Value Warning",rValue)
+    else:
+        print("No Warnings!")
+
+    #print(jMax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
     #coreJMax = core.max()
     coreJMean = np.mean(Img[EI[1]:EI[0],EI[2]:EI[3]])
@@ -851,15 +1167,16 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #for i in range(len(Img)):
     #    for j in range(len(Img[i])):
     #        Img[i][j] = Img[i][j] * C #[uA/cm^2]
-    #Jmax = Img.max()
-    Jmin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
+    #jMax = Img.max()
+    jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
     #print(coreMeanI*C,coreImax*C)
-    print("PMAS:",datetime.now()-sPEAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox".format(Jmax,coreArea,coreJMean,128*42,rValue,rDiff,Jmin,coreMeanI[0]*C),pOutsideBoxes)
+    print("PMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox".format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin,coreMeanI[0]*C),pOutsideBoxes)
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
     if args.gaussFit:
-        diffNy,diffPy,coeffsy = gaussianFit(histogram2D,"y",yBinSize,500,options,savename,2,30)
-        diffNx,diffPx,coeffsx = gaussianFit(histogram2D,"x",xBinSize,500,options,savename,3,20)
+                                           #(hist,     axis, width,maxim,options,name,   y1,y2,saveFits)
+        diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,options,savename,2,30,args.saveFits)
+        diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,options,savename,3,20,args.saveFits)
         #add minimize function for these?
 
     if args.savePics:
@@ -874,9 +1191,9 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     
         #Set maximum value depending on the maximum current density
         from math import log10,ceil
-        maxim = ceil(Jmax / 10) * 10
+        maxim = ceil(jMax / 10) * 10
         if args.maxim != 0: maxim = args.maxim #user provided maximum
-        minim = 10**ceil(log10(Jmin))
+        minim = 10**ceil(log10(jMin))
         cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
         cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
                     "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
@@ -912,6 +1229,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             #Display beam characteristics
             bgdbox=dict(pad=1,fc='w',ec='none')
             propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
+            #do this better, since set by args.x,ylim 
             ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w')
             ax.text(xlim[0]*0.97, ylim[0]*0.60, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.71, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
@@ -919,7 +1237,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
-            ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(Jmax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(jMax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(args.aX,args.aY),propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.96, options['physList'], propsR,fontsize=fs-4)
 
@@ -947,7 +1265,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #dt = datetime.now()
     #print(dt-start)
 
-    return Jmax,pOutsideBox,beamArea,coreJMean,dispY,dispX,rValue,rDiff
+    return jMax,pOutsideBox,beamArea,coreJMean,centX,centY,rValue,rDiff
 
 
 
@@ -961,7 +1279,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
 
 
-def converter(hIn,saveHist,name):
+def converter(hIn,saveHist,name,paths):
     import ROOT
     from numpy import zeros
 
@@ -1022,6 +1340,7 @@ def converter(hIn,saveHist,name):
 
 
 
+
 #add function to check if ROOT file is complete, else delete and make new
 def findRoot(savename,paths):
     from os.path import isfile
@@ -1063,7 +1382,8 @@ def rCompare(Im,Nb,paths):
         elif Nb == 500:
               Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
         else: #Nb=10
-            Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_4_runW_QBZ_TargetImage.csv"),delimiter=",")
+            #Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         
     elif uname()[1] == "mbef-xps-13-9300":
@@ -1108,7 +1428,7 @@ def rCompare(Im,Nb,paths):
 
 
 
-def findEdges(Img,Jmax,graph,savename,xax,yax,args):
+def findEdges(Img,jMax,graph,savename,xax,yax,args):
     from numpy import array
     from scipy.signal import convolve2d as scipySigConv2d
     #does it need to be normalized?
@@ -1297,106 +1617,8 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
 
 
 
-
-def gaussianFit(hist,axis,width,maxim,options,name,y1,y2):
-    #from Kyrre's doubleGaussian.ipynb example
-    import ROOT
-
-    #Project center slice 
-    if   axis == "y" or axis == "Y": 
-        proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
-    elif axis == "x" or axis == "X":
-        proj = hist.ProjectionX(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
-
-    #Define a gaussian function and fit it to the projection
-    f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
-    f1_res = proj.Fit(f1, 'RSQ')
-    #print(f1_res)
-    p0 = f1.GetParameter(0)
-    p1 = f1.GetParameter(1)
-    p2 = f1.GetParameter(2)
-    #print(p0,p1,p2)
-
-    #Define function of a sum of multiple Gaussians to fit to projection
-    r=0.1
-    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
-
-    #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
-    if axis == "y" or axis == "Y":
-        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2)
-        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
-        f2.SetParLimits(1,p2*0.25,p0*y1) #
-        f2.SetParLimits(2,p1, p0*r*2) #
-        f2.SetParLimits(3,p2, p2*y1) #p3=11,22
-        f2.SetParLimits(4,p2, p2*y2) #p5=22,300
-        f2.SetParLimits(5,p2, p2*y2) #p5=22,300
-        #f2.SetParLimits(6,p2,p2*y2) #p5=22,300
-        f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
-    elif axis == "x" or axis == "X":
-        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2)
-        #print(9532,16.3,395,36.5,6511,14,2,334)
-        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*r,p0*y1)
-        f2.SetParLimits(1,p2*0.25,p2*y1)
-        f2.SetParLimits(2,p2, p0*r*2)
-        f2.SetParLimits(3,p2, p2*y1)
-        f2.SetParLimits(4,p2, p2*y2)
-        f2.SetParLimits(5,p2, p2*y2)
-        #f2.SetParLimits(6,0.1,p0)
-        f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
-    f2_res = proj.Fit(f2, 'RSQ')
-    #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-    #print(f2_res)
-
-    x=500
-    #if args.saveFits: #if uncommented it opens a canvas even if false...?
-        #c1 = ROOT.TCanvas()
-        #proj.Draw()
-        #f2.SetLineColor(ROOT.kBlack)
-        #f2.Draw('same')
-        ##f1.SetLineColor(ROOT.kRed)
-        ##f1.Draw('same')
-        #if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-x,x)
-        #elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-x,x)
-        #c1.SetLogy()
-        #c1.Print(name+"_"+axis+"GaussFit"+str(x)+".pdf")
-
-        #import numpy as np
-        #w = np.zeros(maxim)
-        #diff = np.zeros(maxim)
-        #for i in range(maxim):
-        #    w[i] = i
-        #    diff[i] = projY.Integral(projY.GetXaxis().FindBin(-i),projY.GetXaxis().FindBin(i),'width')  -  fy2.Integral(-i,i)
-        #    if i == maxim-1: print(diff[i])
-        #plt.plot(diff)
-        #plt.title("Y Axis Difference")
-        #plt.yscale("log")
-        #plt.savefig(name+"Fit Difference."+args.picFormat)
-
-    differenceN = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
-    total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
-    differenceP = differenceN/total*100
-    coeffs = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceN,total,differenceP))#,"\n")#,coeffs)
-
-    return differenceN, differenceP, coeffs
-
-
-
-
-
-
-
-
-
-
-
 #Detection Algorithm!!!
-def PEAS(Img,args,parts,xax,yax,name,paths):
+def PMAS(Img,args,parts,xax,yax,name,paths):
     import numpy as np
     printEdges = True
 
@@ -1435,7 +1657,7 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
             Img[i][j] = Img[i][j] * C #[uA/cm^2] #redefinition was messing with proton sum, but not necessary for final algorithm
     jMax = Img.max()
     #sumCharge = np.sum(Img)+1
-    #print("PEAS Sum",sumTot)
+    #print("PMAS Sum",sumTot)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
     rValue,rDiff = rCompare(Img,args.Nb,paths)
@@ -1497,28 +1719,7 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
     centY = edges[0] + edges[1]
     print("Beam Center at ",centX,",",centY)
 
-    jMaxLim = 53
-    pOutLim = 4
-    dispYLim = 11
-    dispXLim = 14
-    rValLim = 0.20
-    #if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
-    if jMax >= jMaxLim:
-        print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
-    elif pOut >= pOutLim:
-        print("% Outside Box Warning:",pOut,"%!")
-    elif beamArea <= nomArea:
-        print("Beam Area Warning:",beamArea,"mm^2")
-    elif dispY >= dispYLim:
-        print("Vertical Displacement Warning:",dispY,"mm!")
-    elif dispX >= dispXLim:
-        print("Horizontal Displacement Warning:",dispX,"mm!")
-    elif rValue >= rValLim:
-        print("R Value Warning",rValue)
-    else:
-        print("No Warnings!")
-
-    return jMax,pOut,rValue,edges,EI,beamArea,dispX,dispY,rDiff #make this a list!
+    return jMax,pOut,rValue,edges,EI,beamArea,centX,centY,rDiff #make this a list!
 
 
 
@@ -1531,11 +1732,11 @@ def PEAS(Img,args,parts,xax,yax,name,paths):
 
 
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff):
+def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff):
     #save values in Stats CSV
     import csv
     from os import path as osPath
-    statsName = statsPWD+"EvalStatsN.csv"
+    statsName = statsPWD+"EvalStats28Feb.csv"
     #if not osPath.isfile(statsName): #didn't work...?
     #    with open(statsName,mode = 'w') as csv_file:
     #        csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -1557,9 +1758,9 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMea
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ',')
-                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff]) #add JCore
+                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]) #add JCore
                 csv_file.close()
-            print("saved",Jmax,pOutsideBoxes,beamArea,coreJMean,dispY,dispX,rValue,rDiff)
+            print("saved",jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff)
         else:
             print("Values already in row",foundRow)
 
@@ -1579,19 +1780,21 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     from plotFit import findFit, gaussian
 
     read = zeros(args.iterations)
-    read.fill(-10) #allow better filter than nonzero
+    read.fill(-750) #allow better filter than nonzero
     for i in range(len(Twiss)):
         Twiss[i] = round(Twiss[i]*1e5)/1e5
     #print(Twiss)
     i=0
     lenbreak=False
-    with open(statsPWD+"EvalStatsN.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats28Feb.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
+            if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
                 #print("found Twiss")
                 read[i] = float(row[ind]) #[mm-mrad]
+                #if i < 5:
+                #    print(Twiss,row[0])
                 #print(i,read[i])
                 if i+1 == args.iterations:
                     lenbreak = True
@@ -1600,17 +1803,22 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
                 #print(lenbreak)
             if lenbreak:
                 break
+            #if float(row[1]) == Twiss[0]:
+                #print("we got something!")
+                #print(float(row[2]),Twiss[1])
+            #    if float(row[2]) == Twiss[1]:
+            #        print("we got something!")
     csv_file.close()
 
-    nonEmpty = npGreater(read,-10) #remove unused elements
+    nonEmpty = npGreater(read,-750) #remove unused elements
     read = read[nonEmpty]
-    print("guess",paramName, mean(read),std(read),args.iterations/5,paramBins)
-    mu, sigma,ampl,interval = findFit(read,[mean(read),std(read),args.iterations/4],paramLims,paramBins)
+    print("guess",paramName, args.iterations/50,mean(read),std(read),paramBins)
+    mu, sigma,ampl,interval = findFit(read,[args.iterations/4,mean(read),std(read)],paramLims,paramBins)
     #print(mu,sigma,ampl)
 
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
-    plot(bins, gaussian(bins,mu,ampl,sigma), "r--", linewidth=2)
+    plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
     title(str(len(read))+" Iterations of "+str(args.pOff)+"% Off Nominal")
     xlabel(paramLabel)
     ylabel("Counts")
@@ -1625,13 +1833,16 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     text(xlim()[0]*(1+delta), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
-    name=statsPWD+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
+    text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
+    if args.twissFile =="":
+        name=statsPWD+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
+    else:
+        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
     savefig(name)
     close()
-    print(len(read),paramName,mu,sigma,ampl)
+    print(len(read),paramName,ampl,mu,sigma)
     print(name)
-    return mu,sigma,ampl
+    return mu,sigma,ampl,len(read)
 
 
 
@@ -1655,39 +1866,69 @@ def spreadHist(args,Twiss,paths):
     #elif uname()[1] == "mbef-xps-13-9300":
     #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["jMax","beamPOut","coreArea","coreJMean","dispY","dispX","rValue","rDiff"] #len=8
+    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=8
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",
                 r"Core Area [mm$^2$]",r"Core Average Current Density [$\mu$A/cm$^2$]",
-                "Vertical Displacement [mm]","Horizontal Displacement [mm]","R Divide Value","R Difference Value"]
+                "Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"]
+    #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
     ind = [7,8,9,10,11,12,13,14] #
     unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","rValue","rDiff"] #
-                    #mu, ampl, sigma                 ([1e3,10,10],[1e4,5e3,1e3])
-    paramLims = [(0,[100,100,100]),(0,[100,100,100]),([1e3,10,10],[1e4,5e3,1e3]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100]),(0,[100,100,100])]
-    #paramBins = [25,25,40,25,25,25,25,25]
-    paramBins = [25,25,40,25,25,25,25,25]
+                #ampl, mu, sigma                     ([10,1e3,20],[5e3,1e4,1e3])
+    paramLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
+                    ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
+    paramBins = [30,35,40,30,25,25,25,25]
+    #bR = round(args.iterations/8)
+    #paramBins = [bR,bR,round(args.iterations/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
     ampl = zeros(len(paramName))
+    lens = zeros(len(paramName))
     for i in range(len(paramName)):
-        mus[i], sigmas[i],ampl[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
-        #mus[i], sigmas[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i])
+        print(paramName[i],paramLims[i],paramBins[i])
+        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
+        #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
 
-    for i in range(len(paramName)):
-        print(paramName[i],mus[i],sigmas[i],ampl[i])
-
-
-
-
-
-
-
-
-
-
-
-
-def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims):
     import csv
+    found=False
+    i=0
+    foundRow=0
+    with open(paths['statsPWD']+"pOffStats.csv",mode='r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader)
+        for row in csv_reader:
+            i+=1
+            if float(row[0]) == args.pOff: #No duplicates
+                found = True
+                foundRow = i
+                print("Values already in row",foundRow)
+                break
+        csv_file.close()
+    if not found:
+        with open(paths['statsPWD']+"pOffStats.csv",mode = 'a') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter = ',')
+            for i in range(len(paramName)):
+                if sigmas[i] < 1e-3:
+                    csv_writer.writerow([args.pOff,lens[i],paramName[i],"{:.3f} $\pm$ {:.3e}".format(mus[i],sigmas[i])]) #add JCore
+                else:
+                    csv_writer.writerow([args.pOff,lens[i],paramName[i],"{:.3f} $\pm$ {:.3f}".format(mus[i],sigmas[i])]) #add JCore
+            csv_file.close()
+    
+        for i in range(len(paramName)):
+            print(args.pOff,lens[i],paramName[i],"{:.3f} +/- {:.3e}".format(mus[i],sigmas[i]))
+
+
+
+
+
+
+
+
+
+
+
+
+def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
+    import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
     from plotFit import findFit, gaussian
@@ -1700,33 +1941,36 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims)
     #print(Twiss)
     i=0
     lenbreak=False
-    with open(statsPWD+"EvalStatsN.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats28Feb.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
+            print(re.search(row[0],"(PBW_570MeV)"))
+            if re.search(row[0],"(PBW_570MeV)"):
+            #if row[0]  
             #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
                 #print("found Twiss")
-            read[i] = float(row[ind]) #[mm-mrad]
+                read[i] = float(row[ind]) #[mm-mrad]
                 #print(i,read[i])
-            if i+1 == args.iterations:
-                lenbreak = True
-                break
-            i+=1
+                if i+1 == args.iterations:
+                    lenbreak = True
+                    break
+                i+=1
                 #print(lenbreak)
             if lenbreak:
                 break
     csv_file.close()
 
-    print(paramLabel,len(read))
+    i#print(paramLabel,len(read))
     nonzero = npGreater(read,-10)
     read = read[nonzero]
-    print(len(read),mean(read),std(read),args.iterations/5)
-    mu, sigma, ampl,interval = findFit(read,[mean(read),std(read),args.iterations/4],paramLims)
+    print("guess",paramName,len(read),args.iterations/40,mean(read),std(read))
+    mu, sigma, ampl,interval = findFit(read,[args.iterations/40,mean(read),std(read)],paramLims,paramBins)
     print(mu,sigma,ampl)
 
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
-    plot(bins, gaussian(bins,mu,ampl,sigma), "r--", linewidth=2)
+    plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
     title(str(len(read))+r" Iterations $\pm$50% Around Nominal")
     xlabel(paramLabel)
     ylabel("Counts")
@@ -1742,7 +1986,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims)
     close()
     print(len(read),paramName,mu,sigma)
     print(name)
-    return mu,sigma
+    return mu,sigma,ampl,len(read)
 
 
 
