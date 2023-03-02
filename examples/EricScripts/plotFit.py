@@ -2008,8 +2008,8 @@ def getTwiss(args,iteration,paths):
     elif args.beamClass == 'ESS': #from my OpenXAL calculation
         Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
         #pOff = 0 #negative to have less than
-        Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-        Twiss[4] = Twiss[4] * (1 + args.pOff/100)
+        #Twiss[1] = Twiss[1] * (1 + args.pOff/100)
+        #Twiss[4] = Twiss[4] * (1 + args.pOff/100)
     elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
         Twiss = [0.0001,0.15,0,0.0001,0.15,0]
 
@@ -2021,10 +2021,9 @@ def getTwiss(args,iteration,paths):
     if args.source == "csv":
         import re
         if re.search("beta",paths['csvPWD']+args.beamFile):
-            if re.search("RMamp",paths['csvPWD']+args.beamFile):
-                betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
-                betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
-                print(betaX,betaY)
+            betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
+            betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
+            print(betaX,betaY)
 
     #Tailored to OpenXAL failure input
     if args.source == "twiss":
@@ -2033,11 +2032,7 @@ def getTwiss(args,iteration,paths):
             from os import uname
             i=0
             #Find file
-            if uname()[1] in {"tensor.uio.no" , "heplab01.uio.no", "heplab04.uio.no"} :
-                homePWD = "/uio/hume/student-u52/ericdf/"
-            elif uname()[1] == "mbef-xps-13-9300":
-                homePWD = "/home/efackelman/"
-            twissPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
+            twissPWD = paths['homePWD']+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
             if args.qpNum == "all":
                 #for running all Twiss in OpenXAL Combo Sequence output CSV
                 from plotFit import numLines
@@ -2098,8 +2093,8 @@ def getTwiss(args,iteration,paths):
                             Twiss[3] = float(row[4])*um #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
-                    Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-                    Twiss[4] = Twiss[4] * (1 + args.pOff/100)
+                    #Twiss[1] = Twiss[1] * (1 + args.pOff/100)
+                    #Twiss[4] = Twiss[4] * (1 + args.pOff/100)
                     print(Twiss)
                 csv_file.close()
         else: print("I need a --twissFile argument")
@@ -2121,4 +2116,22 @@ def getTwiss(args,iteration,paths):
     #if args.sim == "beamlet":
     #    from beamletScatter import beamletScatter
     #    beamletScatter(args,Twiss,iteration,paths)
+
+    #If want to do this one set at a time, do this.
+    if args.betaSpread != 0:
+        origBX = Twiss[1]
+        origBY = Twiss[4]
+        print(args.betaSpread,"% Spread around BetaX ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBX,origBX-origBX*args.betaSpread/100,origBX+origBX*args.betaSpread/100)) #requires 3sigma
+        print(args.betaSpread,"% Spread around BetaY ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBY,origBY-origBY*args.betaSpread/100,origBY+origBY*args.betaSpread/100))
+        #Assuming the "scale" in the following function is the %
+        from numpy.random import default_rng
+        rng = default_rng()
+        Twiss[1] = rng.normal(loc=origBX,scale=origBX*args.betaSpread/100/3) #%/3 so 3sigma range = range
+        Twiss[4] = rng.normal(loc=origBY,scale=origBY*args.betaSpread/100/3)
+        print("New BetaX: {:.1f}m, BetaY: {:.1f}m".format(Twiss[1],Twiss[4]))
+    #If want to write sample to CSV and read in, follow Carl's way.
+    #if args.betaSpread != 0:
+    #    import csv
+
+
     return Twiss

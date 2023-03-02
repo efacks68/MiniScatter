@@ -99,11 +99,14 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
             name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
         elif args.beamClass == "Twiss":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,
-                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,len(totX[:,0]),args.Nb,args.nP)+iterEnding
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
+        if args.betaSpread != 0:
+            name = "sampleIn{:.0f}Pct_bX{:.0f},bY{:.0f}m_N{:.1e}protons".format(args.betaSpread,Twiss[1],Twiss[4],nParts)
     if args.rX != 0:
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
     if args.rY != 0:
         name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
+    print(name)
 
     #Raster Magnet Failure Options
     idcy = round(N_t * (1 - args.magFails / 4 )) #produces which quarter:end is 0
