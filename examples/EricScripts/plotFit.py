@@ -1736,7 +1736,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
     #save values in Stats CSV
     import csv
     from os import path as osPath
-    statsName = statsPWD+"EvalStats28Feb.csv"
+    statsName = statsPWD+"EvalStats2Mar.csv"
     #if not osPath.isfile(statsName): #didn't work...?
     #    with open(statsName,mode = 'w') as csv_file:
     #        csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -1786,7 +1786,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     #print(Twiss)
     i=0
     lenbreak=False
-    with open(statsPWD+"EvalStats28Feb.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -1941,7 +1941,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     #print(Twiss)
     i=0
     lenbreak=False
-    with open(statsPWD+"EvalStats28Feb.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2118,20 +2118,89 @@ def getTwiss(args,iteration,paths):
     #    beamletScatter(args,Twiss,iteration,paths)
 
     #If want to do this one set at a time, do this.
+    #if args.betaSpread != 0:
+    #    origBX = Twiss[1]
+    #    origBY = Twiss[4]
+    #    print(args.betaSpread,"% Spread around BetaX ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBX,origBX-origBX*args.betaSpread/100,origBX+origBX*args.betaSpread/100)) #requires 3sigma
+    #    print(args.betaSpread,"% Spread around BetaY ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBY,origBY-origBY*args.betaSpread/100,origBY+origBY*args.betaSpread/100))
+    #    #Assuming the "scale" in the following function is the %
+    #    from numpy.random import default_rng
+    #    rng = default_rng()
+    #    Twiss[1] = rng.normal(loc=origBX,scale=origBX*args.betaSpread/100/3) #%/3 so 3sigma range = range
+    #    Twiss[4] = rng.normal(loc=origBY,scale=origBY*args.betaSpread/100/3)
+    #    print("New BetaX: {:.1f}m, BetaY: {:.1f}m".format(Twiss[1],Twiss[4]))
+    #If want to write sample to CSV and read in, follow Carl's way.
     if args.betaSpread != 0:
+        #requires that a Twiss is defined above
         origBX = Twiss[1]
         origBY = Twiss[4]
-        print(args.betaSpread,"% Spread around BetaX ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBX,origBX-origBX*args.betaSpread/100,origBX+origBX*args.betaSpread/100)) #requires 3sigma
-        print(args.betaSpread,"% Spread around BetaY ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBY,origBY-origBY*args.betaSpread/100,origBY+origBY*args.betaSpread/100))
-        #Assuming the "scale" in the following function is the %
-        from numpy.random import default_rng
-        rng = default_rng()
-        Twiss[1] = rng.normal(loc=origBX,scale=origBX*args.betaSpread/100/3) #%/3 so 3sigma range = range
-        Twiss[4] = rng.normal(loc=origBY,scale=origBY*args.betaSpread/100/3)
-        print("New BetaX: {:.1f}m, BetaY: {:.1f}m".format(Twiss[1],Twiss[4]))
-    #If want to write sample to CSV and read in, follow Carl's way.
-    #if args.betaSpread != 0:
-    #    import csv
+        print(Twiss)
+        #unsure of whether to write more lines or not
+        writeMore = False
+        #check if the file is already made
+        from os.path import isfile
+        name = paths['statsPWD']+"betaSpread_betaX{:.0f},{:.0f}m_{:.0f}Pct".format(origBX,origBY,args.betaSpread)
+        #get length of file, in case user requested more iterations to be made than previous
 
+        #Don't have to manually make the file
+        if not isfile(name+".csv"):
+            #start a new file
+            import csv
+            with open(name+".csv",mode = 'w') as csv_file:
+                csv_writer = csv.writer(csv_file,delimiter = ',')
+                csv_writer.writerow(["i","Beta X [m]","Beta Y [m]"])
+                csv_file.close()
+            writeMore = True
+        else:
+            from plotFit import numLines
+            iters = numLines(name)
+            #read in what is there
+            import csv
+            with open(name+".csv",mode='r') as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                next(csv_reader)
+                rowNum = 0
+                for row in csv_reader:
+                    if type(row[0]) == str:
+                        writeMore = True
+                        break
+                    #for the iteration passed in, get that row values
+                    if int(row[0]) == iteration:
+                        #immediately put in value as the Twiss
+                        Twiss[1] = float(row[1])
+                        Twiss[4] = float(row[2])
+                        print(Twiss)
+                        break
+                    
+                    #if need to make more iterations than in file, flag that to happen and exit before EOF error
+                    if rowNum+1 == iters:
+                        writeMore = True
+                        break
+
+                    rowNum += 1
+                csv_file.close()
+        #only if need to write more 
+        print(writeMore)
+        if writeMore:
+            import csv, numpy as np
+            from numpy.random import default_rng
+            #save original values
+            origBX = Twiss[1]
+            origBY = Twiss[4]
+            print(Twiss)
+
+            #get a random value for betaX and betaY
+            betaX = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
+            betaY = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+            print(betaX,betaY)
+
+            #append new value to the file so don't have to redo it
+            with open(name+".csv",mode = 'a') as csv_file:
+                csv_writer = csv.writer(csv_file,delimiter = ',')
+                csv_writer.writerow([iteration,betaX,betaY]) #save the betas for this iteration number, to be used next time.
+                csv_file.close()
+
+        #else:
+        #    print("Something weird")
 
     return Twiss

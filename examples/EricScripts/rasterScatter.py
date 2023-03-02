@@ -3,9 +3,9 @@
 #Includes setup and output preferences
 
 #possible commands:
-#python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --iterations 10 --pOff -10
+#python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --iterations 10 --betaSpread 10
     #10x smallest Twiss -10%
-#python3 rasterScatter.py --iterations 50 --pOff -5
+#python3 rasterScatter.py --iterations 50 --betaSpread 1
     #50x nominal Twiss - 5%
 
 from datetime import datetime
