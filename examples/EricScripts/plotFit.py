@@ -1121,7 +1121,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     from plotFit import PMAS
     sPMAS=datetime.now()#.strftime("%H-%M-%S"))
     jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,rDiff = PMAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
-    print("finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
+    #print("finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
 
     #Warning print is outside PMAS because it takes a long time
     jMaxLim = 53
@@ -1717,7 +1717,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     #Need to displat beam Center index in X,Y, not displacement 
     centX = edges[2] + edges[3]
     centY = edges[0] + edges[1]
-    print("Beam Center at ",centX,",",centY)
+    #print("Beam Center at ",centX,",",centY)
 
     return jMax,pOut,rValue,edges,EI,beamArea,centX,centY,rDiff #make this a list!
 
@@ -1819,7 +1819,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title(str(len(read))+" Iterations of "+str(args.pOff)+"% Off Nominal")
+    title("{:.0f} Iterations of {:.0f}% Off Nominal".format(len(read),args.betaSpread))
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -1834,11 +1834,12 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
-    if args.twissFile =="":
-        name=statsPWD+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
+    if args.twissFile == "":
+        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom.png".format(len(read),args.betaSpread)
     else:
-        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
-    savefig(name)
+        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom.png".format(len(read),args.betaSpread)
+    if args.saveSpread:
+        savefig(name)
     close()
     print(len(read),paramName,ampl,mu,sigma)
     print(name)
@@ -1897,7 +1898,7 @@ def spreadHist(args,Twiss,paths):
         next(csv_reader)
         for row in csv_reader:
             i+=1
-            if float(row[0]) == args.pOff: #No duplicates
+            if float(row[0]) == args.betaSpread: #No duplicates
                 found = True
                 foundRow = i
                 print("Values already in row",foundRow)
@@ -1908,13 +1909,13 @@ def spreadHist(args,Twiss,paths):
             csv_writer = csv.writer(csv_file, delimiter = ',')
             for i in range(len(paramName)):
                 if sigmas[i] < 1e-3:
-                    csv_writer.writerow([args.pOff,lens[i],paramName[i],"{:.3f} $\pm$ {:.3e}".format(mus[i],sigmas[i])]) #add JCore
+                    csv_writer.writerow([args.betaSpread,lens[i],paramName[i],"{:.3f} $\pm$ {:.3e}".format(mus[i],sigmas[i])]) #add JCore
                 else:
-                    csv_writer.writerow([args.pOff,lens[i],paramName[i],"{:.3f} $\pm$ {:.3f}".format(mus[i],sigmas[i])]) #add JCore
+                    csv_writer.writerow([args.betaSpread,lens[i],paramName[i],"{:.3f} $\pm$ {:.3f}".format(mus[i],sigmas[i])]) #add JCore
             csv_file.close()
     
         for i in range(len(paramName)):
-            print(args.pOff,lens[i],paramName[i],"{:.3f} +/- {:.3e}".format(mus[i],sigmas[i]))
+            print(args.betaSpread,lens[i],paramName[i],"{:.3f} +/- {:.3e}".format(mus[i],sigmas[i]))
 
 
 
@@ -1971,7 +1972,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title(str(len(read))+r" Iterations $\pm$50% Around Nominal")
+    title("{:.0f}".format(len(read))+r" Iterations $\pm$50% Around Nominal")
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -1981,8 +1982,9 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     delta = 1e-3
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
-    name=statsPWD+paramName+"BroadHist_"+str(len(read))+"x"+str(args.pOff)+"pOffNom.png"
-    savefig(name)
+    name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom.png".format(len(read),args.betaSpread)
+    if args.saveSpread:
+        savefig(name)
     close()
     print(len(read),paramName,mu,sigma)
     print(name)
@@ -2007,9 +2009,6 @@ def getTwiss(args,iteration,paths):
         Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
     elif args.beamClass == 'ESS': #from my OpenXAL calculation
         Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
-        #pOff = 0 #negative to have less than
-        #Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-        #Twiss[4] = Twiss[4] * (1 + args.pOff/100)
     elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
         Twiss = [0.0001,0.15,0,0.0001,0.15,0]
 
@@ -2093,29 +2092,9 @@ def getTwiss(args,iteration,paths):
                             Twiss[3] = float(row[4])*um #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
-                    #Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-                    #Twiss[4] = Twiss[4] * (1 + args.pOff/100)
-                    print(Twiss)
+                    print("read Twiss",Twiss)
                 csv_file.close()
         else: print("I need a --twissFile argument")
-
-    ##Get full rastered for this one Twiss
-    #if args.sim == "raster":
-    #    from scatterPBW import scatterPBW
-    #    scatterPBW(args,Twiss,iteration,paths)
-
-    ##Get map of % Outside Box and Current Density on Target for the range specified
-    #if args.sim == "map":
-    #    from mapRADependence import mapRADependence
-    #    from os import uname
-    #    if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-    #    print("it works!")
-    #    mapRADependence(args,Twiss,iteration,paths)
-
-    ##Examine individual beamlet of Twiss
-    #if args.sim == "beamlet":
-    #    from beamletScatter import beamletScatter
-    #    beamletScatter(args,Twiss,iteration,paths)
 
     #If want to do this one set at a time, do this.
     #if args.betaSpread != 0:
@@ -2134,15 +2113,14 @@ def getTwiss(args,iteration,paths):
         #requires that a Twiss is defined above
         origBX = Twiss[1]
         origBY = Twiss[4]
-        print(Twiss)
-        #unsure of whether to write more lines or not
+        #print("old",Twiss)
+
         writeMore = False
         #check if the file is already made
         from os.path import isfile
         name = paths['statsPWD']+"betaSpread_betaX{:.0f},{:.0f}m_{:.0f}Pct".format(origBX,origBY,args.betaSpread)
-        #get length of file, in case user requested more iterations to be made than previous
 
-        #Don't have to manually make the file
+        #Don't have to manually make the file for a new %
         if not isfile(name+".csv"):
             #start a new file
             import csv
@@ -2152,55 +2130,55 @@ def getTwiss(args,iteration,paths):
                 csv_file.close()
             writeMore = True
         else:
+            #If file present, read in values for the iterations requested
+            #Get length of file, in case user requested more iterations than previously made
             from plotFit import numLines
-            iters = numLines(name)
+            iters = numLines(name)-1
+            print("File has",iters,"lines")
+
             #read in what is there
             import csv
             with open(name+".csv",mode='r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
-                next(csv_reader)
+                next(csv_reader) #skips header
                 rowNum = 0
                 for row in csv_reader:
-                    if type(row[0]) == str:
-                        writeMore = True
-                        break
+                    #print(iteration,rowNum,row[0],row[1],row[2])
                     #for the iteration passed in, get that row values
-                    if int(row[0]) == iteration:
+                    if int(row[0]) == int(iteration):
+                        #print("Reading",rowNum, iteration,row[0],row[1],row[2])
                         #immediately put in value as the Twiss
                         Twiss[1] = float(row[1])
                         Twiss[4] = float(row[2])
-                        print(Twiss)
+                        print("Read in Betas:",Twiss[1],Twiss[4])
                         break
-                    
-                    #if need to make more iterations than in file, flag that to happen and exit before EOF error
-                    if rowNum+1 == iters:
+
+                    #if need to make more iterations than in file, flag and exit before EOF error
+                    if int(iteration) >= int(iters):
+                        print("User requested more Twiss than currently written")
                         writeMore = True
                         break
 
                     rowNum += 1
                 csv_file.close()
         #only if need to write more 
-        print(writeMore)
+        #print("Writing more?",writeMore)
         if writeMore:
             import csv, numpy as np
             from numpy.random import default_rng
             #save original values
             origBX = Twiss[1]
             origBY = Twiss[4]
-            print(Twiss)
 
-            #get a random value for betaX and betaY
-            betaX = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
-            betaY = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-            print(betaX,betaY)
+            #get a random value for betaX and betaY and saves into Twiss array
+            Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
+            Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+            print("Newly written Betas:",Twiss[1],Twiss[4])
 
             #append new value to the file so don't have to redo it
             with open(name+".csv",mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
-                csv_writer.writerow([iteration,betaX,betaY]) #save the betas for this iteration number, to be used next time.
+                csv_writer.writerow([iteration,Twiss[1],Twiss[4]]) #save the betas for this iteration number, to be used next time.
                 csv_file.close()
-
-        #else:
-        #    print("Something weird")
 
     return Twiss

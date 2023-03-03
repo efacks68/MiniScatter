@@ -19,7 +19,7 @@ from plotFit import getTwiss
 parser = ArgumentParser()
 parser.add_argument("--sim",       type=str,    default="raster",   choices=("raster","map","beamlet"), help="Type of simulation to perform")
 parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
-parser.add_argument("--twissFile", type=str,   default="FailureA2T", help="Load file with Twiss, auto look in OpenXAL folder")
+parser.add_argument("--twissFile", type=str,   default="", help="Load file with Twiss, auto look in OpenXAL folder")
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton", choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not",   default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
@@ -60,6 +60,7 @@ parser.add_argument("--saveHist",  action="store_true",  default=False,   help="
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
 parser.add_argument("--picFormat", type=str,   default="png",  choices=("png","svg","pdf"),help="Whic file format extension?")
 parser.add_argument("--matPlots",  action="store_true",  default=False,   help="Whether to do various material plots for beamlets")
+parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
 parser.add_argument("--eX",     type=int,     default=55,    help="End ampl X")
@@ -93,7 +94,7 @@ paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
 #get Twiss and run; if no iterations argment defined, will run through once.
 for i in range(args.iterations):
-    print("Iteration",i)
+    print("\n\nIteration",i)
     Twiss = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss
