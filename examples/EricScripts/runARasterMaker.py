@@ -43,7 +43,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration):
     pb = 1
     dt =  np.mean(np.diff(t)) #[s]
     delta_t = np.linspace(0,dt,n_tii) #[s]
-    z = -10 #[mm] for z location to generate protons at in MiniScatter
+    z = -10 #[mm] for z location to generate protons at in MiniScatter #-10 up until at least 4 March 2023
 
     #Assumes Protons
     covX = gemtX/mm * np.asarray([[betaX/mm,-alphX],[-alphX,(1+alphX**2)/(betaX/mm)]]) #[mm]

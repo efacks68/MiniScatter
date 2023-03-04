@@ -13,10 +13,10 @@ def beamletScatter(args,Twiss,i,paths):
     #print(args,Twiss)
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"
-    zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
+    zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
-                    'mat3Plot':False, 'TwissFits':False, 'compareTargs':False }
+                    'mat3Plot':False, 'TwissFits':False }
 
     #Important things
     if args.t == 0:
@@ -24,6 +24,13 @@ def beamletScatter(args,Twiss,i,paths):
     elif args.t == 0.1:
         args.material = "Vac"
     args.beamFile = ""
+    if args.compTargs:
+        options['targetTree'] = True
+        options['MCS'] = True
+    if options['TwissFits']:
+        options['initTree'] = True
+        options['exitTree'] = True
+        options['targetTree'] = True
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     #Send to runPBW to simulate with MiniScatter or opens already run data

@@ -256,6 +256,11 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #pyinit[i] = myTree.py
             #Einit[i] = myTree.E
         myFile.Close()
+
+        from plotFit import toTarget
+        initTargx = toTarget(TwissIx,"initX")
+        initTargy = toTarget(TwissIy,"initY")
+
         if saveParts:
             from plotFit import printParticles
             printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
@@ -332,6 +337,10 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         #Get Twiss for the filtered distributions
         exitxTwf = calcTwiss("Exit X Filtered","Exit X' Filtered",xexit_filtered,pxexit_filtered)
         exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
+        
+        from plotFit import toTarget
+        exitTargx = toTarget(exitxTwf,"exitX")
+        exitTargy = toTarget(exityTwf,"exitY")
     #end of exit Distribution if
 
     #if args.PBIP:
@@ -379,6 +388,9 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         #pxtarg_filtered_p = pxtarg[protarg_filter]
         ytarg_filtered_p = ytarg[protarg_filter]
         #pytarg_filtered_p = pytarg[protarg_filter]
+        protons = Etarg[protarg_filter]
+        electrons = Etarg[eletarg_filter]
+        neutrons = Etarg[neutarg_filter]
 
         #For plotting Energy distribution of all species
         if options['engPlot']:
@@ -398,31 +410,34 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
                 plt.hist(Etarg_filtered_p,100,log=True)
                 plt.xlabel("Energy [MeV]")
                 plt.ylabel("Counts")
-                plt.xlim([0,args.energyo])
+                plt.xlim([0,args.energy])
                 plt.title(rf"Energy Distribution at ESS Target of 10$^{{:d}}$ Protons".format(mag)+
                 "\nThrough PBW of "+mat+", Protons Only")
                 print("Protons Only",engname,args.picFormat)
                 if args.savePics:
-                    plt.savefig(engname+args.picFormat)
+                    plt.savefig(engname+"."+args.picFormat)
                 plt.close()
 
                 #Various Species Energy Plot
-                plt.hist(protarg_filter,100,log=True,color='b',label="Protons")
-                plt.hist(eletarg_filter,100,log=True,color='r',label="Electrons")
-                plt.hist(neutarg_filter,100,log=True,color='g',label="Neutrons")
+                #print(len(protons),len(electrons),len(neutrons))
+                plt.hist(protons,100,log=True,color='b',label="Protons")
+                plt.hist(electrons,25,log=True,color='r',label="Electrons") #bin 25 or else really thin
+                plt.hist(neutrons,100,log=True,color='g',label="Neutrons")
                 plt.xlabel("Energy [MeV]")
                 plt.ylabel("Counts")
-                plt.xlim([0,args.energy+5])
+                #plt.xlim([0,args.energy])
+                plt.legend()
                 titl = "Energy Distribution at ESS Target Through PBW of "+mat+"\n For Various Species"
                 plt.title(titl)
                 if args.savePics:
-                    plt.savefig(engname+"_Various"+args.picFormat)
+                    plt.savefig(engname+"_Various."+args.picFormat)
                 plt.close()                
 
         #Display Full Energy distribution results
         #print("Full Energy distribution of {:d} particles with minimum Energy {:.3f}MeV through ".format(len(Eexit),np.min(Eexit_filtered)),mat," PBW")
 
-        angmax=6e-3 #[rad] one angle filter limit
+        angMax=6e-3 #[rad] one angle filter limit to make the fits to the core of the beam
+        posMax=500
         #Apply PDG, Energy Filters
         xtarg_filtered = xtarg[protarg_filter][Etarg_filter]
         pxtarg_filtered = pxtarg[protarg_filter][Etarg_filter]
@@ -430,25 +445,42 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         pytarg_filtered = pytarg[protarg_filter][Etarg_filter]
         #Apply >,< filters
         ##X, <
-        pxfilterL = np.less(pxtarg_filtered,angmax) #[rad]
-        pxtarg_filtered = pxtarg_filtered[pxfilterL]
-        xtarg_filtered = xtarg_filtered[pxfilterL]
+        pxfilterLa = np.less(pxtarg_filtered,angMax) #[rad]
+        pxtarg_filteredA = pxtarg_filtered[pxfilterLa]
+        xtarg_filteredA = xtarg_filtered[pxfilterLa]
+
+        pxfilterLp = np.less(xtarg_filtered,posMax) #[mm]
+        pxtarg_filteredP = pxtarg_filtered[pxfilterLp]
+        xtarg_filteredP = xtarg_filtered[pxfilterLp]
         ##Y, <
-        pyfilterL = np.less(pytarg_filtered,angmax) #[rad]
-        pytarg_filtered = pytarg_filtered[pyfilterL]
-        ytarg_filtered = ytarg_filtered[pyfilterL]
+        pyfilterLa = np.less(pytarg_filtered,angMax) #[rad]
+        pytarg_filteredA = pytarg_filtered[pyfilterLa]
+        ytarg_filteredA = ytarg_filtered[pyfilterLa]
+
+        pyfilterLp = np.less(ytarg_filtered,posMax) #[mm]
+        pytarg_filteredP = pytarg_filtered[pyfilterLp]
+        ytarg_filteredP = ytarg_filtered[pyfilterLp]
+
         ##X, >
-        pxfilterG = np.greater(pxtarg_filtered,-angmax) #[rad]
-        pxtarg_filtered = pxtarg_filtered[pxfilterG]
-        xtarg_filtered = xtarg_filtered[pxfilterG]
+        pxfilterGa = np.greater(pxtarg_filteredA,-angMax) #[rad]
+        pxtarg_filteredA = pxtarg_filteredA[pxfilterGa]
+        xtarg_filteredA = xtarg_filteredA[pxfilterGa]
+
+        pxfilterGp = np.greater(xtarg_filteredP,-posMax)
+        pxtarg_filteredP = pxtarg_filteredP[pxfilterGp]
+        xtarg_filteredP = xtarg_filteredP[pxfilterGp]
         ##Y, >
-        pyfilterG = np.greater(pytarg_filtered,-angmax) #[rad]
-        pytarg_filtered = pytarg_filtered[pyfilterG]
-        ytarg_filtered = ytarg_filtered[pyfilterG]
+        pyfilterGa = np.greater(pytarg_filteredA,-angMax) #[rad]
+        pytarg_filteredA = pytarg_filteredA[pyfilterGa]
+        ytarg_filteredA = ytarg_filteredA[pyfilterGa]
+
+        pyfilterGp = np.greater(ytarg_filteredP,-posMax)
+        pytarg_filteredP = pytarg_filteredP[pyfilterGp]
+        ytarg_filteredP = ytarg_filteredP[pyfilterGp]
 
         #Get Twiss for the filtered distributions #why not in /mm?
-        targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filtered,pxtarg_filtered)
-        targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filtered,pytarg_filtered)
+        targxTwissf = calcTwiss("Target X Filtered","Target X' Filtered",xtarg_filteredA,pxtarg_filteredA) #angle filtered to fit core 4.3.23
+        targyTwissf = calcTwiss("Target Y Filtered","Target Y' Filtered",ytarg_filteredA,pytarg_filteredA)
 
     #Analytical Formula Calculations
     if options['MCS']:
@@ -473,7 +505,6 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         TwissIy = [Twiss[4],Twiss[5],Igemty*um,((1+Twiss[5]*Twiss[5])/Twiss[4])]
         PBWTwx = [Twiss[1],Twiss[2],Twiss[0]] #Twiss for each for printing on graphs
         PBWTwy = [Twiss[4],Twiss[5],Twiss[3]]
-    #What are units????
 
         ##Highland Equation Radiation Length Calculation
         p = np.sqrt((args.energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
@@ -540,17 +571,13 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
         #Extension to Target. Needed for compareTargets!
         from plotFit import toTarget,compareTargets
-        initTargx = toTarget(TwissIx,"initX")
-        initTargy = toTarget(TwissIy,"initY")
-        exitTargx = toTarget(exitxTwf,"exitX")
-        exitTargy = toTarget(exityTwf,"exitY")
         e8TargxReal = toTarget(Twisse8x,"e8XReal")
         e8TargyReal = toTarget(Twisse8y,"e8YReal")
         e16TargxReal = toTarget(Twisse16x,"e8XReal")
         e16TargyReal = toTarget(Twisse16y,"e8YReal")
 
         #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
-        if options['compareTargs']:
+        if args.compTargs:
             e2t = "Extended to Target"
             #this is to look at exit distribution: #doesn't match well
             ##compareTargets(xexit/mm,yexit/mm,exitxTwf,exityTwf,TwissIx,TwissIy,"PBW Exit",savename+"PBWExit",mat,PBWTwx,PBWTwy,args)
@@ -561,7 +588,8 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)
                     #The above comparison btwn PBW Exit Twiss and Target distrib shows that the beam distrib transforms during the drift from PBW Exit.
                             #That it isn't a mere drift, but the MCS causes a 14% larger beam in Y and 10% larger beam in X.
-            compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Eq 8 Real PBW",savename,mat,PBWTwx,PBWTwy,args)
+            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Eq 8 Real PBW",savename,mat,PBWTwx,PBWTwy,args)
+                    #Position filtered to show spread
                     #The above comparison btwn the Twiss at Target with drift resulting from Muellers formalism and actual Target distrib shows that they are in strong agreement.
                             #The Mueller formalism equations with correct radiation lengths, etc produce beam sigmas within 1% in X and Y (-0.92% in X and +0.38% in Y)
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,e16TargxReal,e16TargyReal,"Eq 16 Calculation from Initial Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)

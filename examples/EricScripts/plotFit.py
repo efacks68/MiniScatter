@@ -15,9 +15,8 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     fs = 14 #set the axis label font size early
 
     #Use Scipy.optimize.curve_fit in my findFit function to get mus and sigmas:
-    guess=[0.01,0.1,1]
-    mux, sigmax, amplx, xinterval = findFit(xs,guess,(0,[1e3,3e5,3e5])) #dynamically gets parameters AND histogram intervals!
-    muy, sigmay, amply, yinterval = findFit(ys,guess,(0,[1e3,3e5,3e5]))
+    mux, sigmax, amplx, xinterval = findFit(xs,[0.01,0.1,10],(0,[1e3,3e5,3e5])) #dynamically gets parameters AND histogram intervals!
+    muy, sigmay, amply, yinterval = findFit(ys,[0.01,0.1,10],(0,[1e3,3e5,3e5]))
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(xs)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -153,7 +152,7 @@ def findFit(data,guess,lims,nBins):
     close()
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    savefig(pwd+"hist.png")
+    #savefig(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
@@ -183,6 +182,7 @@ def findFit(data,guess,lims,nBins):
 
 
 def calcTwiss(labelx,labely,x,y):
+    #Purely get covariance of the distributions
     #use generic x,y but usually x, x' or y,y'!
     import numpy as np
     #beta_rel = 0.948
@@ -317,8 +317,8 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     print("Recalculated Twiss:","Betax: {:.2f}m, alphax: {:.2f}, Geo Emitt x: {:.3e}m".format(calcTwf[0],calcTwf[1],calcTwf[2]))
 
     #Get intervals and info about distribution
-    mux,sigmax,amplx,xinterval = findFit(xs,[0.01,1,1],(0,[1e3,3e5,3e5]))
-    mupx,sigmapx,amply,pxinterval = findFit(pxs,[0.01,1,1],(0,[1e3,3e5,3e5])) #this is a least square fit to Gaussian, so less sensitive to outliers.
+    mux,sigmax,amplx,xinterval =    findFit(xs, [0.01,0.1,10],(0,[1,10,100]))
+    mupx,sigmapx,amply,pxinterval = findFit(pxs,[0.01,0.1,10],(0,[1,10,100])) #this is a least square fit to Gaussian, so less sensitive to outliers.
     print("Histogram   sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(sigmax,sigmapx/mm))
     print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
     print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
@@ -409,7 +409,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     from datetime import datetime
     dt = datetime.now()
 
-    name = savename+"_Twiss"+axis+"'"+dt.strftime("%H-%M-%S")  +".png"##
+    name = savename+"_TwissFit"+axis+"'"+dt.strftime("%H-%M-%S") +".png"##
     #plt.show()
     plt.savefig(name,bbox_inches="tight")
     plt.close()
@@ -462,8 +462,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     fs = 14
 
     #Find fit to histogram
-    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
-    muy,sigmay,amply,yinterval = findFit(targy,[0.01,1,1],(0,[1e3,3e5,3e5]),"auto")
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,0.1,15],(0,[5e3,7e5,7e5]),"auto")
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,0.1,15],(0,[5e3,7e5,7e5]),"auto")
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -588,7 +588,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     from datetime import datetime
     dt = datetime.now()
 
-    name = savename+"_log_"+dt.strftime("%H-%M-%S")+".pdf"##
+    name = savename+"_compTargs_"+dt.strftime("%H-%M-%S")+".pdf"##
     #plt.show()
     if args.savePics:
         plt.savefig(name,bbox_inches="tight")
@@ -790,8 +790,8 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     p0 = f1.GetParameter(0)
     p1 = f1.GetParameter(1)
     p2 = f1.GetParameter(2)
-    print(p0,p1,p2)
-    """
+    print("initial Gaussian fit parameters:",p0,p1,p2)
+
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
     f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
@@ -824,7 +824,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         #f2.SetParLimits(6,0.1,p0)
         f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
     f2_res = proj.Fit(f2, 'RSQ')
-    #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+    print("Gaussian",f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
@@ -860,24 +860,33 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     differencePG = differenceNG/total*100
     coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
     print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNG,total,differencePG))#,"\n")#,coeffs)
-    """
+    
     
     #Now do for Lorentzian
+    #Define a gaussian function and fit it to the projection
+    f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
+    f1_res = proj.Fit(f1, 'RSQ')
+    #print(f1_res)
+    p0 = f1.GetParameter(0)
+    p1 = f1.GetParameter(1)
+    p2 = f1.GetParameter(2)
+    print("initial Gaussian fit parameters:",p0,p1,p2)
+
     f3 = ROOT.TF1('f3','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
     if axis in {"y","Y"}:
-        f3.SetParameters(p2,p2,p2,p2)
+        f3.SetParameters(p0/10,p2,p0,p2)
     elif axis in {"x","X"}:
-        f3.SetParameters(p2,p2,p2,p2)
-    f3.SetParLimits(0,0,p1*y2)
+        f3.SetParameters(p0/10,p2,p0,p2)
+    f3.SetParLimits(0,0,p0*y2)
     f3.SetParLimits(1,0,p2*y1)
     f3.SetParLimits(2,0,p0*y2*y1)
-    f3.SetParLimits(3,0,p1*y1)
+    f3.SetParLimits(3,0,p2*y1)
     f3_res = proj.Fit(f3, 'RSQ')
     differenceNL = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f3.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     differencePL = differenceNL/total*100
     coeffsL = [f3.GetParameter(0),f3.GetParameter(1),f3.GetParameter(2),f3.GetParameter(3)]
-    print("Lorenztian",coeffsL)
+    print("Voigt",coeffsL)
     print(axis," L difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNL,total,differencePL))#,"\n")#,coeffs)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
@@ -955,7 +964,7 @@ def voigtFit(data,axis):
     print(dLen,ind,np.mean(proj),proj.shape)
     bin_heights, bin_borders, _ = hist(proj,bins=round(ind/10),range=(-100,100),label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    savefig(pwd+"hist.png")
+    #savefig(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
     
@@ -1496,8 +1505,8 @@ def findEdges(Img,jMax,graph,savename,xax,yax,args):
         bc = fig.colorbar(b, ax=ax2,pad=0.01)
         bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
         #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
-        plt.savefig(savename+str(promY)+"_GradPics.png")
-        print(savename,promY,"_GradPics.png",sep="")
+        plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat)
+        print(savename,promY,"_GradPics.",args.picFormat,sep="")
         plt.close()
 
     return EI,edges
@@ -1820,9 +1829,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
                 #print(float(row[2]),Twiss[1])
             #    if float(row[2]) == Twiss[1]:
             #        print("we got something!")
-            if re.search(partKey,row[0]) == None:
-                print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
-                raise Exception("Not finding a match!")
+            #if re.search(partKey,row[0]) == None:
+            #    print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
+            #    raise Exception("Not finding a match!")
     csv_file.close()
 
     print(mean(read))
@@ -1865,11 +1874,11 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     else:
         text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
     if args.twissFile == "":
-        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom.png".format(len(read),args.betaSpread)
+        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom".format(len(read),args.betaSpread)
     else:
-        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom.png".format(len(read),args.betaSpread)
+        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom".format(len(read),args.betaSpread)
     if args.saveSpread:
-        savefig(name)
+        savefig(name+"."+args.picFormat)
     close()
     print(len(read),paramName,ampl,mu,sigma)
     print(name)
@@ -1904,7 +1913,7 @@ def spreadHist(args,Twiss,paths):
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
     ind = [7,8,9,10,11,12,13,14]
     unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","",""]
-                #ampl, mu, sigma                     ([10,1e3,20],[5e3,1e4,1e3])
+                #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
     paramLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
                     ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
     paramBins = [30,35,40,30,25,25,25,25]
@@ -2013,9 +2022,9 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     delta = 1e-3
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
-    name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom.png".format(len(read),args.betaSpread)
+    name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom".format(len(read),args.betaSpread)
     if args.saveSpread:
-        savefig(name)
+        savefig(name+"."+args.picFormat)
     close()
     print(len(read),paramName,mu,sigma)
     print(name)
@@ -2158,7 +2167,7 @@ def getTwiss(args,iteration,paths):
             with open(name+".csv",mode = 'w') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow(["i","Beta X [m]","Beta Y [m]"])
-                csv_writer.writerow(["0","1006.80","129.72"])
+                csv_writer.writerow(["0",origBX,origBY])
                 csv_file.close()
             writeMore = True
         else:

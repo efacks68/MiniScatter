@@ -1,4 +1,5 @@
-#plot spread of same Twiss
+#plot spread of observables from spread of Twiss
+#python3 spreadTwiss.py --betaSpread 50 --iterations 200 --saveSpread
 
 from argparse import ArgumentParser
 from plotFit import spreadHist,getTwiss
@@ -36,17 +37,5 @@ paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
 i = 0
 Twiss = getTwiss(args,i,paths)
-#if args.beamClass == 'Yngve': #smallest from Yngve
-#    Twiss = [0.3519001,144.15027172522036,-8.184063058768368,0.3651098,88.04934327630778,-1.0382192928960423]
-#elif args.beamClass == 'ESS': #from my OpenXAL calculation
-#    Twiss = [0.11315,1006.80,-60.44,0.12155,129.72,-7.72]
-#    #pOff = 10 #negative to have less than
-#    Twiss[1] = Twiss[1] * (1 + args.pOff/100)
-#    Twiss[4] = Twiss[4] * (1 + args.pOff/100)
-#elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
-#    Twiss = [0.0001,0.15,0,0.0001,0.15,0]
-#if args.twiss:
-#        Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
-#        args.beamClass = "Twiss"
 
 spreadHist(args,Twiss,paths)
