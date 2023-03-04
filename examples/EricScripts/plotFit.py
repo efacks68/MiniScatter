@@ -1170,7 +1170,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
     #print(coreMeanI*C,coreImax*C)
-    print("PMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox".format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin,coreMeanI[0]*C),pOutsideBoxes)
+    print("PMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox"\
+                .format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin,coreMeanI[0]*C),pOutsideBoxes)
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
     if args.gaussFit:
@@ -1758,7 +1759,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
         if not found: #if found, won't enter
             with open(statsName,mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ',')
-                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]) #add JCore
+                csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]) #add JCore?
                 csv_file.close()
             print("saved",jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff)
         else:
@@ -1774,10 +1775,11 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
 
 
 def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
-    import csv
+    import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
     from plotFit import findFit, gaussian
+    from math import floor,log10
 
     read = zeros(args.iterations)
     read.fill(-750) #allow better filter than nonzero
@@ -1786,21 +1788,31 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     #print(Twiss)
     i=0
     lenbreak=False
+    pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
+    partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
+    #print(pctKey,partKey)
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
-                #print("found Twiss")
-                read[i] = float(row[ind]) #[mm-mrad]
-                #if i < 5:
-                #    print(Twiss,row[0])
-                #print(i,read[i])
-                if i+1 == args.iterations:
-                    lenbreak = True
-                    break
-                i+=1
-                #print(lenbreak)
+            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
+            #if i ==5:
+            #    break
+            if re.search(partKey,row[0]):
+                #print("Found correct size simulation")
+                if re.search(pctKey,row[0]):
+                #if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and 
+                        #round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
+                    #print("found Twiss")
+                    read[i] = float(row[ind]) #[mm-mrad]
+                    #if i < 5:
+                    #    print(Twiss,row[0])
+                    #print(i,read[i])
+                    if i+1 == args.iterations:
+                        lenbreak = True
+                        break
+                    i+=1
+                    #print(lenbreak)
             if lenbreak:
                 break
             #if float(row[1]) == Twiss[0]:
@@ -1808,8 +1820,12 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
                 #print(float(row[2]),Twiss[1])
             #    if float(row[2]) == Twiss[1]:
             #        print("we got something!")
+            if re.search(partKey,row[0]) == None:
+                print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
+                raise Exception("Not finding a match!")
     csv_file.close()
 
+    print(mean(read))
     nonEmpty = npGreater(read,-750) #remove unused elements
     read = read[nonEmpty]
     print("guess",paramName, args.iterations/50,mean(read),std(read),paramBins)
@@ -1819,21 +1835,35 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title("{:.0f} Iterations of {:.0f}% Off Nominal".format(len(read),args.betaSpread))
+    title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal".format(len(read),args.betaSpread))
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=14
-    delta=1e-3
-    text(xlim()[0]*(1+delta), ylim()[1]*0.95, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    if sigma > 10:
+        delta=1e-3
+    elif sigma > 2 and sigma <= 10:
+        delta=5e-3
+    elif sigma < 2 and sigma > 1:
+        delta = 3e-2
+    else:
+        delta=1e-4
+    left=xlim()[0] #=7
+    midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
+    if mu < midPoint:
+        xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
+    text(xlim()[0]*(1+delta), ylim()[1]*0.95, "Nominal Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     text(xlim()[0]*(1+delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     text(xlim()[0]*(1+delta), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
+    if sigma <1e-3:
+        text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3e}".format(sigma)+unit, propsR)
+    else:
+        text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
     if args.twissFile == "":
         name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom.png".format(len(read),args.betaSpread)
     else:
@@ -1867,13 +1897,13 @@ def spreadHist(args,Twiss,paths):
     #elif uname()[1] == "mbef-xps-13-9300":
     #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=8
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",
-                r"Core Area [mm$^2$]",r"Core Average Current Density [$\mu$A/cm$^2$]",
-                "Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"]
+    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Area [mm$^2$]",
+                r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
+                "R Divide Value","R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,9,10,11,12,13,14] #
-    unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","rValue","rDiff"] #
+    ind = [7,8,9,10,11,12,13,14]
+    unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","",""]
                 #ampl, mu, sigma                     ([10,1e3,20],[5e3,1e4,1e3])
     paramLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
                     ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
@@ -1942,12 +1972,13 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     #print(Twiss)
     i=0
     lenbreak=False
+    key = "(N2.9e+05protons)" #"(PBW_570MeV)"
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            print(re.search(row[0],"(PBW_570MeV)"))
-            if re.search(row[0],"(PBW_570MeV)"):
+            print(re.search(row[0],key))
+            if re.search(row[0],key):
             #if row[0]  
             #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[3]) == Twiss[2] and float(row[4]) == Twiss[3] and float(row[5]) == Twiss[4] and float(row[6]) == Twiss[5]:
                 #print("found Twiss")
@@ -2127,6 +2158,7 @@ def getTwiss(args,iteration,paths):
             with open(name+".csv",mode = 'w') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow(["i","Beta X [m]","Beta Y [m]"])
+                csv_writer.writerow(["0","1006.80","129.72"])
                 csv_file.close()
             writeMore = True
         else:
@@ -2173,6 +2205,18 @@ def getTwiss(args,iteration,paths):
             #get a random value for betaX and betaY and saves into Twiss array
             Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
             Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+            if Twiss[4] <= 0 or Twiss [1] <= 0:
+                Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
+                Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+                if Twiss[4] <= 0 or Twiss [1] <= 0:
+                    Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
+                    Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+                    if Twiss[4] <= 0 or Twiss [1] <= 0:
+                        Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
+                        Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
+                        if Twiss[4] <= 0 or Twiss [1] <= 0:
+                            print("Check things, a Beta has been <0 four times!")
+                        #can't happen 4 times in a row that the value is 2 sigma off
             print("Newly written Betas:",Twiss[1],Twiss[4])
 
             #append new value to the file so don't have to redo it

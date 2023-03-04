@@ -102,18 +102,18 @@ for i in range(args.iterations):
         from scatterPBW import scatterPBW
         scatterPBW(args,Twiss,i,paths)
 
-    #Get map of % Outside Box and Current Density on Target for the range specified
-    if args.sim == "map":
-        from mapRADependence import mapRADependence
-        from os import uname
-        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-        print("it works!")
-        mapRADependence(args,Twiss,i,paths)
-
     #Examine individual beamlet of Twiss
     if args.sim == "beamlet":
         from beamletScatter import beamletScatter
         beamletScatter(args,Twiss,i,paths)
+
+#Get map of % Outside Box and Current Density on Target for the range specified
+if args.sim == "map": #for sending only 1 Twiss.
+    from mapRADependence import mapRADependence
+    from os import uname
+    if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+    print("it works!")
+    mapRADependence(args,Twiss,i,paths)
 
 print("Simulation took ",datetime.now()-origin,"s long",sep="")
 

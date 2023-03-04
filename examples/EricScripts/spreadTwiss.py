@@ -12,6 +12,8 @@ parser.add_argument("--betaSpread",type=float, default=0,     help="What % aroun
 parser.add_argument("--iterations",type=int,   default=10,    help="How many times to iterate this setting")
 parser.add_argument("--twissFile", type=str,   default="",    help="Load file with Twiss, auto look in OpenXAL folder")
 parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
+parser.add_argument("--Nb",        type=int,   default=10,    help="Number of macroparticles per beamlet. Default=10")
+parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 args = parser.parse_args()
 
 #Where to save CSVs and statistics

@@ -1,49 +1,7 @@
 #Script for searching Raster Magnet Amplitude space
 # making 2D map of % outside box, with input from Carl Lindstrom.
 
-
-
-#Command Line arguments for save control
-#parser = argparse.ArgumentParser()
-#parser.add_argument("--beamClass", type=str,    default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
-#parser.add_argument("--l",         type=str,    help="Load Particles or not",   default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
-#parser.add_argument("--twiss",     type=float,  nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
-#parser.add_argument("--t",         type=float,  default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
-#parser.add_argument("--energy",    type=float,  default=570,   help="Beam Energy [MeV]. Default=570")
-#parser.add_argument("--Nb",        type=int,    default=10,    help="Number of macroparticles per beamlet. Default=10")
-#parser.add_argument("--nP",        type=float,  default=1e2,   help="Numper of beamlets in pulse. Default=1e3")
-#parser.add_argument("--rX",        type=float,  default=0,     help="X distance from beam axis [mm]. Default=0")
-#parser.add_argument("--rY",        type=float,  default=0,     help="Y distance from beam axis [mm]. Default=0")
-#parser.add_argument("--aX",        type=float,  default=54.65, help="RM X Amplitude [mm]. Default=54.65")
-#parser.add_argument("--aY",        type=float,  default=18.37, help="RM Y Amplitude [mm]. Default=18.37")
-#parser.add_argument("--failure",   type=float,  default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4. Default=0")
-#parser.add_argument("--magFails",  type=int,    default=2,     choices = range(0,5),  help="Number of Raster Magnets that fail, 1-4. Default=2")
-#parser.add_argument("--xlim",      type=float,  default=150,   help="+/- value for horizontal axis of output rastered image [mm]. Default=150")
-#parser.add_argument("--ylim",      type=float,  default=150,   help="+/- value for vertical axis of output rastered image [mm]. Default=150")
-#parser.add_argument("--maxim",     type=float,  default=0  ,   help="Maximum current density value for output rastered imagem[uA/cm^2]. Default=0")
-#parser.add_argument("--edgeRaster",action="store_true",  help="Only populate edges of raster. Default=False")
-#parser.add_argument("--PBIP",      action="store_true",  default=False,   help="Is PBIP present? Default=False")
-#parser.add_argument("--noText",    action="store_true",  default=False,   help="Turns off printed text when called. Default=False")
-#parser.add_argument("--noBox",     action="store_true",  default=False,   help="Turns off printed box when called. Default=False")
-#parser.add_argument("--savePics",  action="store_true",  default=False,   help="Saves Rastered Image. Default=False")
-#parser.add_argument("--saveGrads", action="store_true",  default=False,   help="Plots gradients of beam at Target. Default=False")
-#parser.add_argument("--saveEdges", action="store_true",  default=False,   help="Plots edges on Raster Image. Default=False")
-#parser.add_argument("--gaussFit",  action="store_true",  default=False,   help="Computes sum of Gaussian fits for central axis projection. Default=False")
-#parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
-#parser.add_argument("--saveHist",  action="store_true",  default=False,   help="Saves Histogram of proton density at target. Default=False")
-#parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
-
-#parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes to use: short(nominal-10% less) or large(nominal-70% less)")
-#parser.add_argument("--eX",     type=int,     default=55,    help="End ampl X")
-#parser.add_argument("--eY",     type=int,     default=20,    help="End ampl Y")
-#parser.add_argument("--startX", type=int,     default=30,    help="Start ampl for X")
-#parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
-#parser.add_argument("--NstepX", type=int,     default=6,     help="N steps for X")
-#parser.add_argument("--NstepY", type=int,     default=6,     help="N steps for Y")
-#args = parser.parse_args()
-#print(args)
-
-def mapRADependence(args,Twiss,paths):
+def mapRADependence(args,Twiss,iteration,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin,"\n")
@@ -70,12 +28,6 @@ def mapRADependence(args,Twiss,paths):
     elif args.t == 0.1:
         materials = ["G4_Galactic"]
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
-
-    if os.uname()[1] == "tensor.uio.no":
-        csvPWD = "/scratch2/ericdf/PBWScatter/CSVs/"
-    elif os.uname()[1] == "mbef-xps-13-9300":
-        csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-    else: print("Help! Unknown build directory!, scatterPBW.py l 61")
 
     #For the input amplitude range selection, 'short' or 'long'
     amplRatio = (args.aX + 0.001) / (args.aY + 0.001) #so no /zero
@@ -125,15 +77,14 @@ def mapRADependence(args,Twiss,paths):
     #VacpOutsideBoxes = np.zeros(len(rXAmps))
 
     #Check if there is a CSV with the data already present. Speeds up plot modifications
-    mapCsvPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
-    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    mapCsvPWD = paths['statsPWD']+"rAmplDependence/2DMap/"
 
     #now name has beta instead of emit!
     name = "RasterAmplDependence_POutBox,Imax_bX{:.0f}m_R{:.1f},{:.1f}mm".format(Twiss[1],rXRange,args.eY-args.startY)
     if os.path.isfile(mapCsvPWD+name+".csv"):
         print("Found data! Reading in!",name)
         #from plotFit import numLines
-        #nLines = numLines(csvPWD+name)
+        #nLines = numLines(paths['csvPWD']+name)
         #print(nLines)
         with open(mapCsvPWD+name+".csv") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -164,16 +115,16 @@ def mapRADependence(args,Twiss,paths):
             for j in range(len(rYAmps)):
                 print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
                 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,csvPWD,options)
+                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
                 #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-                _,_,_,Jmaxes[j][i], pOutsideBoxes[j][i], dispY,dispX,rValue = simulation(args,args.material,False,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes)
+                _,_,_,Jmaxes[j][i], pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff  = simulation(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes,paths)
                 #Store % value for plotting
                 #Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
                 #noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
                 #VacpOutsideBoxes[i] = noPBWPOutBox
                 print(datetime.now().strftime("%H-%M-%S"))
                 from plotFit import saveStats
-                saveStats(statsPWD,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],dispY,dispX,rValue)
+                saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff)
             print("time elapsed",datetime.now()-origin)
 
         #Save values for future quick use
@@ -199,7 +150,6 @@ def mapRADependence(args,Twiss,paths):
     maxim = pOutsideBoxes.max()*1.1
     plotRange = maxim-minim
     print(minim,maxim,plotRange)
-    picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/rAmplDependence/2DMap/"
     plt.close()
     plt.clf()
     X,Y = np.meshgrid(rXAmps,rYAmps)
@@ -240,11 +190,9 @@ def mapRADependence(args,Twiss,paths):
     from math import floor,ceil
     xlim1 = ax1.get_xlim()
     ylim1 = ax1.get_ylim()
-    #22Jan-you are adjusting the nominal markers, then runnning several different maps
-    #try to find an optimal ampl.
+    #22Jan23-you are adjusting the nominal markers, then runnning several different maps try to find an optimal ampl.
     #also, you have to adjust the original values in the Gaussian fitting as it keeps throwing 
-    #  the "lower/upper bounds outside current parameter value." error which is about the initial
-    #  value being outside the SetParamterLimit bounds
+    #  the "lower/upper bounds outside current parameter value." error which is about the initial value being outside the SetParamterLimit bounds
 
     ax1.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='o')
     ax1.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='o')
@@ -264,7 +212,7 @@ def mapRADependence(args,Twiss,paths):
     #plt.legend(loc=legloc)
     plt.tight_layout()
     dt = datetime.now()
-    plt.savefig(picPWD+name+".png")#+dt.strftime("%H-%M-%S")
-    print("saved",picPWD+name+".png")#+dt.strftime("%H-%M-%S")
+    plt.savefig(mapCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
+    print("saved",mapCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
 
     print(datetime.now()-origin)
