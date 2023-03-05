@@ -72,7 +72,7 @@ def mapRADependence(args,Twiss,iteration,paths):
     mapCsvPWD = paths['statsPWD']+"rAmplDependence/2DMap/"
 
     #now name has beta instead of emit!
-    name = "RasterAmplDependence_POutBox,Imax_bX{:.0f}m_R{:.1f},{:.1f}mm".format(Twiss[1],rXRange,args.eY-args.startY)
+    name = "RasterAmplDependence_POutBox,Imax_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm".format(Twiss[1],Twiss[4],rXRange,args.eY-args.startY)
     if os.path.isfile(mapCsvPWD+name+".csv"):
         print("Found data! Reading in!",name)
         #from plotFit import numLines
@@ -102,11 +102,16 @@ def mapRADependence(args,Twiss,iteration,paths):
                         j = 0 + z
             csv_file.close()
     else:
-        print("Run simulations for RA ratio",amplRatio,"\t",name)
+        #print("Run simulations for RA ratio",amplRatio,"\t",name)
         for i in range(len(rXAmps)):
             for j in range(len(rYAmps)):
                 print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
                 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
+                args.aX = rXAmps[i]
+                args.aY = rYAmps[j]
+                from runARasterMaker import runARasterMaker
+                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
+
                 from simulation import setup
                 #def                        setup(args,material,           beamFile,Twiss,options,paths):
                 savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options,paths)
@@ -116,7 +121,7 @@ def mapRADependence(args,Twiss,iteration,paths):
 
                 TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
                 (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-                Jmax[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+                Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
                 #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
                 ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
@@ -127,7 +132,7 @@ def mapRADependence(args,Twiss,iteration,paths):
                 ##VacpOutsideBoxes[i] = noPBWPOutBox
                 print(datetime.now().strftime("%H-%M-%S"))
                 from plotFit import saveStats
-                saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff)
+                saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff,"MapRMA")
             print("time elapsed",datetime.now()-origin)
 
         #Save values for future quick use

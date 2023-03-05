@@ -7,6 +7,7 @@
     #10x smallest Twiss -10%
 #python3 rasterScatter.py --betaSpread 30 --iterations 100 --saveSpread >output30x100.txt
 #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
+#python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
 
 from datetime import datetime
 origin = datetime.now()
@@ -64,12 +65,12 @@ parser.add_argument("--saveSpread",action="store_true",  default=False,   help="
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
-parser.add_argument("--eX",     type=int,     default=55,    help="End ampl X")
-parser.add_argument("--eY",     type=int,     default=20,    help="End ampl Y")
+parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
+parser.add_argument("--eY",     type=int,     default=25,    help="End ampl Y")
 parser.add_argument("--startX", type=int,     default=30,    help="Start ampl for X")
 parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
-parser.add_argument("--NstepX", type=int,     default=6,     help="N steps for X")
-parser.add_argument("--NstepY", type=int,     default=6,     help="N steps for Y")
+parser.add_argument("--NstepX", type=int,     default=7,     help="N steps for X")
+parser.add_argument("--NstepY", type=int,     default=7,     help="N steps for Y")
 #Thickness Dependence option:
 parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
 parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")

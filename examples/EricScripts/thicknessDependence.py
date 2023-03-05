@@ -118,7 +118,7 @@ def thicknessDependence(args,Twiss,iteration,paths):
     targxTwissf = targxTwissf[nonEmpty]
     targyTwissf = targyTwissf[nonEmpty]
 
-    print("For a beamlet",Twiss,"\nThick, % Out Box,\t Müller X, \t\tMüller Y,\t\t Distrib X, \t\tDistrib Y")
+    print("For a beamlet",Twiss,"\nThick, % Out Box,\t Müller X, \tMüller Y,\t   Distrib X, \t    Distrib Y")
     for i in range(len(PBWT)):
             print(PBWT[i],",    {:.3f}".format(pOutsideBoxes[i]),",  ",e8TargxReal[i],e8TargyReal[i],targxTwissf[i],targyTwissf[i])
 
@@ -135,9 +135,9 @@ def thicknessDependence(args,Twiss,iteration,paths):
     xlim = plt.xlim()
     ylim = plt.ylim()
     plt.text(xlim[0]+0.1,ylim[1]*0.96,"Beam Twiss at PBW:",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.92,r"$\epsilon_{Nx,Ny} = 0.113, 0.122$ [mm*mrad]",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.88,r"$\beta_{x,y} = 941, 120$ [m]",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.84,r"$\alpha_{x,y} = -59, -7.5$",fontsize=fs-4)
+    plt.text(xlim[0]+0.1,ylim[1]*0.92,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-4)
+    plt.text(xlim[0]+0.1,ylim[1]*0.88,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-4)
+    plt.text(xlim[0]+0.1,ylim[1]*0.84,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-4)
     plt.annotate('PBW Al \nThickness:2.25mm',
         xy=(2.25, 10.6), xycoords='data', #down
         xytext=(20, 50), textcoords='offset points',
