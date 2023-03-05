@@ -8,6 +8,7 @@
 #python3 rasterScatter.py --betaSpread 30 --iterations 100 --saveSpread >output30x100.txt
 #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
 #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
+#python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --iterations 5 --saveSpread
 
 from datetime import datetime
 origin = datetime.now()
@@ -96,17 +97,17 @@ elif uname()[1] == "mbef-xps-13-9300":
 else:
     csvPWD = input("Path from home to direction you like to save root files to: ")
     statsPWD = "."
-paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
 
 #Get Twiss and run; if no iterations argment defined, will run through once.
 for i in range(args.iterations):
     print("\n\nIteration",i)
-    Twiss = getTwiss(args,i,paths)
+    Twiss,origBx,origBY = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss
     if args.sim == "raster":
         from scatterPBW import scatterPBW
-        scatterPBW(args,Twiss,i,paths)
+        scatterPBW(args,Twiss,i,paths,origBx,origBY)
 
     #Examine individual beamlet of Twiss
     if args.sim == "beamlet":

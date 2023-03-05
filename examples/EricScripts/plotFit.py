@@ -2149,6 +2149,10 @@ def getTwiss(args,iteration,paths):
                 csv_file.close()
         else: print("I need a --twissFile argument")
 
+    
+    #The backup of the Twiss
+    origBX = Twiss[1]
+    origBY = Twiss[4]
     #If want to do this one set at a time, do this.
     #if args.betaSpread != 0:
     #    origBX = Twiss[1]
@@ -2172,6 +2176,7 @@ def getTwiss(args,iteration,paths):
         #check if the file is already made
         from os.path import isfile
         name = paths['statsPWD']+"betaSpread_betaX{:.0f},{:.0f}m_{:.0f}Pct".format(origBX,origBY,args.betaSpread)
+        print(name)
 
         #Don't have to manually make the file for a new %
         if not isfile(name+".csv"):
@@ -2239,12 +2244,13 @@ def getTwiss(args,iteration,paths):
                         if Twiss[4] <= 0 or Twiss [1] <= 0:
                             print("Check things, a Beta has been <0 four times!")
                         #can't happen 4 times in a row that the value is 2 sigma off
-            print("Newly written Betas:",Twiss[1],Twiss[4])
+            print(origBX,origBY,"Newly written Betas:",Twiss[1],Twiss[4])
 
             #append new value to the file so don't have to redo it
             with open(name+".csv",mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow([iteration,Twiss[1],Twiss[4]]) #save the betas for this iteration number, to be used next time.
                 csv_file.close()
+    print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4])
 
-    return Twiss
+    return Twiss,origBX,origBY

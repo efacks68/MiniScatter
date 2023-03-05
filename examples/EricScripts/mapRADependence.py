@@ -1,7 +1,7 @@
 #Script for searching Raster Magnet Amplitude space
 # making 2D map of % outside box, with input from Carl Lindstrom.
 
-def mapRADependence(args,Twiss,iteration,paths):
+def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
     from datetime import datetime
     origin = datetime.now()
     print(origin,"\n")
@@ -110,7 +110,7 @@ def mapRADependence(args,Twiss,iteration,paths):
                 args.aX = rXAmps[i]
                 args.aY = rYAmps[j]
                 from runARasterMaker import runARasterMaker
-                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
+                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration,origBx,origBY)
 
                 from simulation import setup
                 #def                        setup(args,material,           beamFile,Twiss,options,paths):
@@ -202,9 +202,12 @@ def mapRADependence(args,Twiss,iteration,paths):
     #also, you have to adjust the original values in the Gaussian fitting as it keeps throwing 
     #  the "lower/upper bounds outside current parameter value." error which is about the initial value being outside the SetParamterLimit bounds
 
-    ax1.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='o')
-    ax1.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='o')
+    ax1.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
+    ax1.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
     ax1.text(defaultRMAmplX+1,defaultRMAmplY+1,"Nominal Y, Nominal X",dict(horizontalalignment="right",verticalalignment="bottom"))
+    ax2.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
+    ax2.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
+    ax2.text(defaultRMAmplX+1,defaultRMAmplY+1,"Nominal Y, Nominal X",dict(horizontalalignment="right",verticalalignment="bottom"))
     ##Set up texts to include with relevant info
     #xlim = plt.xlim()
     #ylim = plt.ylim()
