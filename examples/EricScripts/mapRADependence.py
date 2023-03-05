@@ -8,19 +8,11 @@ def mapRADependence(args,Twiss,iteration,paths):
     import numpy as np
     import matplotlib.pyplot as plt
     import os,csv#,argparse
-    from runARasterMaker import runARasterMaker
-    from simulation import simulation
 
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff }
-
-    #options     = {'noText':args.noText, 'noBox':args.noBox, 'wide':True, 'physList':physList, 'dependence':"RA",
-    #                            'xlim':args.xlim, 'ylim':args.ylim, 'maxim':args.maxim, 'saveHist':args.saveHist,
-    #                            'PBIP':args.PBIP, 'beamClass':args.beamClass, 'Nb':args.Nb, 'failure':args.failure,
-    #                            'magFails':args.magFails, 'saveRaster':args.saveRaster, 'saveFits':args.saveFits,
-    #                            'saveGrads':args.saveGrads, 'saveEdges':args.saveEdges, 'gaussFit':args.gaussFit }
 
     #Important things
     if args.t == 0:
@@ -71,7 +63,7 @@ def mapRADependence(args,Twiss,iteration,paths):
         #print(start,end,step,"\n",rXAmps,"\n",rYAmps)
         print("there are ",args.NstepX*args.NstepY,"points to plot. Expect that number of minutes.")
 
-    pOutsideBoxes = np.zeros([len(rYAmps),len(rXAmps)])
+    pOutsideBoxes = np.zeros([len(rYAmps),len(rXAmps)]) #figure out how to run N times/have spread to avg numbers
     Jmaxes = np.zeros([len(rYAmps),len(rXAmps)])
     #coreMeans = np.zeros([len(rYAmps),len(rXAmps)])
     #VacpOutsideBoxes = np.zeros(len(rXAmps))
@@ -115,13 +107,24 @@ def mapRADependence(args,Twiss,iteration,paths):
             for j in range(len(rYAmps)):
                 print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
                 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
-                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
-                #Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
-                _,_,_,Jmaxes[j][i], pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff  = simulation(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes,paths)
-                #Store % value for plotting
-                #Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
-                #noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
-                #VacpOutsideBoxes[i] = noPBWPOutBox
+                from simulation import setup
+                #def                        setup(args,material,           beamFile,Twiss,options,paths):
+                savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options,paths)
+
+                import miniScatterDriver
+                from plotFit import rasterImage
+
+                TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
+                (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
+                Jmax[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+
+                #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
+                ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
+                #_,_,_,Jmaxes[j][i], pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff  = simulation(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes,paths)
+                ##Store % value for plotting
+                ##Run with 0.1 thickness, which is the value that triggers the Vacuum rectangular 'PBW' for reference
+                ##noPBWPOutBox = runPBW(energy,rasterBeamFile,beamType,0.1,beamXAngle,beamYAngle,PBIP,args.savePics,physList,Twiss,rXAmps[i],rYAmps[i],dependence)
+                ##VacpOutsideBoxes[i] = noPBWPOutBox
                 print(datetime.now().strftime("%H-%M-%S"))
                 from plotFit import saveStats
                 saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff)

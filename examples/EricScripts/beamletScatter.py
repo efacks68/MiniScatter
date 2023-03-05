@@ -13,7 +13,7 @@ def beamletScatter(args,Twiss,i,paths):
     #print(args,Twiss)
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"
-    zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
+    zoff        = "*-1" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
                     'mat3Plot':False, 'TwissFits':False }
@@ -34,6 +34,6 @@ def beamletScatter(args,Twiss,i,paths):
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     #Send to runPBW to simulate with MiniScatter or opens already run data
-    runPBW(args,args.beamFile,Twiss,options,boxes,paths)
+    Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,targxTwissf,targyTwissf = runPBW(args,args.beamFile,Twiss,options,boxes,paths)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

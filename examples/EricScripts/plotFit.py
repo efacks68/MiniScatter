@@ -462,8 +462,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     fs = 14
 
     #Find fit to histogram
-    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,0.1,15],(0,[5e3,7e5,7e5]),"auto")
-    muy,sigmay,amply,yinterval = findFit(targy,[0.01,0.1,15],(0,[5e3,7e5,7e5]),"auto")
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,0.1,15],(0,[5e10,7e10,7e10]),"auto") #to accomodate 1e7 protons
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,0.1,15],(0,[5e10,7e10,7e10]),"auto")
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -872,16 +872,26 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     p2 = f1.GetParameter(2)
     print("initial Gaussian fit parameters:",p0,p1,p2)
 
-    f3 = ROOT.TF1('f3','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
-    if axis in {"y","Y"}:
-        f3.SetParameters(p0/10,p2,p0,p2)
-    elif axis in {"x","X"}:
-        f3.SetParameters(p0/10,p2,p0,p2)
-    f3.SetParLimits(0,0,p0*y2)
-    f3.SetParLimits(1,0,p2*y1)
-    f3.SetParLimits(2,0,p0*y2*y1)
-    f3.SetParLimits(3,0,p2*y1)
+    #https://root.cern/doc/master/fitConvolution_8py.html
+    f3 = ROOT.TF1('f3L','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    #f3L = ROOT.TF1('f3L','[0] * [1]/(x**2 + [1]**2)',-maxim,maxim)
+    #f3G = ROOT.TF1('f3G','[2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    #f3C = ROOT.TF1Convolution('f3L','f3G',-maxim,maxim,True)
+    #f3C.SetRange(-maxim,maxim)
+    #f3C.SetNofPointsFFT(10000)
+    #f3 = ROOT.TF1('f3',f3C,-maxim,maxim,f3C.GetNpar()) #not ever finding a fit!
+
+
+    #if axis in {"y","Y"}:
+    f3.SetParameters(p2,p2,p2,p2)
+    #elif axis in {"x","X"}:
+    #    f3.SetParameters(p2,p2,p2,p2)
+    f3.SetParLimits(0,0,p0*y2*y2)
+    f3.SetParLimits(1,0,p0*y2*y2)
+    f3.SetParLimits(2,0,p0*y2*y2)
+    f3.SetParLimits(3,0,p0*y2*y2)
     f3_res = proj.Fit(f3, 'RSQ')
+
     differenceNL = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f3.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     differencePL = differenceNL/total*100
@@ -1742,17 +1752,20 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
 
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff):
+def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,fileName):
     #save values in Stats CSV
     import csv
     from os import path as osPath
-    statsName = statsPWD+"EvalStats2Mar.csv"
-    #if not osPath.isfile(statsName): #didn't work...?
-    #    with open(statsName,mode = 'w') as csv_file:
-    #        csv_writer = csv.writer(csv_file,delimiter = ',')
-    #        csv_writer.writerow(["BeamFile","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
-    #        csv_file.close()
-    if osPath.isfile(statsName):
+    if fileName !="":  
+            statsName = statsPWD+fileName+".csv"
+    else:
+        statsName = statsPWD+"EvalStats2Mar.csv"
+    if not osPath.isfile(statsName): #didn't work...?
+        with open(statsName,mode = 'w') as csv_file:
+            csv_writer = csv.writer(csv_file,delimiter = ',')
+            csv_writer.writerow(["BeamFile","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
+            csv_file.close()
+    elif osPath.isfile(statsName):
         found = False
         foundRow = 0
         i = 0
@@ -1790,7 +1803,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     from plotFit import findFit, gaussian
     from math import floor,log10
 
-    read = zeros(args.iterations)
+    read = zeros(args.iterations+1)
     read.fill(-750) #allow better filter than nonzero
     for i in range(len(Twiss)):
         Twiss[i] = round(Twiss[i]*1e5)/1e5
@@ -1817,7 +1830,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
                     #if i < 5:
                     #    print(Twiss,row[0])
                     #print(i,read[i])
-                    if i+1 == args.iterations:
+                    if i == args.iterations:
                         lenbreak = True
                         break
                     i+=1
@@ -1863,16 +1876,16 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
     if mu < midPoint:
         xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
-    text(xlim()[0]*(1+delta), ylim()[1]*0.95, "Nominal Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+delta), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+0), ylim()[1]*0.95, "Nominal Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+0), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+0), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    text(xlim()[0]*(1+0), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
     
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     if sigma <1e-3:
-        text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3e}".format(sigma)+unit, propsR)
+        text(xlim()[1]*(1-0), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3e}".format(sigma)+unit, propsR)
     else:
-        text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
+        text(xlim()[1]*(1-0), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
     if args.twissFile == "":
         name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom".format(len(read),args.betaSpread)
     else:

@@ -17,12 +17,12 @@ from plotFit import getTwiss
 
 #Command Line arguments for save control
 parser = ArgumentParser()
-parser.add_argument("--sim",       type=str,    default="raster",   choices=("raster","map","beamlet"), help="Type of simulation to perform")
-parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
-parser.add_argument("--twissFile", type=str,   default="", help="Load file with Twiss, auto look in OpenXAL folder")
+parser.add_argument("--sim",       type=str,   default="raster",   choices=("raster","map","beamlet","thick"), help="Type of simulation to perform")
+parser.add_argument("--source",    type=str,   default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
+parser.add_argument("--twissFile", type=str,   default="",    help="Load file with Twiss, auto look in OpenXAL folder")
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
-parser.add_argument("--particle",  type=str,   default="proton", choices=("proton","electron"), help="Which particle to simulate?")
-parser.add_argument("--beamFile",  type=str,   help="Load Particles or not",   default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
+parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
+parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
@@ -70,6 +70,10 @@ parser.add_argument("--startX", type=int,     default=30,    help="Start ampl fo
 parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
 parser.add_argument("--NstepX", type=int,     default=6,     help="N steps for X")
 parser.add_argument("--NstepY", type=int,     default=6,     help="N steps for Y")
+#Thickness Dependence option:
+parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
+parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")
+parser.add_argument("--stepThick",type=float, default=0.5,   help="Step of Thicknesses")
 args = parser.parse_args()
 
 #Where to save CSVs and statistics
@@ -93,7 +97,7 @@ else:
     statsPWD = "."
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
-#get Twiss and run; if no iterations argment defined, will run through once.
+#Get Twiss and run; if no iterations argment defined, will run through once.
 for i in range(args.iterations):
     print("\n\nIteration",i)
     Twiss = getTwiss(args,i,paths)
@@ -107,8 +111,16 @@ for i in range(args.iterations):
     if args.sim == "beamlet":
         from beamletScatter import beamletScatter
         beamletScatter(args,Twiss,i,paths)
+    
+    #Get graph of % Outside Box and Current Density on Target for the thickness range specified
+    if args.sim == "thick": #for sending only 1 Twiss.
+        from thicknessDependence import thicknessDependence
+        from os import uname
+        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+        print("it works!")
+        thicknessDependence(args,Twiss,i,paths)
 
-#Get map of % Outside Box and Current Density on Target for the range specified
+#Get map of % Outside Box and Current Density on Target for the RMA range specified
 if args.sim == "map": #for sending only 1 Twiss.
     from mapRADependence import mapRADependence
     from os import uname

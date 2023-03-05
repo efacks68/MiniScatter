@@ -43,7 +43,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
 
     #For loading particles
-    if beamFile != "":
+    if args.sim == "raster" or args.sim == "map":
         from plotFit import numLines
         parts = numLines(beamFile)
         baseSimSetup["N"]        = parts #change to match file particles. Used for file name
@@ -98,6 +98,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         m1["keyval"]["waterThick"] = 2.0 #[mm]
         m1["keyval"]["al2Thick"]   = 1.25 #[mm]
         #m1["keyval"]["width"]      = 200 #[mm]
+        if args.sim == "thick":
+            m1["keyval"]["al1Thick"]   = options['PBWT']*0.5 #[mm]
+            m1["keyval"]["al2Thick"]   = options['PBWT']*0.5 #[mm]
         baseSimSetup["MAGNET"].append(m1)
 
         #Start output name
@@ -227,6 +230,10 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     #set these as place holders
     xtarg_filtered_p = np.zeros(10)
     ytarg_filtered_p = np.zeros(10)
+    e8SigX = 0
+    e8SigY = 0
+    targSigX = 0
+    targSigY = 0
 
     #print(simSetup_simple1)
     #Run simulation or load old simulation root file!
@@ -646,4 +653,12 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,options,savename,3,10,args.saveFits)
             #print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
 
-    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff #filter by PDG only
+    if args.sim == "thick":
+        from plotFit import getMoments
+        [e8SigX,_] = getMoments(e8TargxReal)
+        [e8SigY,_] = getMoments(e8TargyReal)
+        [targSigX,_] = getMoments(targxTwissf)
+        [targSigY,_] = getMoments(targyTwissf)
+        print(e8SigX,e8SigY,targSigX,targSigY)
+
+    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,e8SigX,e8SigY,targSigX,targSigY #filter by PDG only
