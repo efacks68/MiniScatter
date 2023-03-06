@@ -3,12 +3,18 @@
 #Includes setup and output preferences
 
 #possible commands:
-#python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --iterations 10 --betaSpread 10
-    #10x smallest Twiss -10%
-#python3 rasterScatter.py --betaSpread 30 --iterations 100 --saveSpread >output30x100.txt
-#python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
-#python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
-#python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --iterations 5 --saveSpread
+#nominal systematic error:
+    #python3 rasterScatter.py --betaSpread 10 --iterations 10 --saveSpread
+#Various Twiss ranges with iterations:
+    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --iterations 10 --betaSpread 10
+#Fit Gaussian and Voigt to a beamlet:
+    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
+#thickness dependence plot:
+    #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
+#Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --iterations 5 --saveSpread
+#Vary N particles for nominal systematic error approx
+    #python3 rasterScatter.py --Nb 50 --iterations 10 --saveSpread
 
 from datetime import datetime
 origin = datetime.now()
@@ -70,8 +76,9 @@ parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
 parser.add_argument("--eY",     type=int,     default=25,    help="End ampl Y")
 parser.add_argument("--startX", type=int,     default=30,    help="Start ampl for X")
 parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
-parser.add_argument("--NstepX", type=int,     default=7,     help="N steps for X")
-parser.add_argument("--NstepY", type=int,     default=7,     help="N steps for Y")
+parser.add_argument("--Nstep", type=int,     default=7,     help="N steps")
+#parser.add_argument("--NstepX", type=int,     default=7,     help="N steps for X")
+#parser.add_argument("--NstepY", type=int,     default=7,     help="N steps for Y")
 #Thickness Dependence option:
 parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
 parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")
@@ -128,9 +135,9 @@ if args.sim == "map": #for sending only 1 Twiss.
     from os import uname
     if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
     print("it works!")
-    mapRADependence(args,Twiss,i,paths)
+    mapRADependence(args,Twiss,i,paths,origBx,origBY)
 
-print("Simulation took ",datetime.now()-origin,"s long",sep="")
+print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
 if args.iterations >= 2:
     from plotFit import spreadHist

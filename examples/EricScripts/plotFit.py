@@ -150,13 +150,14 @@ def findFit(data,guess,lims,nBins):
     from plotFit import gaussian
 
     close()
+    #print(data)
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #savefig(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
-    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=lims) #p0 should be good start, though not what is recommended
+    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=lims) #p0 should be good start
     x_interval_for_fit = linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
     plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
     #plt.legend()
@@ -167,6 +168,7 @@ def findFit(data,guess,lims,nBins):
     close() #be sure to close this or else these show up in the multi plots!
     #print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
+        #   mu,     sigma,       ampl
     return(popt[1],abs(popt[2]),popt[0],x_interval_for_fit) #for Vac and Air sigma sometimes give - number...
 
 
@@ -1803,8 +1805,8 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     from plotFit import findFit, gaussian
     from math import floor,log10
 
-    read = zeros(args.iterations+1)
-    read.fill(-750) #allow better filter than nonzero
+    read = zeros(args.iterations)
+    read.fill(-750) #allow better filter than nonzero?
     for i in range(len(Twiss)):
         Twiss[i] = round(Twiss[i]*1e5)/1e5
     #print(Twiss)
@@ -1812,7 +1814,8 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     lenbreak=False
     pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
     partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
-    #print(pctKey,partKey)
+    nBkey = "NpB{:.0f}".format(args.Nb)
+    print(pctKey,partKey,nBkey)
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
@@ -1820,17 +1823,16 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
             #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
             #if i ==5:
             #    break
-            if re.search(partKey,row[0]):
-                #print("Found correct size simulation")
-                if re.search(pctKey,row[0]):
-                #if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and 
-                        #round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
+            if re.search(nBkey,row[0]) or re.search(partKey,row[0]): #not working for some reason
+                #print("Found correct size simulation\n",Twiss,"\n",row[1:6])
+                if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
+                        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
                     #print("found Twiss")
                     read[i] = float(row[ind]) #[mm-mrad]
                     #if i < 5:
                     #    print(Twiss,row[0])
                     #print(i,read[i])
-                    if i == args.iterations:
+                    if i == args.iterations-1:
                         lenbreak = True
                         break
                     i+=1
@@ -1847,17 +1849,20 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
             #    raise Exception("Not finding a match!")
     csv_file.close()
 
-    print(mean(read))
+    #print(mean(read))
     nonEmpty = npGreater(read,-750) #remove unused elements
     read = read[nonEmpty]
-    print("guess",paramName, args.iterations/50,mean(read),std(read),paramBins)
+    #print(paramLims)
+    paramLims = (0,[args.iterations,100,500])
+    print("guess",paramName, args.iterations/4,mean(read),std(read),paramBins,len(read),paramLims)
+                                #gaussian(x,amplitude,          mu,      sigma)
     mu, sigma,ampl,interval = findFit(read,[args.iterations/4,mean(read),std(read)],paramLims,paramBins)
-    #print(mu,sigma,ampl)
+    print(mu,sigma,ampl)#,"\n",read)
 
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal".format(len(read),args.betaSpread))
+    title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal\nwith {:.0f} Protons per Beamlet".format(len(read),args.betaSpread,args.Nb))
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -1874,6 +1879,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
         delta=1e-4
     left=xlim()[0] #=7
     midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
+    #print(mu,left,midPoint)
     if mu < midPoint:
         xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
     text(xlim()[0]*(1+0), ylim()[1]*0.95, "Nominal Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
@@ -1887,9 +1893,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     else:
         text(xlim()[1]*(1-0), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
     if args.twissFile == "":
-        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom".format(len(read),args.betaSpread)
+        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom_Nb{:.0f}".format(len(read),args.betaSpread,args.Nb)
     else:
-        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom".format(len(read),args.betaSpread)
+        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom_Nb{:.0f}".format(len(read),args.betaSpread,args.Nb)
     if args.saveSpread:
         savefig(name+"."+args.picFormat)
     close()
@@ -1919,7 +1925,7 @@ def spreadHist(args,Twiss,paths):
     #elif uname()[1] == "mbef-xps-13-9300":
     #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
+    paramName=["jMax","beamPOut"]#,"coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Area [mm$^2$]",
                 r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 "R Divide Value","R Difference Value"]

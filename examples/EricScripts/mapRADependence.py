@@ -57,11 +57,13 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
         legloc = "center right"
         twTloc = 0.55
     elif args.ampl =="map":
-        rXAmps = np.linspace(args.startX,args.eX,args.NstepX)
-        rYAmps = np.linspace(args.startY,args.eY,args.NstepY)
+        rXAmps = np.linspace(args.startX,args.eX,args.Nstep)#X
+        rYAmps = np.linspace(args.startY,args.eY,args.Nstep)#Y
         rXRange = args.eX-args.startX
-        #print(start,end,step,"\n",rXAmps,"\n",rYAmps)
-        print("there are ",args.NstepX*args.NstepY,"points to plot. Expect that number of minutes.")
+        print(args.startX,args.eX,args.Nstep,"\n",rXAmps,"\n",rYAmps)
+        print("there are ",args.Nstep*args.Nstep,"points to plot. Expect that number of minutes.")
+        #print("there are ",args.NstepX*args.NstepY,"points to plot. Expect that number of minutes.")
+
 
     pOutsideBoxes = np.zeros([len(rYAmps),len(rXAmps)]) #figure out how to run N times/have spread to avg numbers
     Jmaxes = np.zeros([len(rYAmps),len(rXAmps)])
@@ -72,9 +74,9 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
     mapCsvPWD = paths['statsPWD']+"rAmplDependence/2DMap/"
 
     #now name has beta instead of emit!
-    name = "RasterAmplDependence_POutBox,Imax_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm".format(Twiss[1],Twiss[4],rXRange,args.eY-args.startY)
+    name = "RasterAmplDependence_POutBox,Imax_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm_{:.0f}steps".format(Twiss[1],Twiss[4],rXRange,args.eY-args.startY,args.Nstep)
     if os.path.isfile(mapCsvPWD+name+".csv"):
-        print("Found data! Reading in!",name)
+        print("Found data! Reading in!",mapCsvPWD+name)
         #from plotFit import numLines
         #nLines = numLines(paths['csvPWD']+name)
         #print(nLines)
@@ -204,10 +206,15 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
 
     ax1.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
     ax1.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
-    ax1.text(defaultRMAmplX+1,defaultRMAmplY+1,"Nominal Y, Nominal X",dict(horizontalalignment="right",verticalalignment="bottom"))
+    ax1.text(defaultRMAmplX+1,defaultRMAmplY+0.5,"Nominal Y, Nominal X",color="w",ha="center",va="bottom")
     ax2.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
     ax2.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
-    ax2.text(defaultRMAmplX+1,defaultRMAmplY+1,"Nominal Y, Nominal X",dict(horizontalalignment="right",verticalalignment="bottom"))
+    ax2.text(defaultRMAmplX+1,defaultRMAmplY+0.5,"Nominal Y, Nominal X",color="w",ha="center",va="bottom")
+
+    for i in range(len(rXAmps)):
+        for j in range(len(rYAmps)):
+            ax1.text(rXAmps[i],rYAmps[j],"{:.0f}".format(Jmaxes[j][i]),color="w",ha="center",va="center")
+            ax2.text(rXAmps[i],rYAmps[j],"{:.0f}".format(pOutsideBoxes[j][i]),color="w",ha="center",va="center")
     ##Set up texts to include with relevant info
     #xlim = plt.xlim()
     #ylim = plt.ylim()
