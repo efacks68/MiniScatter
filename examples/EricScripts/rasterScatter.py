@@ -106,15 +106,15 @@ else:
     statsPWD = "."
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
 
-#Get Twiss and run; if no iterations argment defined, will run through once.
-for i in range(args.iterations):
+def loopIterations(args,paths,i):
+    #Get Twiss and run; if no iterations argment defined, will run through once.
     print("\n\nIteration",i)
-    Twiss,origBx,origBY = getTwiss(args,i,paths)
+    Twiss,origBX,origBY = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss
     if args.sim == "raster":
         from scatterPBW import scatterPBW
-        scatterPBW(args,Twiss,i,paths,origBx,origBY)
+        scatterPBW(args,Twiss,i,paths,origBX,origBY)
 
     #Examine individual beamlet of Twiss
     if args.sim == "beamlet":
@@ -128,6 +128,65 @@ for i in range(args.iterations):
         if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
         print("it works!")
         thicknessDependence(args,Twiss,i,paths)
+    return Twiss,origBX,origBY
+
+#attempting multiProcessing with Python from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
+from multiprocessing import Lock, Process, Queue, current_process
+import time
+import queue #imported for using queue.Empty exception
+
+def do_job(tasks_to_accomplish, tasks_that_are_done):
+    while True:
+        try:
+            '''
+                try to get task from the queue. get_nowait() function will 
+                raise queue.Empty exception if the queue is empty. 
+                queue(False) function would do the same task also.
+            '''
+            task = tasks_to_accomplish.get_nowait()
+        except queue.Empty:
+
+            break
+        else:
+            '''
+                if no exception has been raised, add the task completion 
+                message to task_that_are_done queue
+            '''
+            print(task)
+            tasks_that_are_done.put(task + ' is done by ' + current_process().name)
+            time.sleep(.5)
+    return Twiss,origBX,origBY
+
+
+def multiLoop(args,paths):
+    from rasterScatter import loopIterations
+    number_of_task = args.iterations
+    number_of_processes = 4 #Number of cpus :  8
+    tasks_to_accomplish = Queue()
+    tasks_that_are_done = Queue()
+    processes = []
+
+    for i in range(number_of_task):
+        tasks_to_accomplish.put(loopIterations(args,paths,i))
+
+    # creating processes
+    for w in range(number_of_processes):
+        p = Process(target=do_job, args=(tasks_to_accomplish, tasks_that_are_done))
+        processes.append(p)
+        p.start()
+
+    # completing process
+    for p in processes:
+        p.join()
+
+    # print the output
+    while not tasks_that_are_done.empty():
+        print(tasks_that_are_done.get())
+
+    return Twiss,origBX,origBY
+
+
+Twiss,origBX,origBY = multiLoop(args,paths)
 
 #Get map of % Outside Box and Current Density on Target for the RMA range specified
 if args.sim == "map": #for sending only 1 Twiss.
@@ -135,7 +194,7 @@ if args.sim == "map": #for sending only 1 Twiss.
     from os import uname
     if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
     print("it works!")
-    mapRADependence(args,Twiss,i,paths,origBx,origBY)
+    mapRADependence(args,Twiss,i,paths,origBX,origBY)
 
 print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
