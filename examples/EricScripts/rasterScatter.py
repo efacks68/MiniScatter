@@ -116,18 +116,6 @@ def loopIterations(args,paths,i):
         from scatterPBW import scatterPBW
         scatterPBW(args,Twiss,i,paths,origBX,origBY)
 
-    #Examine individual beamlet of Twiss
-    if args.sim == "beamlet":
-        from beamletScatter import beamletScatter
-        beamletScatter(args,Twiss,i,paths)
-    
-    #Get graph of % Outside Box and Current Density on Target for the thickness range specified
-    if args.sim == "thick": #for sending only 1 Twiss.
-        from thicknessDependence import thicknessDependence
-        from os import uname
-        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-        print("it works!")
-        thicknessDependence(args,Twiss,i,paths)
     return Twiss,origBX,origBY
 
 #attempting multiProcessing with Python from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
@@ -135,7 +123,7 @@ from multiprocessing import Lock, Process, Queue, current_process
 import time
 import queue #imported for using queue.Empty exception
 
-def do_job(tasks_to_accomplish, tasks_that_are_done):
+def do_job(tasks_to_accomplish, tasks_that_are_done, outLock):
     while True:
         try:
             '''
@@ -145,20 +133,25 @@ def do_job(tasks_to_accomplish, tasks_that_are_done):
             '''
             task = tasks_to_accomplish.get_nowait()
         except queue.Empty:
-
             break
         else:
             '''
                 if no exception has been raised, add the task completion 
                 message to task_that_are_done queue
             '''
-            print(task)
-            tasks_that_are_done.put(task + ' is done by ' + current_process().name)
-            time.sleep(.5)
-    return Twiss,origBX,origBY
+            #print(task)
+            Twiss,origBX,origBY = loopIterations(args,paths,task)
+            #tasks_that_are_done.put(task + ' is done by ' + current_process().name)
+            #time.sleep(.5)
+    #return Twiss,origBX,origBY
+    with outLock:
+        outTwiss[task] = Twiss
+        outOrigBX[task] = origBX
+        outOrigBY[task] = origBY
+    return True
 
 
-def multiLoop(args,paths):
+def multiLoop(args,paths,outLock):
     from rasterScatter import loopIterations
     number_of_task = args.iterations
     number_of_processes = 4 #Number of cpus :  8
@@ -167,11 +160,12 @@ def multiLoop(args,paths):
     processes = []
 
     for i in range(number_of_task):
-        tasks_to_accomplish.put(loopIterations(args,paths,i))
+        #tasks_to_accomplish.put(loopIterations(args,paths,i))
+        tasks_to_accomplish.put(i)
 
     # creating processes
     for w in range(number_of_processes):
-        p = Process(target=do_job, args=(tasks_to_accomplish, tasks_that_are_done))
+        p = Process(target=do_job, args=(tasks_to_accomplish, tasks_that_are_done, outLock))
         processes.append(p)
         p.start()
 
@@ -183,21 +177,42 @@ def multiLoop(args,paths):
     while not tasks_that_are_done.empty():
         print(tasks_that_are_done.get())
 
-    return Twiss,origBX,origBY
+    #return Twiss,origBX,origBY
 
 
-Twiss,origBX,origBY = multiLoop(args,paths)
+#Twiss,origBX,origBY = multiLoop(args,paths)
+if args.sim =="raster":
+    outTwiss  = {}
+    outOrigBX = {}
+    outOrigBY = {}
+    outLock = Lock()
+    multiLoop(args,paths, outLock)
+else:
+    i=0
+    Twiss,origBX,origBY = getTwiss(args,i,paths)
+    #Examine individual beamlet of Twiss
+    if args.sim == "beamlet":
+        from beamletScatter import beamletScatter
+        beamletScatter(args,Twiss,i,paths)
 
-#Get map of % Outside Box and Current Density on Target for the RMA range specified
-if args.sim == "map": #for sending only 1 Twiss.
-    from mapRADependence import mapRADependence
-    from os import uname
-    if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
-    print("it works!")
-    mapRADependence(args,Twiss,i,paths,origBX,origBY)
+    #Get graph of % Outside Box and Current Density on Target for the thickness range specified
+    if args.sim == "thick": #for sending only 1 Twiss.
+        from thicknessDependence import thicknessDependence
+        from os import uname
+        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+        print("it works!")
+        thicknessDependence(args,Twiss,i,paths)
+
+    #Get map of % Outside Box and Current Density on Target for the RMA range specified
+    if args.sim == "map": #for sending only 1 Twiss.
+        from mapRADependence import mapRADependence
+        from os import uname
+        if uname()[1] == "mbef-xps-13-9300": args.nP = 1e1
+        print("it works!")
+        mapRADependence(args,Twiss,i,paths,origBX,origBY)
 
 print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
-if args.iterations >= 2:
-    from plotFit import spreadHist
-    spreadHist(args,Twiss,paths)
+#if args.iterations >= 2:
+#    from plotFit import spreadHist
+#    spreadHist(args,outTwiss['0'],paths) #with threading working, this isn't
