@@ -15,6 +15,8 @@
     #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --iterations 5 --saveSpread
 #Vary N particles for nominal systematic error approx
     #python3 rasterScatter.py --Nb 50 --iterations 10 --saveSpread
+#Map RA Dependence:
+    #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 
 from datetime import datetime
 origin = datetime.now()
@@ -39,7 +41,7 @@ parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
-parser.add_argument("--Nb",        type=int,   default=10,    help="Number of macroparticles per beamlet. Default=10")
+parser.add_argument("--Nb",        type=int,   default=100,    help="Number of macroparticles per beamlet. Default=10")
 parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
 parser.add_argument("--rX",        type=float, default=0,     help="X distance from beam axis at BPM94 [mm]. Default=0")
 parser.add_argument("--rY",        type=float, default=0,     help="Y distance from beam axis at BPM94 [mm]. Default=0")
@@ -112,18 +114,18 @@ def loopIterations(args,paths,i):
     Twiss,origBX,origBY = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss
-    if args.sim == "raster":
-        from scatterPBW import scatterPBW
-        scatterPBW(args,Twiss,i,paths,origBX,origBY)
+    #if args.sim == "raster":
+    from scatterPBW import scatterPBW
+    scatterPBW(args,Twiss,i,paths,origBX,origBY)
 
     return Twiss,origBX,origBY
 
 #attempting multiProcessing with Python from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
-from multiprocessing import Lock, Process, Queue, current_process
+from multiprocessing import Lock, Process, Queue, current_process, Manager
 import time
 import queue #imported for using queue.Empty exception
 
-def do_job(tasks_to_accomplish, tasks_that_are_done, outLock):
+def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
     while True:
         try:
             '''
@@ -141,22 +143,23 @@ def do_job(tasks_to_accomplish, tasks_that_are_done, outLock):
             '''
             #print(task)
             Twiss,origBX,origBY = loopIterations(args,paths,task)
-            #tasks_that_are_done.put(task + ' is done by ' + current_process().name)
-            #time.sleep(.5)
-    #return Twiss,origBX,origBY
-    with outLock:
-        outTwiss[task] = Twiss
-        outOrigBX[task] = origBX
-        outOrigBY[task] = origBY
+            #print(task,Twiss)
+
+        with outLock:
+            print("in outLock, task=",task, "process=",current_process().name)
+            outTwiss[task] = Twiss #says this is undefined before it runs the first sampling, ???
+            outOrigBX[task] = origBX
+            outOrigBY[task] = origBY
+            print(outTwiss)
+
     return True
 
 
-def multiLoop(args,paths,outLock):
-    from rasterScatter import loopIterations
+def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY): #from outputTest.txt, this is running double everything. Why?
+    #from rasterScatter import loopIterations
     number_of_task = args.iterations
     number_of_processes = 4 #Number of cpus :  8
     tasks_to_accomplish = Queue()
-    tasks_that_are_done = Queue()
     processes = []
 
     for i in range(number_of_task):
@@ -164,29 +167,44 @@ def multiLoop(args,paths,outLock):
         tasks_to_accomplish.put(i)
 
     # creating processes
-    for w in range(number_of_processes):
-        p = Process(target=do_job, args=(tasks_to_accomplish, tasks_that_are_done, outLock))
-        processes.append(p)
-        p.start()
+    if number_of_processes > 0:
+        for w in range(number_of_processes):
+            p = Process(target=do_job, args=(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY))
+            processes.append(p)
+            p.start()
 
-    # completing process
-    for p in processes:
-        p.join()
+        # completing process
+        for p in processes:
+            p.join()
+    else:
+        raise ValueError("number of processes < 1")
 
-    # print the output
-    while not tasks_that_are_done.empty():
-        print(tasks_that_are_done.get())
-
-    #return Twiss,origBX,origBY
-
+#import pdb; pdb.set_trace()
 
 #Twiss,origBX,origBY = multiLoop(args,paths)
 if args.sim =="raster":
-    outTwiss  = {}
-    outOrigBX = {}
-    outOrigBY = {}
-    outLock = Lock()
-    multiLoop(args,paths, outLock)
+    Twiss = {}
+    origBX = {}
+    origBY = {}
+    with Manager() as multiManager:
+        outTwiss  = multiManager.dict()
+        outOrigBX = multiManager.dict()
+        outOrigBY = multiManager.dict()
+        outLock = Lock()
+
+        multiLoop(args,paths, outLock,outTwiss,outOrigBX,outOrigBY)
+
+        Twiss  = outTwiss.copy()
+        origBX = outOrigBX.copy()
+        origBY = outOrigBY.copy()
+    print()
+    print("final:")
+    print(Twiss)
+
+    #import pdb; pdb.set_trace()
+
+    i=0
+    Twiss,origBX,origBY = getTwiss(args,i,paths) #temporary, make it work better!
 else:
     i=0
     Twiss,origBX,origBY = getTwiss(args,i,paths)
@@ -215,4 +233,4 @@ print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
 #if args.iterations >= 2:
 #    from plotFit import spreadHist
-#    spreadHist(args,outTwiss['0'],paths) #with threading working, this isn't
+#    spreadHist(args,Twiss,paths) #with threading working, this isn't
