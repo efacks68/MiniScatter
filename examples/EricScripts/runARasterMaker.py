@@ -25,7 +25,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration,origBx,origBY):
 
     t_pulse = round(0.04 * 1/14 * 1e6) # mus
     pulse_start = 10 #why have a delay?
-    t_end = (2* pulse_start + t_pulse) /1000# - 2#3 ms
+    t_end = (2* pulse_start + t_pulse) /1000# - 2 #2.857 ms
     time_length = round(t_end * args.nP) #number of pulses, nominal = 2.86e3
 
     t = np.linspace(0,t_end,time_length) #array of steps of length time_length
@@ -192,7 +192,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration,origBx,origBY):
         part_file.close()
 
         finish = datetime.now()
-        print(name,".csv took: ",finish-start,"s",sep="")
+        print(name,".csv took: ",finish-start,"s, ",finish,sep="")
 
     #Bit of a downside that can only get raster pattern from making new CSV...
     if args.saveRaster:

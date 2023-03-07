@@ -15,6 +15,9 @@ parser.add_argument("--twissFile", type=str,   default="",    help="Load file wi
 parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
 parser.add_argument("--Nb",        type=int,   default=10,    help="Number of macroparticles per beamlet. Default=10")
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
+parser.add_argument("--picFormat", choices=("png","svg","pdf"), type=str, default="png",  help="Whic file format extension?")
+parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
+
 args = parser.parse_args()
 
 #Where to save CSVs and statistics
@@ -36,6 +39,6 @@ else:
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
 
 i = 0
-Twiss = getTwiss(args,i,paths)
+Twiss,origBX,origBY = getTwiss(args,i,paths)
 
 spreadHist(args,Twiss,paths)

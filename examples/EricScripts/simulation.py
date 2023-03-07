@@ -144,7 +144,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     #Where to save/load root and Picture files
 
     if uname()[1] == "mbef-xps-13-9300": #my laptop
-        baseSimSetup["OUTFOLDER"] = osPath.join("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/")
+        baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath'])
     elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}: #UiO desktop
         if args.source == "twiss":
             baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"failures/")
@@ -164,15 +164,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     simSetup_simple1 = baseSimSetup.copy()
     #print(outname,"\n")
     simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
-
-    ####Redundant??? ----------
-    #Variables for automation
-    if uname()[1] == "mbef-xps-13-9300":
-        savepath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
-    elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
-        #savepath = "/scratch2/ericdf/PBWScatter/"
-        savepath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/" #Eric's files location
-    savename=savepath+outname #base savename for plots downstream, brings directly to my directory
+    savename=paths['statsPWD']+outname #base savename for plots downstream, brings directly to my directory
     #savedfile=osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
     #print(savename, savedfile)
 

@@ -1090,7 +1090,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     yBinSize = yax[501]-yax[500]
     sumTot=np.sum(Img)
     ImgJ = Img #PMAS converts whole array into J, so send this one instead of making it inside PMAS.
-    print(xBinSize,yBinSize,sumTot)
+    #print(xBinSize,yBinSize,sumTot)
     I_pulse = 62.5*1e3 #[uA]
 
     #99% box #for multiple boxes, use arrays
@@ -1800,21 +1800,22 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
 
 def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
     import csv,re
-    from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
-    from numpy import greater as npGreater,zeros,mean,std
+    from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout
+    from numpy import greater,zeros,mean,std
     from plotFit import findFit, gaussian
     from math import floor,log10
 
     read = zeros(args.iterations)
     read.fill(-750) #allow better filter than nonzero?
+    print(Twiss)
     for i in range(len(Twiss)):
         Twiss[i] = round(Twiss[i]*1e5)/1e5
-    #print(Twiss)
+    print(Twiss)
     i=0
     lenbreak=False
     pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
     partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
-    nBkey = "NpB{:.0f}".format(args.Nb)
+    nBkey = "NpB{:.0f}_".format(args.Nb)
     print(pctKey,partKey,nBkey)
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -1850,7 +1851,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     csv_file.close()
 
     #print(mean(read))
-    nonEmpty = npGreater(read,-750) #remove unused elements
+    nonEmpty = greater(read,-750) #remove unused elements
     read = read[nonEmpty]
     #print(paramLims)
     paramLims = (0,[args.iterations,100,500])
@@ -1862,42 +1863,48 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal\nwith {:.0f} Protons per Beamlet".format(len(read),args.betaSpread,args.Nb))
+    nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
+    if args.betaSpread != 0:
+        title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal\nwith {:.2e} Protons".format(len(read),args.betaSpread,nPs))
+    else:
+        title("{:.0f} Iterations with {:.2e} Protons".format(len(read),nPs))
+
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=14
-    if sigma > 10:
+    if mu > 10:
         delta=1e-3
-    elif sigma > 2 and sigma <= 10:
-        delta=5e-3
-    elif sigma < 2 and sigma > 1:
-        delta = 3e-2
-    else:
-        delta=1e-4
-    left=xlim()[0] #=7
-    midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
+    elif mu > 2 and mu <= 10:
+        delta=3e-4
+    elif mu < 2 and mu > 1:
+        delta = 1e-2
+    else: #mu<1
+        delta=3e-4
+    #left=xlim()[0] #=7
+    #midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
     #print(mu,left,midPoint)
-    if mu < midPoint:
-        xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
-    text(xlim()[0]*(1+0), ylim()[1]*0.95, "Nominal Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+0), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+0), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-    text(xlim()[0]*(1+0), ylim()[1]*0.80, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
+    #if mu < midPoint:
+    #    xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
+    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.97, "Beam Twiss at PBW:", propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.83, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.75, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
     
-    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
-    if sigma <1e-3:
-        text(xlim()[1]*(1-0), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3e}".format(sigma)+unit, propsR)
+    if sigma <1e-2:
+        text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
     else:
-        text(xlim()[1]*(1-0), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.5f}".format(sigma)+unit, propsR)
+        text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
     if args.twissFile == "":
-        name=statsPWD+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom_Nb{:.0f}".format(len(read),args.betaSpread,args.Nb)
+        name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}betaSpreadNom".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
     else:
-        name=statsPWD+args.twissFile+args.qpNum+paramName+"Hist_{:.0f}x{:.0f}betaSpreadNom_Nb{:.0f}".format(len(read),args.betaSpread,args.Nb)
+        name=statsPWD+args.twissFile+args.qpNum+"Nb{:.0f}_{:.0f}x{:.0f}betaSpreadNom".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
     if args.saveSpread:
-        savefig(name+"."+args.picFormat)
+        tight_layout()
+        savefig(name+"."+args.picFormat,bbox_inches='tight')#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)
     print(name)
@@ -1917,15 +1924,10 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
 
 def spreadHist(args,Twiss,paths):
     #from os import uname
-    from plotFit import plotSpread,plotSpreadBroad
+    #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
-    
-    #if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no"}:
-    #    statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #elif uname()[1] == "mbef-xps-13-9300":
-    #    statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
-    paramName=["jMax","beamPOut"]#,"coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
+    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Area [mm$^2$]",
                 r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 "R Divide Value","R Difference Value"]

@@ -74,7 +74,8 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
     mapCsvPWD = paths['statsPWD']+"rAmplDependence/2DMap/"
 
     #now name has beta instead of emit!
-    name = "RasterAmplDependence_POutBox,Imax_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm_{:.0f}steps".format(Twiss[1],Twiss[4],rXRange,args.eY-args.startY,args.Nstep)
+    nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
+    name = "RasterAmplDependence_POutBox,Imax_nP{:.1e}_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm_{:.0f}steps".format(nPs,Twiss[1],Twiss[4],rXRange,args.eY-args.startY,args.Nstep)
     if os.path.isfile(mapCsvPWD+name+".csv"):
         print("Found data! Reading in!",mapCsvPWD+name)
         #from plotFit import numLines
