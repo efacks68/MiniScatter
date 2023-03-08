@@ -1,5 +1,5 @@
 #plot spread of observables from spread of Twiss
-#python3 spreadTwiss.py --betaSpread 50 --iterations 200 --saveSpread
+#python3 spreadTwiss.py --betaSpread 50 --samples 200 --saveSpread
 
 from argparse import ArgumentParser
 from plotFit import spreadHist,getTwiss
@@ -10,7 +10,7 @@ parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines b
 parser.add_argument("--source",    type=str,    default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
-parser.add_argument("--iterations",type=int,   default=10,    help="How many times to iterate this setting")
+parser.add_argument("--samples",   type=int,   default=10,    help="How many times to iterate this setting")
 parser.add_argument("--twissFile", type=str,   default="",    help="Load file with Twiss, auto look in OpenXAL folder")
 parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
 parser.add_argument("--Nb",        type=int,   default=10,    help="Number of macroparticles per beamlet. Default=10")
@@ -27,18 +27,21 @@ elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no"}:
     scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
     #print(scratchPath)
 
-if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
     csvPWD = scratchPath+"CSVs/"
+    homePWD = "/uio/hume/student-u52/ericdf/"
     statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 elif uname()[1] == "mbef-xps-13-9300":
+    scratchPath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
+    homePWD = "/home/efackelman/"
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 else:
     csvPWD = input("Path from home to direction you like to save root files to: ")
     statsPWD = "."
-paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD}
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
 
 i = 0
 Twiss,origBX,origBY = getTwiss(args,i,paths)
 
-spreadHist(args,Twiss,paths)
+spreadHist(args,Twiss,paths,origBX,origBY)

@@ -1,7 +1,7 @@
 #Script for searching Raster Magnet Amplitude space
 # making 2D map of % outside box, with input from Carl Lindstrom.
 
-def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
+def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     from datetime import datetime
     origin = datetime.now()
     print(origin,"\n")
@@ -113,7 +113,7 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
                 args.aX = rXAmps[i]
                 args.aY = rYAmps[j]
                 from runARasterMaker import runARasterMaker
-                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration,origBx,origBY)
+                rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample,origBx,origBY)
 
                 from simulation import setup
                 #def                        setup(args,material,           beamFile,Twiss,options,paths):
@@ -126,7 +126,7 @@ def mapRADependence(args,Twiss,iteration,paths,origBx,origBY):
                 (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
                 Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
-                #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
+                #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample)
                 ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
                 #_,_,_,Jmaxes[j][i], pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff  = simulation(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes,paths)
                 ##Store % value for plotting

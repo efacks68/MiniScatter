@@ -4,17 +4,17 @@
 
 #possible commands:
 #nominal systematic error:
-    #python3 rasterScatter.py --betaSpread 10 --iterations 10 --saveSpread
-#Various Twiss ranges with iterations:
-    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --iterations 10 --betaSpread 10
+    #python3 rasterScatter.py --betaSpread 10 --samples 200 --saveSpread
+#Various Twiss ranges with samples:
+    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --samples 10 --betaSpread 10
 #Fit Gaussian and Voigt to a beamlet:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
 #thickness dependence plot:
     #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
 #Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --iterations 5 --saveSpread
-#Vary N particles for nominal systematic error approx
-    #python3 rasterScatter.py --Nb 50 --iterations 10 --saveSpread
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --samples 5 --saveSpread
+#Vary N particles for nominal convergence study
+    #python3 rasterScatter.py --Nb 50 --samples 200 --saveSpread
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 
@@ -36,7 +36,7 @@ parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", def
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
-parser.add_argument("--iterations",type=int,   default=1,     help="How many times to iterate this setting")
+parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
 parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
@@ -90,11 +90,11 @@ args = parser.parse_args()
 #Where to save CSVs and statistics
 if uname()[1] == "tensor.uio.no":
     scratchPath = "/scratch2/ericdf/PBWScatter/"
-elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no"}:
+elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
     scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
-    #print(scratchPath)
+    print(scratchPath)
 
-if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
     csvPWD = scratchPath+"CSVs/"
     homePWD = "/uio/hume/student-u52/ericdf/"
     statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
@@ -108,9 +108,9 @@ else:
     statsPWD = "."
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
 
-def loopIterations(args,paths,i):
-    #Get Twiss and run; if no iterations argment defined, will run through once.
-    print("\n\nIteration",i)
+def loopSamples(args,paths,i):
+    #Get Twiss and run; if no samples argment defined, will run through once.
+    print("\n\nSample",i)
     Twiss,origBX,origBY = getTwiss(args,i,paths)
 
     #Get full rastered for this one Twiss
@@ -124,6 +124,7 @@ def loopIterations(args,paths,i):
 from multiprocessing import Lock, Process, Queue, current_process, Manager
 import time
 import queue #imported for using queue.Empty exception
+print("Number of processes to use:",4)
 
 def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
     while True:
@@ -142,28 +143,26 @@ def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
                 message to task_that_are_done queue
             '''
             #print(task)
-            Twiss,origBX,origBY = loopIterations(args,paths,task)
+            Twiss,origBX,origBY = loopSamples(args,paths,task)
             #print(task,Twiss)
 
         with outLock:
-            print("in outLock, task=",task, "process=",current_process().name)
+            #print("in outLock, task=",task, "process=",current_process().name)
             outTwiss[task] = Twiss #says this is undefined before it runs the first sampling, ???
             outOrigBX[task] = origBX
             outOrigBY[task] = origBY
-            print(outTwiss)
+            #print(outTwiss)
 
     return True
 
 
 def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY): #from outputTest.txt, this is running double everything. Why?
-    #from rasterScatter import loopIterations
-    number_of_task = args.iterations
-    number_of_processes = 4 #Number of cpus :  8
+    number_of_task = args.samples
+    number_of_processes = 4 #Number of cpus :  8 on tensor, 32 on heplab04
     tasks_to_accomplish = Queue()
     processes = []
 
     for i in range(number_of_task):
-        #tasks_to_accomplish.put(loopIterations(args,paths,i))
         tasks_to_accomplish.put(i)
 
     # creating processes
@@ -204,7 +203,6 @@ if args.sim =="raster":
     #import pdb; pdb.set_trace()
 
     i=0
-    Twiss,origBX,origBY = getTwiss(args,i,paths) #temporary, make it work better!
 else:
     i=0
     Twiss,origBX,origBY = getTwiss(args,i,paths)
@@ -231,6 +229,6 @@ else:
 
 print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
-#if args.iterations >= 2:
-#    from plotFit import spreadHist
-#    spreadHist(args,Twiss,paths) #with threading working, this isn't
+if args.samples >= 2:
+    from plotFit import spreadHist
+    spreadHist(args,Twiss[0],paths,origBX,origBX)

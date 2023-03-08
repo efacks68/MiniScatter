@@ -1,7 +1,7 @@
 #Script for searching Raster Magnet Amplitude space
 # making 2D map of % outside box, with input from Carl Lindstrom.
 
-def thicknessDependence(args,Twiss,iteration,paths):
+def thicknessDependence(args,Twiss,sample,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin,"\n")
@@ -68,7 +68,7 @@ def thicknessDependence(args,Twiss,iteration,paths):
             beamFile = paths['csvPWD']+"tDependence_bX{:.0f},{:.0f}m_t{:.1f}mm".format(Twiss[1],Twiss[4],options['PBWT'])
             Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,e8TargxReal[i],e8TargyReal[i],targxTwissf[i],targyTwissf[i] = runPBW(args,beamFile,Twiss,options,boxes,paths)
 
-            #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,iteration)
+            #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample)
             ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
             #_,_,_,Jmaxes[i], pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff  = simulation(args,args.material,beamXAngle,beamYAngle,rasterBeamFile,Twiss,options,boxes,paths)
             ##Store % value for plotting

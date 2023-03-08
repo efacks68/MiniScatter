@@ -1150,6 +1150,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     centYLim = 11
     centXLim = 14
     rValLim = 0.20
+    nomArea = 5600
     #if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
     if jMax >= jMaxLim:
         print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
@@ -1798,46 +1799,49 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
 
 
 
-def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
+def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramBins,pHistLims,origBX,origBY):
     import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout
     from numpy import greater,zeros,mean,std
     from plotFit import findFit, gaussian
     from math import floor,log10
 
-    read = zeros(args.iterations)
+    read = zeros(args.samples)
     read.fill(-750) #allow better filter than nonzero?
     print(Twiss)
-    for i in range(len(Twiss)):
-        Twiss[i] = round(Twiss[i]*1e5)/1e5
+    #for i in range(len(Twiss)):
+    #    Twiss[i] = re.search(betaKey,row[0])
     print(Twiss)
     i=0
     lenbreak=False
     pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
     partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
     nBkey = "NpB{:.0f}_".format(args.Nb)
-    print(pctKey,partKey,nBkey)
+    betaKey = "bX{:.2f},bY{:.2f}".format(Twiss[1],Twiss[4])
+    origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
+    print(pctKey,partKey,nBkey,betaKey)
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
+            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]),re.search(betaKey,row[0]))
             #if i ==5:
             #    break
-            if re.search(nBkey,row[0]) or re.search(partKey,row[0]): #not working for some reason
-                #print("Found correct size simulation\n",Twiss,"\n",row[1:6])
-                if round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
-                        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]:
+            if re.search(nBkey,row[0]) or re.search(partKey,row[0]) or re.search(betaKey,row[0]): #not working for some reason
+                #print("Found correct size simulation\n",Twiss,"\n",row[1:7])
+                #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[5]) == Twiss [4]:
+                if re.search(betaKey,row[0]) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
+                        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]):
                     #print("found Twiss")
                     read[i] = float(row[ind]) #[mm-mrad]
                     #if i < 5:
                     #    print(Twiss,row[0])
                     #print(i,read[i])
-                    if i == args.iterations-1:
+                    if i == args.samples-1:
                         lenbreak = True
                         break
                     i+=1
-                    #print(lenbreak)
+                    #print(i,lenbreak)
             if lenbreak:
                 break
             #if float(row[1]) == Twiss[0]:
@@ -1853,21 +1857,22 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
     #print(mean(read))
     nonEmpty = greater(read,-750) #remove unused elements
     read = read[nonEmpty]
-    #print(paramLims)
-    paramLims = (0,[args.iterations,100,500])
-    print("guess",paramName, args.iterations/4,mean(read),std(read),paramBins,len(read),paramLims)
+    #print(pFitLims)
+    pFitLims = (0,[args.samples,100,500])
+    print("guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
                                 #gaussian(x,amplitude,          mu,      sigma)
-    mu, sigma,ampl,interval = findFit(read,[args.iterations/4,mean(read),std(read)],paramLims,paramBins)
+    mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     print(mu,sigma,ampl)#,"\n",read)
 
-    _, bins, _ = hist(read,interval) #ax =
+    _, bins, _ = hist(read,interval,range=pHistLims) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
+    xlim(pHistLims)
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
     if args.betaSpread != 0:
-        title("{:.0f} Iterations of {:.0f}% Jitter Around Nominal\nwith {:.2e} Protons".format(len(read),args.betaSpread,nPs))
+        title("{:.0f} Samples of {:.0f}% Jitter Around Nominal\nwith {:.2e} Protons".format(len(read),args.betaSpread,nPs))
     else:
-        title("{:.0f} Iterations with {:.2e} Protons".format(len(read),nPs))
+        title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
 
     xlabel(paramLabel)
     ylabel("Counts")
@@ -1922,7 +1927,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,param
 
 
 
-def spreadHist(args,Twiss,paths):
+def spreadHist(args,Twiss,paths,origBX,origBY):
     #from os import uname
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
@@ -1935,19 +1940,21 @@ def spreadHist(args,Twiss,paths):
     ind = [7,8,9,10,11,12,13,14]
     unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","",""]
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-    paramLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
+    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
                     ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
-    paramBins = [30,35,40,30,25,25,25,25]
-    #bR = round(args.iterations/8)
-    #paramBins = [bR,bR,round(args.iterations/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
+    pHistLims = [[40,53],[8.2,8.55],[5000,7000],[-10,10],[-10,10],[.072,.073],[4.55,4.6]]#nominal
+    pHistLims = [[40,53],[8,8.8],[5000,7000],[-10,10],[-10,10],[.072,.073],[4.55,4.6]] #if range is outside this, the binning is off...
+    paramBins = 20#[30,35,40,30,25,25,25,25]
+    #bR = round(args.samples/8)
+    #paramBins = [bR,bR,round(args.samples/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
     ampl = zeros(len(paramName))
     lens = zeros(len(paramName))
     for i in range(len(paramName)):
-        print(paramName[i],paramLims[i],paramBins[i])
-        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
-        #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramLims[i],paramBins[i])
+        print(paramName[i],paramFitLims[i],paramBins)
+        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins,pHistLims[i],origBX,origBY)
+        #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],pFitLims[i],paramBins[i])
 
     import csv
     found=False
@@ -1988,15 +1995,15 @@ def spreadHist(args,Twiss,paths):
 
 
 
-def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,paramBins):
+def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramBins,pHistLims):
     import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
     from plotFit import findFit, gaussian
 
-    read = zeros(args.iterations)
+    read = zeros(args.samples)
     read.fill(-10)
-    paramLims[1][2] = 1e3 #increase
+    pFitLims[1][2] = 1e3 #increase
     #for i in range(len(Twiss)):
     #    Twiss[i] = round(Twiss[i]*1e5)/1e5
     #print(Twiss)
@@ -2014,7 +2021,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
                 #print("found Twiss")
                 read[i] = float(row[ind]) #[mm-mrad]
                 #print(i,read[i])
-                if i+1 == args.iterations:
+                if i+1 == args.samples:
                     lenbreak = True
                     break
                 i+=1
@@ -2026,14 +2033,14 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
     i#print(paramLabel,len(read))
     nonzero = npGreater(read,-10)
     read = read[nonzero]
-    print("guess",paramName,len(read),args.iterations/40,mean(read),std(read))
-    mu, sigma, ampl,interval = findFit(read,[args.iterations/40,mean(read),std(read)],paramLims,paramBins)
+    print("guess",paramName,len(read),args.samples/40,mean(read),std(read))
+    mu, sigma, ampl,interval = findFit(read,[args.samples/40,mean(read),std(read)],pFitLims,paramBins)
     print(mu,sigma,ampl)
 
     _, bins, _ = hist(read,interval) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    title("{:.0f}".format(len(read))+r" Iterations $\pm$50% Around Nominal")
+    title("{:.0f}".format(len(read))+r" Samples $\pm$50% Around Nominal")
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -2063,7 +2070,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,paramLims,
 
 
 
-def getTwiss(args,iteration,paths):
+def getTwiss(args,sample,paths):
     #Get Twiss to run, depending on user configuration
     # Twiss= [NemtX,BetaX,AlphX,NemtY,BetaY,AlphY]
     if args.beamClass == 'Yngve': #smallest from Yngve
@@ -2135,7 +2142,7 @@ def getTwiss(args,iteration,paths):
                     
                     if args.sim == "raster":
                         from scatterPBW import scatterPBW
-                        scatterPBW(args,Twiss,iteration,paths)
+                        scatterPBW(args,Twiss,sample,paths)
             else:
                 #for single QP fail runs
                 with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
@@ -2197,8 +2204,8 @@ def getTwiss(args,iteration,paths):
                 csv_file.close()
             writeMore = True
         else:
-            #If file present, read in values for the iterations requested
-            #Get length of file, in case user requested more iterations than previously made
+            #If file present, read in values for the samples requested
+            #Get length of file, in case user requested more samples than previously made
             from plotFit import numLines
             iters = numLines(name)-1
             print("File has",iters,"lines")
@@ -2210,18 +2217,18 @@ def getTwiss(args,iteration,paths):
                 next(csv_reader) #skips header
                 rowNum = 0
                 for row in csv_reader:
-                    #print(iteration,rowNum,row[0],row[1],row[2])
-                    #for the iteration passed in, get that row values
-                    if int(row[0]) == int(iteration):
-                        #print("Reading",rowNum, iteration,row[0],row[1],row[2])
+                    #print(sample,rowNum,row[0],row[1],row[2])
+                    #for the sample passed in, get that row values
+                    if int(row[0]) == int(sample):
+                        #print("Reading",rowNum, sample,row[0],row[1],row[2])
                         #immediately put in value as the Twiss
                         Twiss[1] = float(row[1])
                         Twiss[4] = float(row[2])
                         print("Read in Betas:",Twiss[1],Twiss[4])
                         break
 
-                    #if need to make more iterations than in file, flag and exit before EOF error
-                    if int(iteration) >= int(iters):
+                    #if need to make more samples than in file, flag and exit before EOF error
+                    if int(sample) >= int(iters):
                         print("User requested more Twiss than currently written")
                         writeMore = True
                         break
@@ -2257,7 +2264,7 @@ def getTwiss(args,iteration,paths):
             #append new value to the file so don't have to redo it
             with open(name+".csv",mode = 'a') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
-                csv_writer.writerow([iteration,Twiss[1],Twiss[4]]) #save the betas for this iteration number, to be used next time.
+                csv_writer.writerow([sample,Twiss[1],Twiss[4]]) #save the betas for this sample number, to be used next time.
                 csv_file.close()
     print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4])
 

@@ -1,5 +1,5 @@
 
-def runARasterMaker(args,Twiss,csvPWD,options,iteration,origBx,origBY):
+def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     import numpy as np
     from math import pi, asin, sin
     from datetime import datetime
@@ -76,14 +76,14 @@ def runARasterMaker(args,Twiss,csvPWD,options,iteration,origBx,origBY):
     Top = 17
     i=0 #for Bunch number iterator
 
-    #Add special endings for iterations, added for statistics
-    if args.iterations == 1: #this is the controlling variable
+    #Add special endings for samples, added for statistics
+    if args.samples == 1: #this is the controlling variable
         iterEnding = ""
     else:
-        if iteration == 0:
-            iterEnding ="" #reuse the no iteration run
+        if sample == 0:
+            iterEnding ="" #reuse the no sample run
         else:
-            iterEnding = "_"+str(iteration-1) #this is the variant
+            iterEnding = "_"+str(sample-1) #this is the variant
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
