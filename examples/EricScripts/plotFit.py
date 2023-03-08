@@ -1817,7 +1817,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
     partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
     nBkey = "NpB{:.0f}_".format(args.Nb)
-    betaKey = "bX{:.2f},bY{:.2f}".format(Twiss[1],Twiss[4])
+    betaKey = "bX{:.2f},bY{:.2f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
     print(pctKey,partKey,nBkey,betaKey)
     with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
@@ -1830,7 +1830,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             if re.search(nBkey,row[0]) or re.search(partKey,row[0]) or re.search(betaKey,row[0]): #not working for some reason
                 #print("Found correct size simulation\n",Twiss,"\n",row[1:7])
                 #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[5]) == Twiss [4]:
-                if re.search(betaKey,row[0]) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
+                if (re.search(origKey,row[0]) and re.search(betaKey,row[0])) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
                         round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]):
                     #print("found Twiss")
                     read[i] = float(row[ind]) #[mm-mrad]
@@ -1867,12 +1867,19 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     _, bins, _ = hist(read,interval,range=pHistLims) #ax =
     #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
-    xlim(pHistLims)
+
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
-    if args.betaSpread != 0:
-        title("{:.0f} Samples of {:.0f}% Jitter Around Nominal\nwith {:.2e} Protons".format(len(read),args.betaSpread,nPs))
+    if args.qpNum != 0:
+        if ind == 7:
+            xlim(pHistLims)
+        title("{:.0f} Samples of {:.0f}% Jitter for QP{:.0f}\nwith {:.2e} Protons".format(len(read),args.betaSpread,int(args.qpNum),nPs))
     else:
-        title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
+        if args.betaSpread != 0:
+            title("{:.0f} Samples of {:.0f}% Jitter Around Nominal\nwith {:.2e} Protons".format(len(read),args.betaSpread,nPs))
+            #xlim(pHistLims)
+        else:
+            title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
+            xlim(pHistLims)
 
     xlabel(paramLabel)
     ylabel("Counts")

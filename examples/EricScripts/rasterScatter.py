@@ -231,4 +231,4 @@ print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
 if args.samples >= 2:
     from plotFit import spreadHist
-    spreadHist(args,Twiss[0],paths,origBX,origBX)
+    spreadHist(args,Twiss[0],paths,origBX[0],origBX[0],args.beamFile) #need to think about this, maybe pass whole discitonary down, but not sure...
