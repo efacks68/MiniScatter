@@ -78,30 +78,30 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
 
     #Add special endings for samples, added for statistics
     if args.samples == 1: #this is the controlling variable
-        iterEnding = ""
+        sampEnding = ""
     else:
         if sample == 0:
-            iterEnding ="" #reuse the no sample run
+            sampEnding ="" #reuse the no sample run
         else:
-            iterEnding = "_"+str(sample-1) #this is the variant
+            sampEnding = "_"+str(sample-1) #this is the variant
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
-        name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.NB,args.nP)+iterEnding
+        name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)+sampEnding
     else:
         if args.source == "twiss":
-            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY)+iterEnding
+            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)+sampEnding
         elif args.source == "csv":
             name = args.beamFile
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
-            name = "PBW_{:.0f}MeV_beta{:.0f},{:.0f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
+            name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)+sampEnding
         elif args.beamClass == "pencil":
-            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.1e}".format(args.energy,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,args.aX,args.aY,nParts,args.Nb)+sampEnding
         elif args.beamClass == "Twiss":
-            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.0f},bY{:.0f}m_aX{:.0f},aY{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}_NPls{:.0e}".format(args.energy,
-                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb,args.nP)+iterEnding
+            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)+sampEnding
         if args.betaSpread != 0:
-            name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_bX{:.2f},bY{:.2f}m_N{:.1e}protons".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts)
+            name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts,args.Nb)
     if args.rX != 0:
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
     if args.rY != 0:

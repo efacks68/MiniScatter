@@ -17,7 +17,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
     #print(getcwd())
-    if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}:
+    if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
         if getcwd() != "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
     elif uname()[1] == "mbef-xps-13-9300":
@@ -32,7 +32,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     baseSimSetup["WORLDSIZE"] = args.rCut #[mm] Make the world wider for seeing where particles go
     #Output settings
     baseSimSetup["QUICKMODE"]  = False #Include slow plots
-    baseSimSetup["MINIROOT"]   = False #Skip TTRees in the .root files
+    baseSimSetup["MINIROOT"]   = True #Skip TTRees in the .root files
     baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
     baseSimSetup["EDEP_DZ"]    = 1.0 #Z bin width for energy deposit histogram
     baseSimSetup["CUTOFF_RADIUS"] = args.rCut #[mm]Larger radial cutoff #Decreased 10 May
@@ -46,6 +46,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     if args.sim == "raster" or args.sim == "map":
         from plotFit import numLines
         parts = numLines(beamFile)
+        #print(parts,"in sim setup N")
         baseSimSetup["N"]        = parts #change to match file particles. Used for file name
         baseSimSetup["BEAMFILE"] = beamFile+".csv" # number of particles >= N
         baseSimSetup["ENERGY"]   = args.energy #570 #[MeV] #ESS beam energy update 15.8
@@ -145,7 +146,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
 
     if uname()[1] == "mbef-xps-13-9300": #my laptop
         baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath'])
-    elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no"}: #UiO desktop
+    elif uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}: #UiO desktop
         if args.source == "twiss":
             baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"failures/")
         elif args.source == "particles":

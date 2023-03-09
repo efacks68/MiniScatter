@@ -3,20 +3,28 @@
 #Includes setup and output preferences
 
 #possible commands:
-#nominal systematic error:
-    #python3 rasterScatter.py --betaSpread 10 --samples 200 --saveSpread
-#Various Twiss ranges with samples:
-    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --samples 10 --betaSpread 10
+#Vary N particles for nominal convergence study
+    #python3 rasterScatter.py --Nb 100 --samples 200 --saveSpread
+#Jitter study:
+    #python3 rasterScatter.py --samples 200 --saveSpread --betaSpread 10
 #Fit Gaussian and Voigt to a beamlet:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
-#thickness dependence plot:
-    #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
 #Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
     #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --samples 5 --saveSpread
-#Vary N particles for nominal convergence study
-    #python3 rasterScatter.py --Nb 50 --samples 200 --saveSpread
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
+#thickness dependence plot:
+    #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
+#raster magnet failures:
+    #python3 rasterScatter.py --failure 1 --magFails 4 --savePics
+
+#load from CSV file name:
+    #python3 rasterScatter.py --source csv --beamFile sampleIn50Pct_OrigbX1006.80,bY129.72m_beta1006.80,129.72m_N2.9e+06_NpB100 --saveGrads --saveEdges
+
+
+#Not sure it's useful:Various Twiss ranges with samples:
+    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --samples 10 --betaSpread 10
+
 
 from datetime import datetime
 origin = datetime.now()
@@ -72,6 +80,8 @@ parser.add_argument("--picFormat", choices=("png","svg","pdf"), type=str, defaul
 parser.add_argument("--matPlots",  action="store_true",  default=False,   help="Whether to do various material plots for beamlets")
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
+parser.add_argument("--reBin",     type=int, default=5,  help="Number of bins to make into 1 in 2D histogram for smoothing")
+parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
 parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
@@ -124,7 +134,7 @@ def loopSamples(args,paths,i):
 from multiprocessing import Lock, Process, Queue, current_process, Manager
 import time
 import queue #imported for using queue.Empty exception
-print("Number of processes to use:",4)
+print("Number of processes to use:",args.processes)
 
 def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
     while True:
@@ -158,7 +168,7 @@ def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
 
 def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY): #from outputTest.txt, this is running double everything. Why?
     number_of_task = args.samples
-    number_of_processes = 4 #Number of cpus :  8 on tensor, 32 on heplab04
+    number_of_processes = args.processes #Number of cpus :  8 on tensor, 32 on heplab04
     tasks_to_accomplish = Queue()
     processes = []
 

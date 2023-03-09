@@ -1078,16 +1078,16 @@ def voigtFit(data,axis):
 
 def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths):
     import numpy as np
-    name=savename+"_"+position+"Image"
+    name=savename+"_"+position+"Image_rB"+str(args.reBin)
     um = 1e-6
     from datetime import datetime
     from plotFit import converter
 
     #print(datetime.now().strftime("%H-%M-%S"))
-    (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths) #convert from TH2D to numpy map
+    (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths,args.reBin) #convert from TH2D to numpy map
     #print(datetime.now().strftime("%H-%M-%S"))
-    xBinSize = xax[501]-xax[500]
-    yBinSize = yax[501]-yax[500]
+    xBinSize = xax[round(len(xax)*0.5)+1]-xax[round(len(xax)*0.5)]
+    yBinSize = yax[round(len(xax)*0.5)+1]-yax[round(len(xax)*0.5)]
     sumTot=np.sum(Img)
     ImgJ = Img #PMAS converts whole array into J, so send this one instead of making it inside PMAS.
     #print(xBinSize,yBinSize,sumTot)
@@ -1112,23 +1112,28 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     Pprotons = sumTot / parts * 100 #this is constant
     #print("Protons:",parts,sumTot,Pprotons,"\nCharge:",sumCharge,sumCharge/I_pulse*100)
     cols = ["r","cyan","gold","lime","k"]
+    rdVal = 10#args.reBin*2
     for i in range(len(boxes)): 
         pLargers[i] = boxes[i]
         widths[i] = round(widths[0]*(1+pLargers[i]) / 2) * 2
         heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2
         boxLLxs[i] = round(-widths[i]/2 / 2) * 2 #-90
         boxLLys[i] = round(-heights[i]/2 / 2) * 2 #-80
-        #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i])
+        #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
 
         for idx, val in np.ndenumerate(xax):
-            if int(val) == boxLLxs[i]:
+            if int(val) == round(boxLLxs[i]/rdVal)*rdVal:
+                #print(idx[0])
                 boxLInd = idx[0] #455
-            if int(val) == boxLLxs[i]+widths[i]:
+            if int(val) == round(boxLLxs[i]/rdVal)*rdVal+round(widths[i]/rdVal)*rdVal:
+                #print(idx[0])
                 boxRInd = idx[0] #545
         for idx, val in np.ndenumerate(yax):
-            if int(val) == boxLLys[i]:
+            #print(idx[0],val)
+            if int(val) == round(boxLLys[i]/rdVal)*rdVal:
                 boxBInd = idx[0] #460
-            if int(val) == boxLLys[i]+heights[i]:
+            if int(val) == round(boxLLys[i]/rdVal)*rdVal+round(heights[i]/rdVal)*rdVal:
+                #print(idx[0])
                 boxTInd = idx[0] #540
         #Find % outside the 99% Box area
         core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
@@ -1302,9 +1307,15 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
 
 
-def converter(hIn,saveHist,name,paths):
+def converter(hInO,saveHist,name,paths,reBin):
     import ROOT
     from numpy import zeros
+
+    if reBin > 1:
+        #print("Rebinning")
+        oldName=hInO.GetName()
+        hIn = hInO.Rebin2D(reBin,reBin,oldName+"_"+str(reBin))
+        #print("Shape of old:",hInO.GetXaxis().GetNbins(),"\nShape of New:",hIn.GetXaxis().GetNbins())
 
     #Get X axis from ROOT
     xax = zeros(hIn.GetXaxis().GetNbins()+1)
@@ -1330,7 +1341,7 @@ def converter(hIn,saveHist,name,paths):
 
     if saveHist: #for rValue calculations
         from os import uname
-        if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no"}:
+        if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
             import csv,re
             #Remove upper directories that may have come with name for appending outname to scratch folder
             if re.search("/PBW_",name):
@@ -1398,9 +1409,9 @@ def rCompare(Im,Nb,paths):
     from os import uname
 
     #Find reference files
-    if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no"}:
+    if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
         if Nb == 100:
-              Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+              Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         elif Nb == 500:
               Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
@@ -1645,8 +1656,8 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     import numpy as np
     printEdges = True
 
-    xBinSize = xax[501]-xax[500]
-    yBinSize = yax[501]-yax[500]
+    xBinSize = xax[round(len(xax)*0.5)+1]-xax[round(len(xax)*0.5)]
+    yBinSize = yax[round(len(xax)*0.5)+1]-yax[round(len(xax)*0.5)]
 
     #99% box
     width = 160
@@ -1654,15 +1665,16 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     boxLLx = round(-width/2 / 2) * 2 #-90
     boxLLy = round(-height/2 / 2) * 2 #-80
     #print(len(xax),boxLLx,boxLLy,width,height)
+    rdVal=10
     for idx, val in np.ndenumerate(xax):
-        if int(val) == boxLLx:
+        if int(val) == round(boxLLx/rdVal)*rdVal:
             boxLInd = idx[0] #455
-        if int(val) == boxLLx+width:
+        if int(val) == round(boxLLx/rdVal)*rdVal+round(width/rdVal)*rdVal:
             boxRInd = idx[0] #545
     for idx, val in np.ndenumerate(yax):
-        if int(val) == boxLLy:
+        if int(val) == round(boxLLy/rdVal)*rdVal:
             boxBInd = idx[0] #460
-        if int(val) == boxLLy+height:
+        if int(val) == round(boxLLy/rdVal)*rdVal+round(height/rdVal)*rdVal:
             boxTInd = idx[0] #540
     #Find % outside the 99% Box area
     core = Img[boxBInd:boxTInd,boxLInd:boxRInd]
@@ -1762,7 +1774,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
     if fileName !="":  
             statsName = statsPWD+fileName+".csv"
     else:
-        statsName = statsPWD+"EvalStats2Mar.csv"
+        statsName = statsPWD+"EvalStats8Mar.csv"
     if not osPath.isfile(statsName): #didn't work...?
         with open(statsName,mode = 'w') as csv_file:
             csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -1799,7 +1811,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
 
 
 
-def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramBins,pHistLims,origBX,origBY):
+def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramBins,pHistLims,origBX,origBY,beamFile):
     import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout
     from numpy import greater,zeros,mean,std
@@ -1811,39 +1823,56 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     print(Twiss)
     #for i in range(len(Twiss)):
     #    Twiss[i] = re.search(betaKey,row[0])
-    print(Twiss)
+    #print(Twiss)
     i=0
     lenbreak=False
     pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
-    partKey = "{:.0f}".format(floor(log10(2.88e4*args.Nb)))+"protons"
+    partKey = "0{:.0f}".format(floor(log10(2.88e4*args.Nb)))
     nBkey = "NpB{:.0f}_".format(args.Nb)
-    betaKey = "bX{:.2f},bY{:.2f}m".format(Twiss[1],Twiss[4])
+    #beta2Key = "bX{:.2f},bY{:.2f}m".format(Twiss[1],Twiss[4])
+    beta0Key = "beta{:.0f},{:.0f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
-    print(pctKey,partKey,nBkey,betaKey)
-    with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
+    #print(pctKey,partKey,nBkey,beta2Key,beta0Key)
+    with open(statsPWD+"EvalStats8Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]),re.search(betaKey,row[0]))
-            #if i ==5:
-            #    break
-            if re.search(nBkey,row[0]) or re.search(partKey,row[0]) or re.search(betaKey,row[0]): #not working for some reason
-                #print("Found correct size simulation\n",Twiss,"\n",row[1:7])
-                #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[5]) == Twiss [4]:
-                if (re.search(origKey,row[0]) and re.search(betaKey,row[0])) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
-                        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]):
-                    #print("found Twiss")
-                    read[i] = float(row[ind]) #[mm-mrad]
-                    #if i < 5:
-                    #    print(Twiss,row[0])
-                    #print(i,read[i])
-                    if i == args.samples-1:
-                        lenbreak = True
-                        break
-                    i+=1
-                    #print(i,lenbreak)
+            if beta0Key:
+                #print(i,row[0])
+                read[i] = float(row[ind]) #[mm-mrad]
+            #    print(i,read[i])
+                if i == args.samples-1:
+                    lenbreak = True
+                    break
+                i+=1
+                #print(i,lenbreak)
             if lenbreak:
                 break
+
+
+            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]),re.search(beta0Key,row[0]),re.search(beta2Key,row[0]))
+            #if i ==10:
+            #    break
+            #if re.search(nBkey,row[0]) or re.search(partKey,row[0]) or re.search(betaKey,row[0]): #not working for some reason
+            #    print("Found correct size simulation\n",Twiss,"\n",row[1:7])
+                #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[5]) == Twiss [4]:
+            #if re.search(pctKey,row[0]) and (re.search(beta2Key,row[0]) or re.search(beta0Key,row[0])) and (re.search(partKey,row[0]) or re.search(nBkey,row[0])):
+            #    print(i,row[0],pctKey,re.search(pctKey,row[0]),beta2Key,re.search(beta2Key,row[0]), re.search(beta0Key,row[0]),re.search(partKey,row[0]),re.search(nBkey,row[0]))
+
+            #if (re.search(origKey,row[0]): and re.search(betaKey,row[0])) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
+            #        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]):
+            #    print("Found correct size simulation\n",Twiss,"\n",row[1:7])
+            #######    read[i] = float(row[ind]) #[mm-mrad]
+                #if i < 5:
+                #    print(Twiss,row[0])
+            #    print(i,read[i])
+            ##    if i == args.samples-1:
+            ##        lenbreak = True
+            ##        break
+            ##    i+=1
+                #print(i,lenbreak)
+            ##if lenbreak:
+            ##    break
             #if float(row[1]) == Twiss[0]:
                 #print("we got something!")
                 #print(float(row[2]),Twiss[1])
@@ -1934,7 +1963,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
 
 
-def spreadHist(args,Twiss,paths,origBX,origBY):
+def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     #from os import uname
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
@@ -1960,7 +1989,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY):
     lens = zeros(len(paramName))
     for i in range(len(paramName)):
         print(paramName[i],paramFitLims[i],paramBins)
-        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins,pHistLims[i],origBX,origBY)
+        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins,pHistLims[i],origBX,origBY,beamFile)
         #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],pFitLims[i],paramBins[i])
 
     import csv
@@ -2017,7 +2046,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats2Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats8Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2095,8 +2124,8 @@ def getTwiss(args,sample,paths):
     if args.source == "csv":
         import re
         if re.search("beta",paths['csvPWD']+args.beamFile):
-            betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m_RMamp)))",args.beamFile)[0])
-            betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_RMamp)))",args.beamFile)[0])
+            betaX = float(re.search("(([-+]?[0-9]*\.?[0-9]*)+(?=(,([-+]?[0-9]*\.?[0-9]*)+m)))",args.beamFile)[0])
+            betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_N)))",args.beamFile)[0])
             print(betaX,betaY)
 
     #Tailored to OpenXAL failure input
@@ -2264,7 +2293,7 @@ def getTwiss(args,sample,paths):
                         Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
                         Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
                         if Twiss[4] <= 0 or Twiss [1] <= 0:
-                            print("Check things, a Beta has been <0 four times!")
+                            Exception("Get Twiss, a Beta has been <0 four times!")
                         #can't happen 4 times in a row that the value is 2 sigma off
             print(origBX,origBY,"Newly written Betas:",Twiss[1],Twiss[4])
 
