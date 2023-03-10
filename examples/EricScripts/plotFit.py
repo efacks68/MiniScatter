@@ -107,6 +107,7 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     #name = savename+"_"+dt.strftime("%H-%M-%S")+".png"  
     name = savename+".png" #I'd prefer to have it overwrite old files for now
     print(name) #show so it is easy to find the file
+    plt.tight_layout()
     plt.savefig(name,bbox_inches="tight")
     #plt.show()
     plt.close() #be sure to close the plot
@@ -413,6 +414,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
 
     name = savename+"_TwissFit"+axis+"'"+dt.strftime("%H-%M-%S") +".png"##
     #plt.show()
+    plt.tight_layout()
     plt.savefig(name,bbox_inches="tight")
     plt.close()
     print(name)
@@ -593,6 +595,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     name = savename+"_compTargs_"+dt.strftime("%H-%M-%S")+".pdf"##
     #plt.show()
     if args.savePics:
+        plt.tight_layout()
         plt.savefig(name,bbox_inches="tight")
     plt.close()
     print(name)
@@ -729,6 +732,7 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
 
     name = savename+"_"+fitlabel+"_"+dt.strftime("%H-%M-%S")##
     #plt.show()
+    plt.tight_layout
     plt.savefig(name+".pdf",bbox_inches="tight")
     plt.close()
     print(name)
@@ -1102,7 +1106,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     widths = np.zeros(len(boxes))
     heights = np.zeros(len(boxes))
     pLargers = np.zeros(len(boxes)) #percent larger than initial box(?)
-    coreImax = np.zeros(len(boxes))
+    #coreImax = np.zeros(len(boxes))
     coreMeanI = np.zeros(len(boxes))
     widths[0] = 160
     heights[0] = 64
@@ -1112,14 +1116,20 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     Pprotons = sumTot / parts * 100 #this is constant
     #print("Protons:",parts,sumTot,Pprotons,"\nCharge:",sumCharge,sumCharge/I_pulse*100)
     cols = ["r","cyan","gold","lime","k"]
-    rdVal = 10#args.reBin*2
+    rdVal = args.reBin*2
+    if args.reBin > 1:
+        print(args.reBin%2)
+        if args.reBin % 2 == 0:
+            reBinOffset = 0
+        else: 
+            reBinOffset = 0
     for i in range(len(boxes)): 
         pLargers[i] = boxes[i]
         widths[i] = round(widths[0]*(1+pLargers[i]) / 2) * 2
-        heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2
-        boxLLxs[i] = round(-widths[i]/2 / 2) * 2 #-90
-        boxLLys[i] = round(-heights[i]/2 / 2) * 2 #-80
-        #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
+        heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2 + reBinOffset
+        boxLLxs[i] = -round((widths[i]/2) / 2) * 2 #-90
+        boxLLys[i] = -round((heights[i]/2) / 2) * 2 + reBinOffset #-32
+        print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
 
         for idx, val in np.ndenumerate(xax):
             if int(val) == round(boxLLxs[i]/rdVal)*rdVal:
@@ -1129,7 +1139,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
                 #print(idx[0])
                 boxRInd = idx[0] #545
         for idx, val in np.ndenumerate(yax):
-            #print(idx[0],val)
+            #print(idx[0],int(val),round(boxLLys[i]/rdVal)*rdVal)
             if int(val) == round(boxLLys[i]/rdVal)*rdVal:
                 boxBInd = idx[0] #460
             if int(val) == round(boxLLys[i]/rdVal)*rdVal+round(heights[i]/rdVal)*rdVal:
@@ -1141,8 +1151,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         pOutsideBoxes[i] = (sumTot-sumCore)/sumTot*100
         #print(sumCore,pOutsideBoxes[i])
         #coreN = Img[boxBInd:boxTInd,boxLInd:boxRInd] #why a 2nd?
-        coreImax[i] = core.max() #[uA/cm^2]
-        coreMeanI[i] = np.mean(core) #[uA/cm^2]
+        #coreImax[i] = core.max() #[uA/cm^2]
+        #coreMeanI[i] = np.mean(core) #[uA/cm^2]
 
     from plotFit import PMAS
     sPMAS=datetime.now()#.strftime("%H-%M-%S"))
@@ -1196,9 +1206,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #        Img[i][j] = Img[i][j] * C #[uA/cm^2]
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
-    #print(coreMeanI*C,coreImax*C)
-    print("\nPMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox"\
-                .format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin,coreMeanI[0]*C),pOutsideBoxes)
+    print("\nPMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, pOutsideBox"\
+                .format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin),pOutsideBoxes)
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
     if args.gaussFit:
@@ -1263,7 +1272,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ax.text(xlim[0]*0.97, ylim[0]*0.71, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.83, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreMeanI)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreJMean)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
             ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(jMax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(args.aX,args.aY),propsR,fontsize=fs-4)
@@ -1286,7 +1295,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         #from os.path import isfile
         #if isfile(name+"*.png"):
         #  print("already present")
-        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
+        tight_layout()
+        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight')
         close(fig)
         close()
         print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
@@ -1308,15 +1318,15 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
 
 
-def converter(hInO,saveHist,name,paths,reBin):
+def converter(hIn,saveHist,name,paths,reBin):
     import ROOT
     from numpy import zeros
 
     if reBin > 1:
         #print("Rebinning")
-        oldName=hInO.GetName()
-        hIn = hInO.Rebin2D(reBin,reBin,oldName+"_"+str(reBin))
-        #print("Shape of old:",hInO.GetXaxis().GetNbins(),"\nShape of New:",hIn.GetXaxis().GetNbins())
+        oldName=hIn.GetName()
+        hIn = hIn.Rebin2D(reBin,reBin,oldName+"_"+str(reBin))
+        #print("Shape of old:",hIn.GetXaxis().GetNbins(),"\nShape of New:",hIn.GetXaxis().GetNbins())
 
     #Get X axis from ROOT
     xax = zeros(hIn.GetXaxis().GetNbins()+1)
@@ -1531,7 +1541,7 @@ def findEdges(Img,jMax,graph,savename,xax,yax,args):
         bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
         #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
         plt.tight_layout()
-        plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat)
+        plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat,bbox_inches='tight')
         print(savename,promY,"_GradPics.",args.picFormat,sep="")
         plt.close()
 
@@ -1566,7 +1576,7 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
     #print(len(sumGradY),npMin(sumGradY))
-    a=1
+    a=1 #decrease core size
 
     for idx, val in ndenumerate(sumGradY):
         if val == npMin(sumGradY):
@@ -1668,7 +1678,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     boxLLx = round(-width/2 / 2) * 2 #-90
     boxLLy = round(-height/2 / 2) * 2 #-80
     #print(len(xax),boxLLx,boxLLy,width,height)
-    rdVal=10
+    rdVal=args.reBin*2
     for idx, val in np.ndenumerate(xax):
         if int(val) == round(boxLLx/rdVal)*rdVal:
             boxLInd = idx[0] #455
@@ -1698,7 +1708,8 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     #print("PMAS Sum",sumTot)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    rValue,rDiff = rCompare(Img,args.Nb,paths)
+    rValue=0;rDiff=0
+    #rValue,rDiff = rCompare(Img,args.Nb,paths)
     #print("R = ",rValue,rDiff)
     #print("Converted in",datetime.now() - start)
 
@@ -1829,7 +1840,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     i=0
     lenbreak=False
     #How to select which entries? Make keys to search for
-    pctKey = "sampleIn"+"{:.0f}PctAlphaComp".format(args.betaSpread) #"(PBW_570MeV)"
+    pctKey = "sampleIn"+"{:.0f}Pct".format(args.betaSpread) #"(PBW_570MeV)"
     pbwKey = "PBW_{:.0f}MeV".format(args.energy)
     nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
     betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
@@ -1857,7 +1868,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             else:
                 #print(re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
                 if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]):
-                    print(i,row[0])
+                    #print(i,row[0])
                     read[i] = float(row[ind]) #[mm-mrad]
                     #print(i,read[i])
                     if i == args.samples-1:
@@ -1873,7 +1884,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     read = read[nonEmpty]
 
     pFitLims = (0,[args.samples,100,500])
-    print("guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
+    print(len(read),"guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
                               #gaussian(x,  amplitude,          mu,      sigma)
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     #print(mu,sigma,ampl)
@@ -1900,9 +1911,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=14
-    if mu > 30:
+    if mu > 25:
         delta = 3e-4
-    elif mu > 15 and mu <= 30:
+    elif mu > 15 and mu <= 25:
         delta = 1e-5
     elif mu >2 and  mu <= 15:
         delta = 1.2e-4
@@ -2072,6 +2083,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
     name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom".format(len(read),args.betaSpread)
     if args.saveSpread:
+        plt.tight_layout()
         savefig(name+"."+args.picFormat)
     close()
     print(len(read),paramName,mu,sigma)
