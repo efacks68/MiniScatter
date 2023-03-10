@@ -14,13 +14,14 @@ def thicknessDependence(args,Twiss,sample,paths):
     zoff        = "*-1" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':True, 'MCS':True, 'engPlot':False,
-                    'mat3Plot':False, 'TwissFits':False, 'PBWT': 2.25 }
+                    'mat3Plot':False, 'TwissFits':False, 'PBWT': 2.25 ,'MiniRoot':False}
 
     #Important things
+    #ind = 1 #0 is for position distribution sigma, 1 is for angular distribution sigma
     if args.t == 0:
-        materials = ["G4_Al"] #overwrites potential user input. Needs work
+        args.materials = ["G4_Al"] #overwrites potential user input. Needs work
     elif args.t == 0.1:
-        materials = ["G4_Galactic"]
+        args.materials = ["G4_Galactic"]
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     #Check if there is a CSV with the data already present. Speeds up plot modifications
@@ -38,7 +39,10 @@ def thicknessDependence(args,Twiss,sample,paths):
     targyTwissf = np.zeros(len(PBWT))   ; targyTwissf.fill(-750)
 
     #now name has beta instead of emit!
-    name = "tDependence_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}x{:.2f}mm".format(Twiss[1],Twiss[4],args.minThick,args.maxThick,args.stepThick)
+    if args.thickInd == 0:
+        name = "tDependencePos_beta{:.2f},{:.2f}m_R{:.1f},{:.1f}x{:.2f}mm".format(Twiss[1],Twiss[4],args.minThick,args.maxThick,args.stepThick)
+    else: 
+        name = "tDependenceAng_beta{:.2f},{:.2f}m_R{:.1f},{:.1f}x{:.2f}mm".format(Twiss[1],Twiss[4],args.minThick,args.maxThick,args.stepThick)
     if os.path.isfile(thickCsvPWD+name+".csv"):
         print("Found data! Reading in!",thickCsvPWD,name)
         #from plotFit import numLines
@@ -65,8 +69,10 @@ def thicknessDependence(args,Twiss,sample,paths):
 
             options['PBWT'] = PBWT[i]
             from runPBW import runPBW
-            beamFile = paths['csvPWD']+"tDependence_bX{:.0f},{:.0f}m_t{:.1f}mm".format(Twiss[1],Twiss[4],options['PBWT'])
-            Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,e8TargxReal[i],e8TargyReal[i],targxTwissf[i],targyTwissf[i] = runPBW(args,beamFile,Twiss,options,boxes,paths)
+            beamFile = paths['csvPWD']+"tDependence_beta{:.2f},{:.2f}m_t{:.1f}mm".format(Twiss[1],Twiss[4],options['PBWT'])
+            [Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff],e8SigsX,e8SigsY,targSigsX,targSigsY = runPBW(args,beamFile,Twiss,options,boxes,paths)
+            #bc passing list for making smaller # of arguments, extract variables we want here
+            e8TargxReal[i] = e8SigsX[args.thickInd];e8TargyReal[i] = e8SigsY[args.thickInd];targxTwissf[i]=targSigsX[args.thickInd];targyTwissf[i]=targSigsY[args.thickInd]
 
             #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample)
             ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
@@ -78,7 +84,7 @@ def thicknessDependence(args,Twiss,sample,paths):
             print(datetime.now().strftime("%H-%M-%S"))
             from plotFit import saveStats
             statsName = "thicknessStats"
-            saveStats(paths['statsPWD'],Twiss,beamFile,Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,statsName)
+            saveStats(paths['statsPWD'],Twiss,beamFile,Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,statsName,args.reBin)
         print("time elapsed",datetime.now()-origin)
 
         #Save values for future quick use
@@ -130,33 +136,38 @@ def thicknessDependence(args,Twiss,sample,paths):
     plt.scatter(PBWT,targxTwissf,c='aqua',label=r"GEANT4 $\sigma_x$")
     plt.scatter(PBWT,targyTwissf,c='gold',label=r"GEANT4 $\sigma_y$")
 
-    plt.xlim((0.3,args.maxThick+0.2))
-    plt.ylim((np.min(e8TargyReal)-1,np.max(e8TargxReal)+2))
+    if args.thickInd == 0:
+        plt.xlim((0.3,args.maxThick+0.2))
+        plt.ylim((np.min(e8TargyReal)-1,np.max(e8TargxReal)+2))
+        plt.annotate('Actual PBW Al', #up
+        xy=(2.25, 15), xycoords='data',
+        xytext=(-35, -40), textcoords='offset points',
+        arrowprops=dict(arrowstyle="->"))
+        plt.annotate('Thickness: 2.25mm',
+        xy=(2.25, 10.6), xycoords='data', #down
+        xytext=(-49, 46), textcoords='offset points',
+        arrowprops=dict(arrowstyle="->"))
+        
+        plt.ylabel(r"$\sigma$ at Target [mm]",fontsize=fs)
+        plt.title(r"Target Position $\sigma$ Growth with PBW Thickness",fontsize=fs+2)
+    else:
+        plt.ylabel(r"$\sigma$ at Target [mm]",fontsize=fs)
+        plt.title(r"Target Anglular $\sigma$ Growth with PBW Thickness",fontsize=fs+2)
+        #plt.vlines(2.25,plt.ylim()[0],plt.ylim()[1],color="m")
+        #plt.text(2.3,plt.ylim()[0]+0.1,"Actual PBW Al Thickness: 2.25mm",ha="right")
+        plt.annotate('   Actual PBW Al\nThickness: 2.25mm', #up
+        xy=(2.25, .00213), xycoords='data',
+        xytext=(-49, -60), textcoords='offset points',
+        arrowprops=dict(arrowstyle="->"))
+        
     xlim = plt.xlim()
     ylim = plt.ylim()
     plt.text(xlim[0]+0.1,ylim[1]*0.96,"Beam Twiss at PBW:",fontsize=fs-4)
     plt.text(xlim[0]+0.1,ylim[1]*0.92,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-4)
     plt.text(xlim[0]+0.1,ylim[1]*0.88,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-4)
     plt.text(xlim[0]+0.1,ylim[1]*0.84,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-4)
-    plt.annotate('PBW Al \nThickness:2.25mm',
-        xy=(2.25, 10.6), xycoords='data', #down
-        xytext=(20, 50), textcoords='offset points',
-        arrowprops=dict(arrowstyle="->",
-                        connectionstyle="arc,angleA=90,armA=0,rad=7"))
-    ##plt.annotate('', #down
-    ##    xy=(2.25, 4.5), xycoords='data',
-    ##    xytext=(38.5, 73), textcoords='offset points',
-    ##    arrowprops=dict(arrowstyle="->",
-    ##                    connectionstyle="arc,angleA=-115,armA=40,angleB=40,armB=0,rad=7"))
-    plt.annotate('', #up
-        xy=(2.25, 15), xycoords='data',
-        xytext=(18, -36), textcoords='offset points',
-        arrowprops=dict(arrowstyle="->",
-                        connectionstyle="arc,angleA=110,armA=15,rad=7"))
-
+    
     plt.xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
-    plt.ylabel(r"$\sigma$ at Target [mm]",fontsize=fs)
-    plt.title(r"Target $\sigma$ Growth with PBW Thickness",fontsize=fs+2)
 
     #handles1, labels1 = plt.gca().get_legend_handles_labels()
     #print(labels1)

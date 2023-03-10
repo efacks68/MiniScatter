@@ -1,5 +1,6 @@
 #plot spread of observables from spread of Twiss
 #python3 spreadTwiss.py --betaSpread 50 --samples 200 --saveSpread
+#python3 spreadTwiss.py --samples 200 --saveSpread --Nb 10
 
 from argparse import ArgumentParser
 from plotFit import spreadHist,getTwiss
@@ -15,7 +16,7 @@ parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines b
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
-parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
+parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, or all")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
 parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of already made csv")
@@ -54,6 +55,21 @@ parser.add_argument("--matPlots",  action="store_true",  default=False,   help="
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
 parser.add_argument("--reBin",     type=int, default=5,  help="Number of bins to make into 1 in 2D histogram for smoothing")
+parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
+#Maps options:
+parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
+parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
+parser.add_argument("--eY",     type=int,     default=25,    help="End ampl Y")
+parser.add_argument("--startX", type=int,     default=30,    help="Start ampl for X")
+parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
+parser.add_argument("--Nstep", type=int,     default=7,     help="N steps")
+#parser.add_argument("--NstepX", type=int,     default=7,     help="N steps for X")
+#parser.add_argument("--NstepY", type=int,     default=7,     help="N steps for Y")
+#Thickness Dependence option:
+parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
+parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")
+parser.add_argument("--stepThick",type=float, default=0.5,   help="Step of Thicknesses")
+parser.add_argument("--thickInd",type=int, default=0, choices=(0,1),   help="Position (0) or Angle (1) dependence on thickness?")
 args = parser.parse_args()
 
 #Where to save CSVs and statistics
@@ -82,7 +98,7 @@ physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT
 zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
 options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                 'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
-                'mat3Plot':False }
+                'mat3Plot':False, 'MiniRoot':True  }
 
 #Important things
 if args.t == 0:

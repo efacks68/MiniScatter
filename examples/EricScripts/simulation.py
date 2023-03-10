@@ -12,6 +12,8 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     from numpy import cos,sin#,arctan
     from os import uname,getcwd,chdir,path as osPath
     from sys import path as sysPath
+    #from datetime import datetime
+    #print("setup start",datetime.now())
 
     #Setup MiniScatter -- modify the path to where you built MiniScatter
     MiniScatter_path="../../MiniScatter/build/."
@@ -32,7 +34,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     baseSimSetup["WORLDSIZE"] = args.rCut #[mm] Make the world wider for seeing where particles go
     #Output settings
     baseSimSetup["QUICKMODE"]  = False #Include slow plots
-    baseSimSetup["MINIROOT"]   = True #Skip TTRees in the .root files
+    baseSimSetup["MINIROOT"]   = options['MiniRoot'] #Skip TTRees in the .root files
     baseSimSetup["ANASCATTER"] = True #don't do Analytical Scatter Angle Test
     baseSimSetup["EDEP_DZ"]    = 1.0 #Z bin width for energy deposit histogram
     baseSimSetup["CUTOFF_RADIUS"] = args.rCut #[mm]Larger radial cutoff #Decreased 10 May
@@ -45,7 +47,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     #For loading particles
     if args.sim == "raster" or args.sim == "map":
         from plotFit import numLines
+        #print("numLines start",datetime.now())
         parts = numLines(beamFile)
+        #print("numLines end",datetime.now())
         #print(parts,"in sim setup N")
         baseSimSetup["N"]        = parts #change to match file particles. Used for file name
         baseSimSetup["BEAMFILE"] = beamFile+".csv" # number of particles >= N
@@ -75,6 +79,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         #G4_STAINLESS-STEEL, G4_WATER,G4_SODIUM_IODIDE, G4_Galactic, G4_AIR, Sapphire, ChromoxPure, ChromoxScreen
 
         #What beam?
+        #print("t !=0",datetime.now())
         if beamFile != "":
             import re
             name = re.sub(".+(PBW)",mat,beamFile) #change file name
@@ -83,6 +88,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         else:
             outname = "simplePBW_"+str(baseSimSetup["THICK"])+"mm"+mat+"_{:.0f}MeV_emtx{:.0f}um".format(baseSimSetup["ENERGY"],Twiss[1]*1e3)
     else: #realistic curved PBW
+        #print("t=0",datetime.now())
         baseSimSetup["THICK"] = 0.0
         baseSimSetup["MAGNET"] = []
         #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
@@ -126,6 +132,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             m2["keyval"]["absorberHeight"]   = 950.0 #[mm]
             baseSimSetup["MAGNET"].append(m2)
 
+    #print("setup name end",datetime.now())
     if options['physList'] == "QGSP_BERT_EMZ":
         outname = outname + "_QBZ"
     elif options['physList'] == "FTFP_BERT_EMZ":
@@ -167,7 +174,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     simSetup_simple1["OUTNAME"] = outname #"PBW_570MeV_pencil_N1e+05"#
     savename=paths['statsPWD']+outname #base savename for plots downstream, brings directly to my directory
     #savedfile=osPath.join(simSetup_simple1["OUTFOLDER"],simSetup_simple1["OUTNAME"])+".root"
-    #print(savename, savedfile)
+    #print("setup end",datetime.now())#savename, savedfile)
 
     return savename,simSetup_simple1
 
@@ -613,7 +620,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         from plotFit import plot1DRaster,rasterImage
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-        Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+        PMASreturn = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
         
         if options['initTree']:
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
@@ -648,10 +655,11 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
     if args.sim == "thick":
         from plotFit import getMoments
-        [e8SigX,_] = getMoments(e8TargxReal)
-        [e8SigY,_] = getMoments(e8TargyReal)
-        [targSigX,_] = getMoments(targxTwissf)
-        [targSigY,_] = getMoments(targyTwissf)
+        e8SigsX = getMoments(e8TargxReal)
+        e8SigsY = getMoments(e8TargyReal)
+        targSigsX = getMoments(targxTwissf)
+        targSigsY = getMoments(targyTwissf)
         print(e8SigX,e8SigY,targSigX,targSigY)
 
-    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,e8SigX,e8SigY,targSigX,targSigY #filter by PDG only
+    #passing lists to decrease length of argument calls
+    return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, PMASreturn,e8SigsX,e8SigsY,targSigsX,targSigsY #filter by PDG only

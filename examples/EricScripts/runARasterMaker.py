@@ -106,7 +106,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
     if args.rY != 0:
         name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
-    print(name)
+    print(name,"sample:",sample)
 
     #Raster Magnet Failure Options
     idcy = round(N_t * (1 - args.magFails / 4 )) #produces which quarter:end is 0
@@ -134,7 +134,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     outname = csvPWD + name
     from os.path import isfile
     if isfile(outname+".csv"):
-        print("Found: ",outname,".csv",sep="")
+        print("Found: ",outname,".csv ",datetime.now(),sep="")
     else:
         print("CSV not found. Making: ",outname,".csv",sep="")
         totX = np.zeros([nParts,2])

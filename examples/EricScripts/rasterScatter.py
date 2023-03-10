@@ -42,7 +42,7 @@ parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines b
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
-parser.add_argument("--qpNum",     type=str,   default="138", help="Either a number between 099 and 148, or all")
+parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, or all")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
 parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of already made csv")
@@ -95,6 +95,7 @@ parser.add_argument("--Nstep", type=int,     default=7,     help="N steps")
 parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
 parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")
 parser.add_argument("--stepThick",type=float, default=0.5,   help="Step of Thicknesses")
+parser.add_argument("--thickInd",type=int, default=0, choices=(0,1),   help="Position (0) or Angle (1) dependence on thickness?")
 args = parser.parse_args()
 
 #Where to save CSVs and statistics
@@ -208,7 +209,7 @@ if args.sim =="raster":
         origBY = outOrigBY.copy()
     print()
     print("final:")
-    print(Twiss)
+    print(len(Twiss))
 
     #import pdb; pdb.set_trace()
 

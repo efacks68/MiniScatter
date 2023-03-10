@@ -14,7 +14,7 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
-                    'mat3Plot':False }
+                    'mat3Plot':False,'MiniRoot':True }
 
     #Important things
     if args.t == 0:
@@ -23,6 +23,7 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
         args.material = "Vac"
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
+    #print("getting raster",datetime.now())
     #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
     rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample,origBx,origBY)
 
@@ -33,11 +34,13 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     import miniScatterDriver
     from plotFit import rasterImage
 
+    #print("reading root",datetime.now())
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-    Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+    [Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff] = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
     from plotFit import saveStats
-    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,"")
+    #print("saveStats start",datetime.now())
+    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,"",args.reBin)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

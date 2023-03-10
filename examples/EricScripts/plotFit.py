@@ -1147,7 +1147,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     from plotFit import PMAS
     sPMAS=datetime.now()#.strftime("%H-%M-%S"))
     jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,rDiff = PMAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
-    #print("finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
+    #print(EI)#"finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
 
     #Warning print is outside PMAS because it takes a long time
     jMaxLim = 53
@@ -1179,7 +1179,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #print(jMax,pOutsideBox,rValue,rDiff,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
     #coreJMax = core.max()
-    coreJMean = np.mean(Img[EI[1]:EI[0],EI[2]:EI[3]])
+    coreJMean = np.mean(Img[EI[1]:EI[0],EI[2]:EI[3]]) #decrease by 1 index
     coreArea = (edges[0]-edges[1])*(edges[3]-edges[2])
     #print("J in core ",coreArea,"mm^2 is {:.2f} uA/cm^2".format(coreJMean),sep="")#np.sum(Img[idxMinY:idxMaxY,idxMinX:idxMaxX])))
     #print("Beam Core Area: ",edges[3]-edges[2],"mm wide x ",edges[0]-edges[1],"mm high",sep="")
@@ -1197,7 +1197,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
     #print(coreMeanI*C,coreImax*C)
-    print("PMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox"\
+    print("\nPMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, coreMeanI {:.1f}, pOutsideBox"\
                 .format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin,coreMeanI[0]*C),pOutsideBoxes)
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
@@ -1293,7 +1293,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #dt = datetime.now()
     #print(dt-start)
 
-    return jMax,pOutsideBox,beamArea,coreJMean,centX,centY,rValue,rDiff
+    #passing lists to decrease length of argument calls
+    return [jMax,pOutsideBox,beamArea,coreJMean,centX,centY,rValue,rDiff]
 
 
 
@@ -1529,6 +1530,7 @@ def findEdges(Img,jMax,graph,savename,xax,yax,args):
         bc = fig.colorbar(b, ax=ax2,pad=0.01)
         bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
         #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
+        plt.tight_layout()
         plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat)
         print(savename,promY,"_GradPics.",args.picFormat,sep="")
         plt.close()
@@ -1564,20 +1566,21 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
     #print(len(sumGradY),npMin(sumGradY))
+    a=1
 
     for idx, val in ndenumerate(sumGradY):
         if val == npMin(sumGradY):
-            topInd = idx[0]
+            topInd = idx[0]-a
             #print("top",val,idx[0])
         if val == npMax(sumGradY):
-            botInd = idx[0]
+            botInd = idx[0]+a
             #print("bot",val,idx[0])
     for idx,val in ndenumerate(sumGradX):
         if val == npMin(sumGradX):
-            rigInd = idx[0]
+            rigInd = idx[0]+a
             #print("rig",val,idx[0])
         if val == npMax(sumGradX):
-            lefInd = idx[0]
+            lefInd = idx[0]-a
             #print("lef",val,idx[0])
     #print([topInd,botInd,lefInd,rigInd])
     ##n=6 #this gave pretty even results
@@ -1607,11 +1610,11 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
     lim=550
     if topInd > lim:
         topInd = 0
-        print(avgMinSumGradY,avgMinSumGradY/n,avgMaxSumGradY)
+        #print(avgMinSumGradY,avgMinSumGradY/n,avgMaxSumGradY)
         print("\n\nError in Gradient calculation of top Index!\n\n")
     elif botInd > lim:
         botInd = 0
-        print(maxSumGradYInds,avgMaxSumGradY,avgMaxSumGradY/n)
+        #print(maxSumGradYInds,avgMaxSumGradY,avgMaxSumGradY/n)
         print("\n\nError in Gradient calculation of bottom Index!\n\n")
     elif lefInd > lim:
         lefInd = 0
@@ -1767,14 +1770,16 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
 
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,fileName):
+def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,fileName,reBin):
     #save values in Stats CSV
     import csv
     from os import path as osPath
+    from re import sub
+    rasterBeamFile = sub(".+(?<=(/CSVs/))","",rasterBeamFile)
     if fileName !="":  
-            statsName = statsPWD+fileName+".csv"
+            statsName = statsPWD+fileName#+"_rB"+str(reBin)+".csv"
     else:
-        statsName = statsPWD+"EvalStats8Mar.csv"
+        statsName = statsPWD+"EvalStats10Mar.csv"
     if not osPath.isfile(statsName): #didn't work...?
         with open(statsName,mode = 'w') as csv_file:
             csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -1820,87 +1825,66 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     read = zeros(args.samples)
     read.fill(-750) #allow better filter than nonzero?
-    print(Twiss)
-    #for i in range(len(Twiss)):
-    #    Twiss[i] = re.search(betaKey,row[0])
-    #print(Twiss)
+    #print(Twiss,beamFile)
     i=0
     lenbreak=False
-    pctKey = "sampleIn"+"{:.0f}".format(args.betaSpread)+"Pct" #"(PBW_570MeV)"
-    partKey = "0{:.0f}".format(floor(log10(2.88e4*args.Nb)))
-    nBkey = "NpB{:.0f}_".format(args.Nb)
-    #beta2Key = "bX{:.2f},bY{:.2f}m".format(Twiss[1],Twiss[4])
-    beta0Key = "beta{:.0f},{:.0f}m".format(Twiss[1],Twiss[4])
+    #How to select which entries? Make keys to search for
+    pctKey = "sampleIn"+"{:.0f}PctAlphaComp".format(args.betaSpread) #"(PBW_570MeV)"
+    pbwKey = "PBW_{:.0f}MeV".format(args.energy)
+    nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
+    betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
-    #print(pctKey,partKey,nBkey,beta2Key,beta0Key)
-    with open(statsPWD+"EvalStats8Mar.csv",mode='r') as csv_file:
+    #print(pctKey,nBkey,betaKey,origKey,"\n\n")
+    #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile) )
+    with open(statsPWD+"EvalStats10Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
-            if beta0Key:
-                #print(i,row[0])
-                read[i] = float(row[ind]) #[mm-mrad]
-            #    print(i,read[i])
-                if i == args.samples-1:
-                    lenbreak = True
+            #requires differentiating between type of run we're looking at. Can't have both in one line
+            if args.betaSpread != 0:
+                #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
+                if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
+                    #print(i,row[0])
+                    read[i] = float(row[ind])
+                    #print(i,read[i])
+                    if i == args.samples-1:
+                        lenbreak = True
+                        break
+                    i+=1
+                    #print(i,lenbreak)
+                if lenbreak:
                     break
-                i+=1
-                #print(i,lenbreak)
-            if lenbreak:
-                break
-
-
-            #print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]),re.search(beta0Key,row[0]),re.search(beta2Key,row[0]))
-            #if i ==10:
-            #    break
-            #if re.search(nBkey,row[0]) or re.search(partKey,row[0]) or re.search(betaKey,row[0]): #not working for some reason
-            #    print("Found correct size simulation\n",Twiss,"\n",row[1:7])
-                #if float(row[1]) == Twiss[0] and float(row[2]) == Twiss[1] and float(row[5]) == Twiss [4]:
-            #if re.search(pctKey,row[0]) and (re.search(beta2Key,row[0]) or re.search(beta0Key,row[0])) and (re.search(partKey,row[0]) or re.search(nBkey,row[0])):
-            #    print(i,row[0],pctKey,re.search(pctKey,row[0]),beta2Key,re.search(beta2Key,row[0]), re.search(beta0Key,row[0]),re.search(partKey,row[0]),re.search(nBkey,row[0]))
-
-            #if (re.search(origKey,row[0]): and re.search(betaKey,row[0])) or (round(float(row[1])*1e5)/1e5 == Twiss[0] and round(float(row[2])*1e5)/1e5 == Twiss[1] and \
-            #        round(float(row[3])*1e5)/1e5 == Twiss[2] and round(float(row[4])*1e5)/1e5 == Twiss[3] and round(float(row[5])*1e5)/1e5 == Twiss[4] and round(float(row[6])*1e5)/1e5 == Twiss[5]):
-            #    print("Found correct size simulation\n",Twiss,"\n",row[1:7])
-            #######    read[i] = float(row[ind]) #[mm-mrad]
-                #if i < 5:
-                #    print(Twiss,row[0])
-            #    print(i,read[i])
-            ##    if i == args.samples-1:
-            ##        lenbreak = True
-            ##        break
-            ##    i+=1
-                #print(i,lenbreak)
-            ##if lenbreak:
-            ##    break
-            #if float(row[1]) == Twiss[0]:
-                #print("we got something!")
-                #print(float(row[2]),Twiss[1])
-            #    if float(row[2]) == Twiss[1]:
-            #        print("we got something!")
-            #if re.search(partKey,row[0]) == None:
-            #    print(i,row[0],partKey,pctKey,re.search(pctKey,row[0]),re.search(partKey,row[0]))
-            #    raise Exception("Not finding a match!")
+            else:
+                #print(re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
+                if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]):
+                    print(i,row[0])
+                    read[i] = float(row[ind]) #[mm-mrad]
+                    #print(i,read[i])
+                    if i == args.samples-1:
+                        lenbreak = True
+                        break
+                    i+=1
+                    #print(i,lenbreak)
+                if lenbreak:
+                    break
     csv_file.close()
 
-    #print(mean(read))
     nonEmpty = greater(read,-750) #remove unused elements
     read = read[nonEmpty]
-    #print(pFitLims)
+
     pFitLims = (0,[args.samples,100,500])
     print("guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
-                                #gaussian(x,amplitude,          mu,      sigma)
+                              #gaussian(x,  amplitude,          mu,      sigma)
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
-    print(mu,sigma,ampl)#,"\n",read)
+    #print(mu,sigma,ampl)
 
-    _, bins, _ = hist(read,interval,range=pHistLims) #ax =
-    #y1 = norm.pdf(bins, mu, sigma) #need to pass it ampl to get the scale right...
+    _, bins, _ = hist(read,interval)#,range=pHistLims)
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
 
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
-    if args.qpNum != 0:
-        if ind == 7:
-            xlim(pHistLims)
+    if args.qpNum != "":
+        #if ind == 7:
+            #xlim(pHistLims)
         title("{:.0f} Samples of {:.0f}% Jitter for QP{:.0f}\nwith {:.2e} Protons".format(len(read),args.betaSpread,int(args.qpNum),nPs))
     else:
         if args.betaSpread != 0:
@@ -1908,7 +1892,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             #xlim(pHistLims)
         else:
             title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
-            xlim(pHistLims)
+            #xlim(pHistLims)
 
     xlabel(paramLabel)
     ylabel("Counts")
@@ -1916,12 +1900,12 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=14
-    if mu > 10:
-        delta=1e-3
-    elif mu > 2 and mu <= 10:
-        delta=3e-4
-    elif mu < 2 and mu > 1:
-        delta = 1e-2
+    if mu > 30:
+        delta = 3e-4
+    elif mu > 15 and mu <= 30:
+        delta = 1e-5
+    elif mu >2 and  mu <= 15:
+        delta = 1.2e-4
     else: #mu<1
         delta=3e-4
     #left=xlim()[0] #=7
@@ -1968,18 +1952,18 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
 
-    paramName=["jMax","beamPOut","coreArea","coreJMean","centX","centY","rValue","rDiff"] #len=6 #
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Area [mm$^2$]",
+    paramName=["jMax","beamPOut","coreJMean","centX","centY","rValue","rDiff"] #len=6 #"coreArea",
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",#r"Core Area [mm$^2$]",
                 r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 "R Divide Value","R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,9,10,11,12,13,14]
-    unit=[r"$\mu$A/cm$^2$","%",r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm","",""]
+    ind = [7,8,10,11,12,13,14]#9
+    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$","mm","mm","",""]#r"mm$^2$",
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),([10,1e3,20],[5e3,1e4,1e3]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),
+    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6])
                     ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
-    pHistLims = [[40,53],[8.2,8.55],[5000,7000],[-10,10],[-10,10],[.072,.073],[4.55,4.6]]#nominal
-    pHistLims = [[40,53],[8,8.8],[5000,7000],[-10,10],[-10,10],[.072,.073],[4.55,4.6]] #if range is outside this, the binning is off...
+    pHistLims = [[35,45],[8.2,8.55],[-10,10],[-10,10],[.072,.073],[4.55,4.6]]#nominal#[5000,7000],
+    pHistLims = [[35,45],[8,8.8],[-10,10],[-10,10],[.072,.073],[4.55,4.6]] #[5000,8000],#if range is outside this, the binning is off...
     paramBins = 20#[30,35,40,30,25,25,25,25]
     #bR = round(args.samples/8)
     #paramBins = [bR,bR,round(args.samples/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
@@ -2046,7 +2030,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats8Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats10Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2283,17 +2267,17 @@ def getTwiss(args,sample,paths):
             #get a random value for betaX and betaY and saves into Twiss array
             Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
             Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-            if Twiss[4] <= 0 or Twiss [1] <= 0:
+            if Twiss[4] <= 50 or Twiss [1] <= 50: #make sure not too small
                 Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
                 Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                if Twiss[4] <= 0 or Twiss [1] <= 0:
+                if Twiss[4] <= 50 or Twiss [1] <= 50:
                     Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
                     Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                    if Twiss[4] <= 0 or Twiss [1] <= 0:
+                    if Twiss[4] <= 50 or Twiss [1] <= 50:
                         Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
                         Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                        if Twiss[4] <= 0 or Twiss [1] <= 0:
-                            Exception("Get Twiss, a Beta has been <0 four times!")
+                        if Twiss[4] <= 50 or Twiss [1] <= 50:
+                            Exception("Get Twiss, a Beta has been <50 four times!")
                         #can't happen 4 times in a row that the value is 2 sigma off
             print(origBX,origBY,"Newly written Betas:",Twiss[1],Twiss[4])
 
@@ -2302,6 +2286,18 @@ def getTwiss(args,sample,paths):
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow([sample,Twiss[1],Twiss[4]]) #save the betas for this sample number, to be used next time.
                 csv_file.close()
-    print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4])
+
+        ##Yngve: calculate changed alpha as well as beta:
+        ##Erik - no need for now
+        #from numpy import sqrt
+        #origAX = Twiss[2]
+        #b1b0X = Twiss[1]/origBX
+        #Twiss[2] = origAX + 0.5*(-sqrt(4*(origAX**2) * b1b0X + 8*origAX*b1b0X + 4*b1b0X - 4 / (origBX**2))) - origAX
+        #print("{:.2f}\t\t{:.2f}\t\t{:.3f}\t\t{:.3f}".format(origBX,Twiss[1],origAX,Twiss[2]))
+        #origAY = Twiss[5]
+        #b1b0Y = Twiss[4]/origBY
+        #Twiss[5] = origAY + 0.5*(-sqrt(4*(origAY**2) * b1b0Y + 8*origAY*b1b0Y + 4*b1b0Y - 4 / (origBY**2))) - origAY
+        #print("{:.3f}\t\t{:.3f}\t\t{:.3f}\t\t{:.3f}".format(origBY,Twiss[4],origAY,Twiss[5]))
+    print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4],"new Alphas:",Twiss[2],Twiss[5])
 
     return Twiss,origBX,origBY

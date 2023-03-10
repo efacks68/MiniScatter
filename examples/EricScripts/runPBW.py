@@ -23,7 +23,7 @@ def runPBW(args,beamFile,Twiss,options,boxes,paths):
 
     #Opening figure only if doing material plotting
     if not args.matPlots:
-        savename,xtarg,ytarg,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,e8TargxReal,e8TargyReal,targxTwissf,targyTwissf = simulation(args,args.material,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths)
+        savename,xtarg,ytarg,PMASreturn,e8SigsX,e8SigsY,targSigsX,targSigsY = simulation(args,args.material,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths)
     elif args.matPlots:
         materials = ["Vac","Al"]#,"Au"] #,"G4_AIR"full list as of 1.4.22
         import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def runPBW(args,beamFile,Twiss,options,boxes,paths):
             args.material = mat
             print("Material:",mat)
             #savename,xtarg,ytarg,Jmax,pOutsideBoxes,beamArea,dispY,dispX,rValue,rDiff= simulation(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
-            savename,xtarg,ytarg,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,e8TargxReal,e8TargyReal,targxTwissf,targyTwissf = simulation(args,args.material,args.rX, args.rY,beamFile,Twiss,options,boxes,paths)
+            savename,xtarg,ytarg,PMASreturn,e8SigsX,e8SigsY,targSigsX,targSigsY = simulation(args,args.material,args.rX, args.rY,beamFile,Twiss,options,boxes,paths)
             #Now plot the distributions with various views depending on the material
             if mat == "Vac" or mat == "Air":
                 if options['mat3Plot']:
@@ -184,4 +184,4 @@ def runPBW(args,beamFile,Twiss,options,boxes,paths):
                     plt.close() #be sure to close the plot
         #print(datetime.now().strftime("%H-%M-%S"),"\t",datetime.now()-start)
 
-    return Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,e8TargxReal,e8TargyReal,targxTwissf,targyTwissf
+    return PMASreturn,e8SigsX,e8SigsY,targSigsX,targSigsY

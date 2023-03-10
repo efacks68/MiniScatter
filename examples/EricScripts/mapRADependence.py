@@ -12,7 +12,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
-    options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff }
+    options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'MiniRoot':True  }
 
     #Important things
     if args.t == 0:
@@ -124,7 +124,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
                 TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
                 (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-                Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+                [Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff] = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
 
                 #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample)
                 ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
