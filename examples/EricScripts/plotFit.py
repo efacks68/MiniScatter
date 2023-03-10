@@ -8,7 +8,7 @@
 def plotFit(xs,ys,savename,xlim,ylim,material,thick): 
     import numpy as np
     import matplotlib.pyplot as plt
-    from plotFit import findFit
+    #from plotFit import findFit
     #For creating the PDF of particle distribution from findFit function optimized mu and sigma.
     from scipy.stats import norm 
 
@@ -148,7 +148,7 @@ def findFit(data,guess,lims,nBins):
     from numpy import diff,linspace
     from matplotlib.pyplot import hist,plot,close,savefig
     from scipy.optimize import curve_fit
-    from plotFit import gaussian
+    #from plotFit import gaussian
 
     close()
     #print(data)
@@ -299,7 +299,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     #For plotting particle Distribution at Target Exit with PDF from Twiss parameters.
     import numpy as np
     import matplotlib.pyplot as plt
-    from plotFit import findFit, calcTwiss, getMoments
+    #from plotFit import findFit, calcTwiss, getMoments
     from scipy.stats import norm 
     mm = 1e-3 #the position numbers are in mm so must convert the PDF parameters to mm!
     urad = 1e-6
@@ -459,7 +459,7 @@ def toTarget(TwPm,label):
 def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,mat,PBWTwx,PBWTwy,args):
     #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
     import numpy as np
-    from plotFit import findFit, getMoments
+    #from plotFit import findFit, getMoments
     from scipy.stats import norm 
     import matplotlib.pyplot as plt
     mm = 1e-3
@@ -645,7 +645,7 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     # --Add sobel filter for finding edge of Raster
     # --Add XY view with 99% box, beam edges, current density calculation, 
     import numpy as np
-    from plotFit import findFit, getMoments
+    #from plotFit import findFit, getMoments
     #from scipy.stats import norm 
     import matplotlib.pyplot as plt
     mm = 1e-3
@@ -938,143 +938,6 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     return differenceNG, differencePG, coeffsG, differenceNL,differencePL,coeffsL
 
 
-def voigtFit(data,axis):
-    #From https://scipython.com/book/chapter-8-scipy/examples/weighted-and-non-weighted-least-squares-fitting/
-    import numpy as np
-    from scipy.optimize import curve_fit
-    from matplotlib.pyplot import hist,savefig
-    import pylab
-
-    x0, A, gamma = 12, 3, 5
-
-    n = 1001
-    x = np.linspace(-20, 20, n)
-    
-    """
-    yexact = A * gamma**2 / (gamma**2 + (x-x0)**2)
-
-    # Add some noise with a sigma of 0.5 apart from a particularly noisy region
-    # near x0 where sigma is 3
-    sigma = np.ones(n)*0.5
-    sigma[np.abs(x-x0+1)<1] = 3
-    noise = np.random.randn(n) * sigma
-    y = yexact + noise
-    """
-    def f(x, x0, A, gamma):
-        """ The Lorentzian entered at x0 with amplitude A and HWHM gamma. """
-        return A *gamma**2 / (gamma**2 + (x-x0)**2)
-
-    def rms(y, yfit):
-        return np.sqrt(np.sum((y-yfit)**2))
-
-    if axis in {"X","x"}:   
-        ind = 1
-    elif axis in {"Y","y"}:
-        ind = 0
-
-    #Get center
-    dLen = len(data[ind])
-    ind=round(dLen/2)
-    proj = data[ind]
-    #np.reshape(proj,dLen)
-    print(dLen,ind,np.mean(proj),proj.shape)
-    bin_heights, bin_borders, _ = hist(proj,bins=round(ind/10),range=(-100,100),label="histogram")
-    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #savefig(pwd+"hist.png")
-    #print(len(bin_borders))
-    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-    
-    # Unweighted fit
-    p0 = 10, 4, 2
-    popt, pcov = curve_fit(f, bin_centers, bin_heights, p0)
-    yfit = f(x, *popt)
-    print('Unweighted fit parameters:', popt)
-    print('Covariance matrix:'); print(pcov)
-    #print('rms error in fit:', rms(yexact, yfit))
-    #print()
-
-    # Weighted fit
-    #popt2, pcov2 = curve_fit(f, x, y, p0, sigma=sigma, absolute_sigma=True)
-    #yfit2 = f(x, *popt2)
-    #print('Weighted fit parameters:', popt2)
-    #print('Covariance matrix:'); print(pcov2)
-    #print('rms error in fit:', rms(yexact, yfit2))
-
-    #pylab.plot(x, yexact, label='Exact')
-    #pylab.plot(x, y, 'o', label='Data')
-    pylab.plot(x, yfit, label='Unweighted fit')
-    #pylab.plot(x, yfit2, label='Weighted fit')
-    #pylab.ylim(-1,4)
-    pylab.legend(loc='lower center')
-    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    pylab.savefig(pwd+"Cauchy.png")
-
-    
-    ##https://scipython.com/book/chapter-8-scipy/examples/the-voigt-profile/
-    #import numpy as np
-    #from scipy.special import wofz
-    #from scipy.optimize import curve_fit
-    #from matplotlib.pyplot import hist,plot
-    #import pylab
-    
-    #def G(x, alpha):
-    #    """ Return Gaussian line shape at x with HWHM alpha """
-    #    return np.sqrt(np.log(2) / np.pi) / alpha\
-    #                            * np.exp(-(x / alpha)**2 * np.log(2))
-
-    #def L(x, gamma):
-    #    """ Return Lorentzian line shape at x with HWHM gamma """
-    #    return gamma / np.pi / (x**2 + gamma**2)
-
-    #def V(x, alpha, gamma):
-    #    """
-    #    Return the Voigt line shape at x with Lorentzian component HWHM gamma
-    #    and Gaussian component HWHM alpha.
-
-    #    """
-    #    sigma = alpha / np.sqrt(2 * np.log(2))
-
-    #    return np.real(wofz((x + 1j*gamma)/sigma/np.sqrt(2))) / sigma / np.sqrt(2*np.pi)
-
-    #if axis in {"X","x"}:   
-    #    ind = 1
-    #elif axis in {"Y","y"}:
-    #    ind = 0
-
-    ##Get center
-    #dLen = len(data[ind])
-    #proj = data[round(dLen/2):round(dLen/2)+1]
-    #print(dLen,round(dLen/2),np.mean(data[round(dLen/2)]))
-
-    #bin_heights, bin_borders, _ = hist(proj,bins='auto',label="histogram")
-    ##pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    ##savefig(pwd+"hist.png")
-    ##print(len(bin_borders))
-    #bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-
-    #a0 = [0,10,10]
-    #g0 = [0,10,10]
-    ##not working, not getting a fit.
-    """
-    alpha,_ = curve_fit(G, bin_centers, bin_heights,p0=a0)#,bounds=lims) #p0 should be good start, though not what is recommended
-    gamma,_ = curve_fit(L, bin_centers, bin_heights,p0=g0)#,bounds=lims) #p0 should be good start, though not what is recommended
-    print(alpha,gamma)
-    x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
-    plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
-    
-    #alpha, gamma = 0.1, 0.1
-    x = np.linspace(-lim,lim,dLen)
-    pylab.plot(x, G(x, alpha), ls=':', label='Gaussian')
-    pylab.plot(x, L(x, gamma), ls='--', label='Lorentzian')
-    pylab.plot(x, V(x, alpha, gamma), label='Voigt')
-    pylab.xlim(-lim,lim)
-    pylab.legend()
-    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #pylab.savefig(pwd+"Voigt.png")
-    """
-
-
-
 
 
 
@@ -1085,7 +948,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     name=savename+"_"+position+"Image_rB"+str(args.reBin)
     um = 1e-6
     from datetime import datetime
-    from plotFit import converter
+    #from plotFit import converter
 
     #print(datetime.now().strftime("%H-%M-%S"))
     (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths,args.reBin) #convert from TH2D to numpy map
@@ -1117,19 +980,19 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #print("Protons:",parts,sumTot,Pprotons,"\nCharge:",sumCharge,sumCharge/I_pulse*100)
     cols = ["r","cyan","gold","lime","k"]
     rdVal = args.reBin*2
-    if args.reBin > 1:
-        print(args.reBin%2)
-        if args.reBin % 2 == 0:
-            reBinOffset = 0
-        else: 
-            reBinOffset = 0
+    #if args.reBin > 1:
+    #    print(args.reBin%2)
+    #    if args.reBin % 2 == 0:
+    #        reBinOffset = 0
+    #    else: 
+    #        reBinOffset = 0
     for i in range(len(boxes)): 
         pLargers[i] = boxes[i]
         widths[i] = round(widths[0]*(1+pLargers[i]) / 2) * 2
-        heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2 + reBinOffset
+        heights[i] = round(heights[0]*(1+pLargers[i]) / 2) * 2 #+ reBinOffset
         boxLLxs[i] = -round((widths[i]/2) / 2) * 2 #-90
-        boxLLys[i] = -round((heights[i]/2) / 2) * 2 + reBinOffset #-32
-        print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
+        boxLLys[i] = -round((heights[i]/2) / 2) * 2 #+ reBinOffset #-32
+        #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
 
         for idx, val in np.ndenumerate(xax):
             if int(val) == round(boxLLxs[i]/rdVal)*rdVal:
@@ -1154,7 +1017,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         #coreImax[i] = core.max() #[uA/cm^2]
         #coreMeanI[i] = np.mean(core) #[uA/cm^2]
 
-    from plotFit import PMAS
+    #from plotFit import PMAS
     sPMAS=datetime.now()#.strftime("%H-%M-%S"))
     jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,rDiff = PMAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
     #print(EI)#"finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
@@ -1752,7 +1615,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
     #Edges
     #Not great, may need to reshape and average. Not sure how to do that...
-    from plotFit import findEdges
+    #from plotFit import findEdges
     EI,edges = findEdges(Img,jMax,args.saveGrads,name,xax,yax,args) #[topInd,botInd,lefInd,rigInd]
     nomEdges = [20,-22,-66,68]
     nomArea = (nomEdges[0]-nomEdges[1])*(nomEdges[3]-nomEdges[2])
@@ -1790,11 +1653,11 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
     if fileName !="":  
             statsName = statsPWD+fileName#+"_rB"+str(reBin)+".csv"
     else:
-        statsName = statsPWD+"EvalStats10Mar.csv"
+        statsName = statsPWD+"EvalStats10Mar_rBin4.csv"
     if not osPath.isfile(statsName): #didn't work...?
         with open(statsName,mode = 'w') as csv_file:
             csv_writer = csv.writer(csv_file,delimiter = ',')
-            csv_writer.writerow(["BeamFile","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
+            csv_writer.writerow(["BeamFile","Emittance X [mm-mrad]","Beta X [m]","Alpha X","Emittance Y [mm-mrad]","Beta Y [m]","Alpha Y","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
             csv_file.close()
     elif osPath.isfile(statsName):
         found = False
@@ -1831,7 +1694,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout
     from numpy import greater,zeros,mean,std
-    from plotFit import findFit, gaussian
+    #from plotFit import findFit, gaussian
     from math import floor,log10
 
     read = zeros(args.samples)
@@ -1847,7 +1710,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
     #print(pctKey,nBkey,betaKey,origKey,"\n\n")
     #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile) )
-    with open(statsPWD+"EvalStats10Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats10Mar_rBin4.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2030,7 +1893,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     import csv,re
     from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel
     from numpy import greater as npGreater,zeros,mean,std
-    from plotFit import findFit, gaussian
+    #from plotFit import findFit, gaussian
 
     read = zeros(args.samples)
     read.fill(-10)
@@ -2041,7 +1904,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats10Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats10Mar_rBin4.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2134,7 +1997,7 @@ def getTwiss(args,sample,paths):
             twissPWD = paths['homePWD']+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
             if args.qpNum == "all":
                 #for running all Twiss in OpenXAL Combo Sequence output CSV
-                from plotFit import numLines
+                #from plotFit import numLines
                 n = numLines(twissPWD+args.twissFile)
                 for i in range(n):
                     with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
@@ -2238,7 +2101,7 @@ def getTwiss(args,sample,paths):
         else:
             #If file present, read in values for the samples requested
             #Get length of file, in case user requested more samples than previously made
-            from plotFit import numLines
+            #from plotFit import numLines
             iters = numLines(name)-1
             print("File has",iters,"lines")
 
