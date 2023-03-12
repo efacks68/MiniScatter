@@ -154,7 +154,7 @@ def findFit(data,guess,lims,nBins):
     #print(data)
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #savefig(pwd+"hist.png")
+    #savefig(pwd+"hist.png"); print(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
@@ -943,7 +943,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
 
 
-def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths):
+def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,paths,sample):
     import numpy as np
     name=savename+"_"+position+"Image_rB"+str(args.reBin)
     um = 1e-6
@@ -994,6 +994,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         boxLLys[i] = -round((heights[i]/2) / 2) * 2 #+ reBinOffset #-32
         #print(len(xax),boxLLxs[i],boxLLys[i],widths[i],heights[i],round(boxLLys[i]/rdVal)*rdVal)
 
+        #11 Mar Verified the Box is the correct locations, the beam is just displaced when reBinned!
+            #But Edges (tight) are correct as well
         for idx, val in np.ndenumerate(xax):
             if int(val) == round(boxLLxs[i]/rdVal)*rdVal:
                 #print(idx[0])
@@ -1069,7 +1071,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #        Img[i][j] = Img[i][j] * C #[uA/cm^2]
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
-    print("\nPMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, pOutsideBox"\
+    print(sample,"\nPMAS:",datetime.now()-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, Rdiv {:.3f}, Rdiff {:.2f} Jmin {:.1f}, pOutsideBox"\
                 .format(jMax,coreArea,coreJMean,128*42,rValue,rDiff,jMin),pOutsideBoxes)
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
@@ -1118,10 +1120,13 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             #name = name+"_2212only"
             xlim = ax.get_xlim()
             ylim = ax.get_ylim()
-            
+
         #Show 99% box
-        if not args.noBox: #for user clarity, call is noBox
+        if not args.noBox: #for user clarity, call is noBox, include % outside text for this
             ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
+            ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w')
+        else: #yes no Boxes
+            name+="_noBox"
 
         if not args.noText: #for user clarity, call is noText
             ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} total protons".format(Pprotons,parts),fontsize=fs)
@@ -1130,13 +1135,12 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             bgdbox=dict(pad=1,fc='w',ec='none')
             propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
             #do this better, since set by args.x,ylim 
-            ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+r"% Outside 160x64mm$^2$ Box", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w')
             ax.text(xlim[0]*0.97, ylim[0]*0.60, "Beam Twiss at PBW:", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.71, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.83, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            #ax.text(xlim[1]*0.97, ylim[0]*0.57, r"Box <$\bf{J}$>: "+"{:.1f}".format(coreJMean)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
+            ax.text(xlim[1]*0.97, ylim[0]*0.60, r"Core <$\bf{J}$>: "+"{:.1f}".format(coreJMean)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            #ax.text(xlim[1]*0.97, ylim[0]*0.60, "R={:.4f}".format(rValue), propsR,fontsize=fs-2)
             ax.text(xlim[1]*0.97, ylim[0]*0.75, r"Max $\bf{J}$: "+"{:.1f}".format(jMax)+r" $\mu$A/cm$^2$", propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.85, "RM Amplitudes: {:.1f}, {:.1f}mm".format(args.aX,args.aY),propsR,fontsize=fs-4)
             ax.text(xlim[1]*0.97, ylim[0]*0.96, options['physList'], propsR,fontsize=fs-4)
@@ -1145,6 +1149,9 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
                 ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
                 ax.text(xlim[0]*0.90, ylim[1]*(0.85-i*0.1), "{:.2f}".format(pOutsideBoxes[i])+"% Outside {:.0f}% Larger Box".format(pLargers[i]*100), 
                                   color=cols[i], fontweight='bold',fontsize = fs-2, backgroundcolor = 'w',bbox=dict(pad=1))#,path_effects=[path_effects.withStroke(linewidth=1, foreground='k')])
+        else: #yes no text
+            name+="_noText"
+
 
         if args.saveEdges:
             edgeCol = 'k'
@@ -1153,6 +1160,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
             ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
             #print("Edges printed!!")
+            name+="_Edges"
 
         dt = datetime.now()
         #from os.path import isfile
@@ -1278,15 +1286,19 @@ def findRoot(savename,paths):
 
 
 
-def rCompare(Im,Nb,paths):
+def rCompare(Im,Nb,paths,reBin):
     import numpy as np
     from os import uname
 
     #Find reference files
     if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
-        if Nb == 100:
-              Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
-            #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+        if Nb == 100: #do fill in from args
+            if reBin == 5:
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
+            elif reBin == 4:
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
+            elif reBin == 1 or reBin == 2:
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         elif Nb == 500:
               Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
         else: #Nb=10
@@ -1314,7 +1326,7 @@ def rCompare(Im,Nb,paths):
         for j in range(leny):
             #Iref[j,i] += offset
             if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i] + offset) ) ** 2 ) / (leny * lenx) ) #
+            diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i] + offset) ) ) / (leny * lenx) ) #
     rDiff = np.sqrt(np.sum(diff))
 
     return rDiv,rDiff
@@ -1394,10 +1406,10 @@ def findEdges(Img,jMax,graph,savename,xax,yax,args):
         ax3.vlines(edges[3],ax3.get_ylim()[0],ax3.get_ylim()[1],color='m')
         ax4.vlines(edges[0],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
         ax4.vlines(edges[1],ax4.get_ylim()[0],ax4.get_ylim()[1],color='m')
-        plt.setp(ax1,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
-        plt.setp(ax2,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
-        plt.setp(ax3,xlim=(-args.xlim,args.xlim),title="Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
-        plt.setp(ax4,xlim=(-args.xlim,args.xlim),title="Sum of Gradient Y",xlabel="Y [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax1,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="(a) Gradient X",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax2,xlim=(-args.xlim,args.xlim),ylim=(-args.ylim,args.ylim),title="(c) Gradient Y",xlabel="X [mm]",ylabel="Y [mm]")
+        plt.setp(ax3,xlim=(-args.xlim,args.xlim),title="(b) Sum of Gradient X",xlabel="X [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
+        plt.setp(ax4,xlim=(-args.xlim,args.xlim),title="(d) Sum of Gradient Y",xlabel="Y [mm]",ylabel="Gradient Sum")#,ylim=(-500,500))
         ac = fig.colorbar(a, ax=ax1,pad=0.01)
         ac.set_label(r"d$\bf{J}$/dx",labelpad=3,fontsize=12)
         bc = fig.colorbar(b, ax=ax2,pad=0.01)
@@ -1450,10 +1462,10 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
             #print("bot",val,idx[0])
     for idx,val in ndenumerate(sumGradX):
         if val == npMin(sumGradX):
-            rigInd = idx[0]+a
+            rigInd = idx[0]-a
             #print("rig",val,idx[0])
         if val == npMax(sumGradX):
-            lefInd = idx[0]-a
+            lefInd = idx[0]+a
             #print("lef",val,idx[0])
     #print([topInd,botInd,lefInd,rigInd])
     ##n=6 #this gave pretty even results
@@ -1544,12 +1556,12 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     rdVal=args.reBin*2
     for idx, val in np.ndenumerate(xax):
         if int(val) == round(boxLLx/rdVal)*rdVal:
-            boxLInd = idx[0] #455
+            boxLInd = idx[0] #bc it is rounding
         if int(val) == round(boxLLx/rdVal)*rdVal+round(width/rdVal)*rdVal:
             boxRInd = idx[0] #545
     for idx, val in np.ndenumerate(yax):
         if int(val) == round(boxLLy/rdVal)*rdVal:
-            boxBInd = idx[0] #460
+            boxBInd = idx[0] #bc it is rounding
         if int(val) == round(boxLLy/rdVal)*rdVal+round(height/rdVal)*rdVal:
             boxTInd = idx[0] #540
     #Find % outside the 99% Box area
@@ -1572,7 +1584,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
     #R value for algorithm. Works when use Current Density, not Nprotons
     rValue=0;rDiff=0
-    #rValue,rDiff = rCompare(Img,args.Nb,paths)
+    rValue,rDiff = rCompare(Img,args.Nb,paths,args.reBin)
     #print("R = ",rValue,rDiff)
     #print("Converted in",datetime.now() - start)
 
@@ -1651,13 +1663,13 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
     from re import sub
     rasterBeamFile = sub(".+(?<=(/CSVs/))","",rasterBeamFile)
     if fileName !="":  
-            statsName = statsPWD+fileName#+"_rB"+str(reBin)+".csv"
+            statsName = statsPWD+fileName
     else:
-        statsName = statsPWD+"EvalStats10Mar_rBin4.csv"
-    if not osPath.isfile(statsName): #didn't work...?
+        statsName = statsPWD+"EvalStats10Mar_rBin4R.csv"
+    if not osPath.isfile(statsName):
         with open(statsName,mode = 'w') as csv_file:
             csv_writer = csv.writer(csv_file,delimiter = ',')
-            csv_writer.writerow(["BeamFile","Emittance X [mm-mrad]","Beta X [m]","Alpha X","Emittance Y [mm-mrad]","Beta Y [m]","Alpha Y","Peak Current Desnity [uA/cm2]","% Outside Boxes","Y Displacement","X Displacement","R Value"])
+            csv_writer.writerow(["BeamFile","Emittance X [mm-mrad]","Beta X [m]","Alpha X","Emittance Y [mm-mrad]","Beta Y [m]","Alpha Y","Peak Current Desnity [uA/cm2]","% Outside Boxes","Core Area","Core J Mean","Center X","Center Y","R Value","R Diff"])
             csv_file.close()
     elif osPath.isfile(statsName):
         found = False
@@ -1677,7 +1689,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
                 csv_writer = csv.writer(csv_file, delimiter = ',')
                 csv_writer.writerow([rasterBeamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]) #add JCore?
                 csv_file.close()
-            print("saved",jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff)
+            print(statsName,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff)
         else:
             print("Values already in row",foundRow)
 
@@ -1708,39 +1720,64 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
     betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
-    #print(pctKey,nBkey,betaKey,origKey,"\n\n")
-    #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile) )
-    with open(statsPWD+"EvalStats10Mar_rBin4.csv",mode='r') as csv_file:
+    failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
+    #print(nBkey,pctKey,origKey,betaKey)
+    #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
+    with open(statsPWD+"EvalStats10Mar_rBin4R.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
-        for row in csv_reader:
-            #requires differentiating between type of run we're looking at. Can't have both in one line
-            if args.betaSpread != 0:
+        #requires differentiating between type of run we're looking at. Can't have both in one line
+        if args.betaSpread != 0: #sampleIn files
+            for row in csv_reader:
+                #if i == 6: #for finding indices out of 7sigma
+                #    print("index",i,"failed file:",row[0])
                 #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
                 if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
-                    #print(i,row[0])
                     read[i] = float(row[ind])
-                    #print(i,read[i])
                     if i == args.samples-1:
                         lenbreak = True
                         break
                     i+=1
-                    #print(i,lenbreak)
                 if lenbreak:
                     break
+        else: #PBW files:
+            if args.failure != 0: #RM fail
+                for row in csv_reader:
+                    if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
+                        read[i] = float(row[ind]) #[mm-mrad]
+                        if i == args.samples-1:
+                            lenbreak = True
+                            break
+                        i+=1
+                    if lenbreak:
+                        break
             else:
-                #print(re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
-                if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]):
-                    #print(i,row[0])
-                    read[i] = float(row[ind]) #[mm-mrad]
-                    #print(i,read[i])
-                    if i == args.samples-1:
-                        lenbreak = True
-                        break
-                    i+=1
-                    #print(i,lenbreak)
-                if lenbreak:
-                    break
+                if args.qpNum != "":
+                    for row in csv_reader:
+                        #if i == 6: #for finding indices out of 7sigma
+                        #    print("index",i,"failed file:",row[0])
+                        #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
+                        if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
+                            read[i] = float(row[ind])
+                            if i == args.samples-1:
+                                lenbreak = True
+                                break
+                            i+=1
+                        if lenbreak:
+                            break
+                else: #nominal
+                    for row in csv_reader:
+                        #if i == 44: #for finding indices out of 7sigma
+                        #    print("index",i,"failed file:",row[0])
+                        #print(re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
+                        if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]):
+                            read[i] = float(row[ind]) #[mm-mrad]
+                            if i == args.samples-1:
+                                lenbreak = True
+                                break
+                            i+=1
+                        if lenbreak:
+                            break
     csv_file.close()
 
     nonEmpty = greater(read,-750) #remove unused elements
@@ -1748,6 +1785,12 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     pFitLims = (0,[args.samples,100,500])
     print(len(read),"guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
+    #sanity check on values
+    #print(read)
+    for i in range(len(read)):
+        if read[i] < mean(read)-std(read)*7 or read[i] > mean(read)+std(read)*7:
+            print(read[i],", index",i,"is outside 7 sigma!")
+
                               #gaussian(x,  amplitude,          mu,      sigma)
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     #print(mu,sigma,ampl)
@@ -1776,9 +1819,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     fs=14
     if mu > 25:
         delta = 3e-4
-    elif mu > 15 and mu <= 25:
-        delta = 1e-5
-    elif mu >2 and  mu <= 15:
+    elif mu > 8.5 and mu <= 25:
+        delta = 2e-4
+    elif mu >2 and  mu <= 8.5:
         delta = 1.2e-4
     else: #mu<1
         delta=3e-4
@@ -1826,18 +1869,18 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
 
-    paramName=["jMax","beamPOut","coreJMean","centX","centY","rValue","rDiff"] #len=6 #"coreArea",
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",#r"Core Area [mm$^2$]",
-                r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
-                "R Divide Value","R Difference Value"]
+    paramName=["jMax","beamPOut","coreJMean","rValue"]#,"rDiff"] #len=6 #"coreArea",,"centX","centY"
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Area [mm$^2$]",
+                r"Core Average Current Density [$\mu$A/cm$^2$]"#,"Beam Center X [mm]","Beam Center Y [mm]",
+                "R Divide Value"]#,"R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,10,11,12,13,14]#9
-    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$","mm","mm","",""]#r"mm$^2$",
+    ind = [7,8,10,13,14]#9#,11,12,
+    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$",""]#,""]#r"mm$^2$",,"mm","mm"
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6])
-                    ([-1e3,-100,-500],[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,10,1])]
-    pHistLims = [[35,45],[8.2,8.55],[-10,10],[-10,10],[.072,.073],[4.55,4.6]]#nominal#[5000,7000],
-    pHistLims = [[35,45],[8,8.8],[-10,10],[-10,10],[.072,.073],[4.55,4.6]] #[5000,8000],#if range is outside this, the binning is off...
+    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6]),([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#
+                    (0,[1e3,10,1])]#,(0,[1e3,10,1])]
+    pHistLims = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
+    pHistLims = [[35,45],[8.0,8.80],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
     paramBins = 20#[30,35,40,30,25,25,25,25]
     #bR = round(args.samples/8)
     #paramBins = [bR,bR,round(args.samples/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
@@ -1904,7 +1947,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats10Mar_rBin4.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats10Mar_rBin4R.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2095,7 +2138,6 @@ def getTwiss(args,sample,paths):
             with open(name+".csv",mode = 'w') as csv_file:
                 csv_writer = csv.writer(csv_file,delimiter = ',')
                 csv_writer.writerow(["i","Beta X [m]","Beta Y [m]"])
-                csv_writer.writerow(["0",origBX,origBY])
                 csv_file.close()
             writeMore = True
         else:
@@ -2103,7 +2145,7 @@ def getTwiss(args,sample,paths):
             #Get length of file, in case user requested more samples than previously made
             #from plotFit import numLines
             iters = numLines(name)-1
-            print("File has",iters,"lines")
+            #print("File has",iters,"lines")
 
             #read in what is there
             import csv
@@ -2173,6 +2215,6 @@ def getTwiss(args,sample,paths):
         #b1b0Y = Twiss[4]/origBY
         #Twiss[5] = origAY + 0.5*(-sqrt(4*(origAY**2) * b1b0Y + 8*origAY*b1b0Y + 4*b1b0Y - 4 / (origBY**2))) - origAY
         #print("{:.3f}\t\t{:.3f}\t\t{:.3f}\t\t{:.3f}".format(origBY,Twiss[4],origAY,Twiss[5]))
-    print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4],"new Alphas:",Twiss[2],Twiss[5])
+    #print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4],"new Alphas:",Twiss[2],Twiss[5])
 
     return Twiss,origBX,origBY

@@ -87,19 +87,19 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
 
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
-        name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)+sampEnding
+        name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)
     else:
         if args.source == "twiss":
             name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)+sampEnding
         elif args.source == "csv":
             name = args.beamFile
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
-            name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)+sampEnding
+            name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)
         elif args.beamClass == "pencil":
-            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,args.aX,args.aY,nParts,args.Nb)+sampEnding
+            name = "PBW_{:.0f}MeV_pencilBeam_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,args.aX,args.aY,nParts,args.Nb)
         elif args.beamClass == "Twiss":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,
-                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)+sampEnding
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)
         if args.betaSpread != 0:
             name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts,args.Nb)
     if args.rX != 0:
@@ -125,6 +125,10 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = name + "_failure4-" + str(args.magFails)+"f"
     if args.edgeRaster:
         name = name + "_edges"
+
+    #Append Sample Ending
+    if args.betaSpread == 0:
+        name = name + sampEnding
 
     #Calculate periods  
     periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
