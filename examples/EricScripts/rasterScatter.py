@@ -10,7 +10,7 @@
 #Fit Gaussian and Voigt to a beamlet:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
 #Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T --qpNum 139 --betaSpread 10 --samples 5 --saveSpread
+    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1e-3Jitter_200x --qpNum all --saveSpread
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 #thickness dependence plot:

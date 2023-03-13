@@ -2,34 +2,55 @@ import csv,sys,re
 from plotFit import findFit,gaussian
 from numpy import zeros,mean,std,greater
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 name=sys.argv[1]
 from plotFit import numLines
-n = numLines("../../../Pictures/"+name)
-#print(n)
+
+if re.search("beta",name): #from plotFit getTwiss
+    path = "../../../Pictures/"
+    n = numLines(path+name)
+    bX = 1
+    bY = 2
+elif re.search("Jitter",name): #from OpenXAL
+    path = "../../../../OpenXAL/OXALNotebooks/failureTwiss/"
+    n = numLines(path+name)
+    bX = 2
+    bY = 5
+
 betaX=zeros(n)
 betaY=zeros(n)
-betaX.fill(-750)
-betaY.fill(-750)
 
-with open("../../../Pictures/"+name+".csv",mode='r') as csv_file:
+with open(path+name+".csv",mode='r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     next(csv_reader) #skips header
     rowNum = 0
     for row in csv_reader:
         #print(sample,rowNum,row[0],row[1],row[2])
-        
-        betaX[rowNum] = float(row[1])
-        betaY[rowNum] = float(row[2])
+        betaX[rowNum] = float(row[bX])
+        betaY[rowNum] = float(row[bY])
         #print(rowNum,"Read in Betas:",betaX[rowNum],betaY[rowNum])
         rowNum+=1
-#print(re.search("(([0-9]*)+(?=Pct))",name)[1])
-if   int(re.search("(([0-9]*)+(?=Pct))",name)[1]) == 1:
-    nBins = 8 #30 for 10pct, 8 for 1pct
-elif int(re.search("(([0-9]*)+(?=Pct))",name)[1]) ==10:
-    nBins = 30
 
-nonzero = greater(betaX,-750)
+#print(betaX,"\n\n",betaY)
+#Set Bins by %
+if re.search("Jitter",name):
+    if int(re.search("(([0-9]*)+(?=Jitter))",name)[1]) == 4:
+        pct = 1
+        nBins = 15
+    elif int(re.search("(([0-9]*)+(?=Jitter))",name)[1]) == 3:
+        pct = 10
+        nBins = 30
+
+if re.search("beta",name):
+    if int(re.search("(([0-9]*)+(?=Pct))",name)[1]) == 1:
+        pct = 1
+        nBins = 10
+    elif int(re.search("(([0-9]*)+(?=Pct))",name)[1]) == 10:
+        pct = 10
+        nBins = 30
+
+nonzero = greater(betaX,0)
 betaX = betaX[nonzero]
 betaY = betaY[nonzero]
 #print(betaX.shape)
@@ -43,14 +64,13 @@ plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
 s1 = fig.add_subplot(1,2,1)
 s2 = fig.add_subplot(1,2,2)
 
-
 fs=14
 bgdbox=dict(pad=1,fc='w',ec='none')
 propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2)
 
 s1.hist(betaX,bins=nBins)
 s1.plot(intervalX, gaussian(intervalX,amplX,muX,sigmaX), "r--", linewidth=2)
-s1.set_xlim([750,1350])
+s1.set_xlim([990,1220])#750,1350
 if s1.get_xlim()[1] > 1700:
     #print()
     deltaX=1e-2
@@ -58,27 +78,32 @@ elif s1.get_xlim()[1] > 1200:
     deltaX=5e-3
 else:
     deltaX=8e-4
-s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.95, r"Nominal $\beta_{x}$= "+re.search("(([0-9]*)+(?=,))",name)[1]+" [m]", propsR)
-    
-s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muX)+"\n"+r"$\sigma$="+"{:.3f}%".format(sigmaX/muX*100), propsR)
-title1=r"Distribution of $\beta_x$ Values for "+re.search("(([0-9]*)+(?=Pct))",name)[1]+"% Variation"
+#s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.95, r"Nominal $\beta_{x}$= "+re.search("(([0-9]*)+(?=,))",name)[1]+" [m]", propsR)
+#if pct == 1:
+s1.xaxis.set_major_locator(ticker.MultipleLocator(20))
+s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muX)+"\n"+r"$\sigma$="+"{:.3f}m\n({:.3f}%)".format(sigmaX,sigmaX/muX*100), propsR)
+title1=r"Distribution of $\beta_x$ Values for "+str(pct)+"% Range"
 #print(title1)
 plt.setp(s1,title=title1,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
+#plt.setp(s1.get_xticklabels(),rotation=45,ha="right")
 
 s2.hist(betaY,bins=nBins)
 s2.plot(intervalY, gaussian(intervalY,amplY,muY,sigmaY), "r--", linewidth=2)
-s2.set_xlim([95,165])
+s2.set_xlim([125,149])#95,165
 if s2.get_xlim()[1] > 200:
-    #print()
     deltaY=1e-2
 elif s2.get_xlim()[1] > 150:
     deltaY=5e-3
 else:
     deltaY=8e-4
-s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.95, r"Nominal $\beta_{y}$= "+re.search("(([0-9]*)+(?=m_))",name)[1]+" [m]", propsR)
-s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muY)+"\n"+r"$\sigma$="+"{:.3f}%".format(sigmaY/muY*100), propsR)
-title2=r"Distribution of $\beta_y$ Values for "+re.search("(([0-9]*)+(?=Pct))",name)[1]+"% Variation"
+#s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.95, r"Nominal $\beta_{y}$= "+re.search("(([0-9]*)+(?=m_))",name)[1]+" [m]", propsR)
+#if pct == 1:
+s2.xaxis.set_major_locator(ticker.MultipleLocator(2))
+s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muY)+"\n"+r"$\sigma$="+"{:.3f}m\n({:.3f}%)".format(sigmaY,sigmaY/muY*100), propsR)
+title2=r"Distribution of $\beta_y$ Values for "+str(pct)+"% Range"
 plt.setp(s2,title=title2,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
+#plt.setp(s2.get_xticklabels(),rotation=45,ha="right")
+
 plt.tight_layout()
 plt.savefig("../../../Pictures/"+name+"Spread.png",bbox_inches='tight')
 print("../../../Pictures/"+name+"Spread.png")

@@ -90,7 +90,11 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)
     else:
         if args.source == "twiss":
-            name = "failure_QP"+args.qpNum+"_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)+sampEnding
+            name = args.twissFile+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
+            #if args.qpNum != "": #need to figure out how to get it to work for QP failures
+            #    if args.qpNum != "all":
+            #        name+="_QP"+args.qpNum
+            #name = "failure_QP"+args.qpNum+"_{:.0f}MeV_emit{:.2f},{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)
         elif args.source == "csv":
             name = args.beamFile
         elif args.beamClass == "ESS" or args.beamClass == "Yngve":
@@ -181,7 +185,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
                 i+=1
 
         #Check on output parameters
-        print("Centroid X max: {:.2f}mm; Particle X max: {:.2f}mm".format(np.max(centroids[:,0]),np.max(totX[:,0])),"; Shape:",np.shape(totX))
+        #print("Centroid X max: {:.2f}mm; Particle X max: {:.2f}mm".format(np.max(centroids[:,0]),np.max(totX[:,0])),"; Shape:",np.shape(totX))
         #Remove 0,0 particles, should be none except for weighted edges case
         nonzero = np.not_equal(totX[:,0],0) #be careful!
         totX = totX[nonzero]
