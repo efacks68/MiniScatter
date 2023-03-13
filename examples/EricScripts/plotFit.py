@@ -154,7 +154,7 @@ def findFit(data,guess,lims,nBins):
     #print(data)
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #savefig(pwd+"hist.png"); print(pwd+"hist.png")
+    savefig(pwd+"hist.png"); print(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
@@ -1240,7 +1240,7 @@ def converter(hIn,saveHist,name,paths,reBin):
             hist_writer = csv.writer(hist_file,delimiter = ',')
             hist_writer.writerows(hOut)
         hist_file.close()
-        print(name+".csv")
+        print(paths['scratchPath']+name+".csv")
 
     return (hOut,xax,yax)
 
@@ -2051,53 +2051,70 @@ def getTwiss(args,sample,paths):
     if args.source == "twiss":
         if args.twissFile != "":
             import csv
-            from os import uname
-            i=0
-            #Find file
             twissPWD = paths['homePWD']+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
-            if args.qpNum == "all":
+            if args.qpNum == "all": #for getting all samples out of betaSample OpenXAL output file
+                ##
+                ## To Do : Double check this is doing what I want, along with sample appending...
+                ##
                 #for running all Twiss in OpenXAL Combo Sequence output CSV
-                #from plotFit import numLines
-                n = numLines(twissPWD+args.twissFile)
-                for i in range(n):
-                    with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
-                        csv_reader = csv.reader(csv_file, delimiter=',')
-                        rowNum = 0 #to increment QP number
-                        for row in csv_reader:
-                            #if rowNum == 0:
-                            #    print("row 0")
-                            #    if type(row[1]) == str:
-                            #        print("Header skipped")
-                            #        continue
-                                    #next(csv_reader,None)
-                            if rowNum == sample: #i #not sure how to go back to QP finding...
-                                if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
-                                    um = 1e6 #if from OpenXAL 
-                                elif float(row[1]) > 1e-4:
-                                    um = 1
-                                #print("um",um)
-                                Twiss[0] = float(row[1])*um #[mm-mrad]
-                                Twiss[1] = float(row[2])
-                                Twiss[2] = float(row[3])
-                                Twiss[3] = float(row[4])*um #[mm-mrad]
-                                Twiss[4] = float(row[5])
-                                Twiss[5] = float(row[6])
-                                #print(Twiss)
-                                #break
-                                #Adjusts names so the files are in order when it is a QP failure
-                                if len(row[0]) == 2:
-                                    args.qpNum = "0"
-                                else: 
-                                    args.qpNum = ""
-                                args.qpNum += row[0]
-                                #print(i,rowNum,args.qpNum)
-                                break
-                            rowNum+=1
-                    csv_file.close()
-                    
-                    #if args.sim == "raster":
-                    #    from scatterPBW import scatterPBW
-                    #    scatterPBW(args,Twiss,sample,paths)
+                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    rowNum = 0 #to increment QP number
+                    for row in csv_reader:
+                        if rowNum == sample: #i #not sure how to go back to QP finding...
+                            if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
+                                um = 1e6 #if from OpenXAL 
+                            elif float(row[1]) > 1e-4:
+                                um = 1
+                            #print("um",um)
+                            Twiss[0] = float(row[1])*um #[mm-mrad]
+                            Twiss[1] = float(row[2])
+                            Twiss[2] = float(row[3])
+                            Twiss[3] = float(row[4])*um #[mm-mrad]
+                            Twiss[4] = float(row[5])
+                            Twiss[5] = float(row[6])
+                            #Adjusts names so the files are in order when it is a QP failure
+                            if len(row[0]) == 2:
+                                args.qpNum = "0"
+                            else: 
+                                args.qpNum = ""
+                            args.qpNum += row[0]
+                            #print(rowNum,args.qpNum,Twiss)
+                            break
+                        rowNum+=1
+                csv_file.close()
+            elif args.qpNum == "qps": #for getting all QPs out of OpenXAL Failure file
+                print("In QPs")
+                #for running all QPs in OpenXAL Combo Sequence output CSV
+                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=',')
+                    rowNum = 99 #to increment QP number
+                    ###
+                    ### To Do 13 Mar: Figure out how to read in each QP in FailureHEBT-A2T_80pctField_1e-04Jitter rather than individually
+                    ###
+                    for row in csv_reader:
+                        if rowNum == int(row[0]): #i #not sure how to go back to QP finding...
+                            if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
+                                um = 1e6 #if from OpenXAL 
+                            elif float(row[1]) > 1e-4:
+                                um = 1
+                            #print("um",um)
+                            Twiss[0] = float(row[1])*um #[mm-mrad]
+                            Twiss[1] = float(row[2])
+                            Twiss[2] = float(row[3])
+                            Twiss[3] = float(row[4])*um #[mm-mrad]
+                            Twiss[4] = float(row[5])
+                            Twiss[5] = float(row[6])
+                            #Adjusts names so the files are in order when it is a QP failure
+                            if len(row[0]) == 2:
+                                args.qpNum = "0"
+                            else: 
+                                args.qpNum = ""
+                            args.qpNum += row[0]
+                            print(sample,row[0],args.qpNum,Twiss)
+                            break
+                        rowNum+=1
+                csv_file.close()
             else:
                 #for single QP fail runs
                 with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:

@@ -595,7 +595,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)
                     #The above comparison btwn PBW Exit Twiss and Target distrib shows that the beam distrib transforms during the drift from PBW Exit.
                             #That it isn't a mere drift, but the MCS causes a 14% larger beam in Y and 10% larger beam in X.
-            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Eq 8 Real PBW",savename,mat,PBWTwx,PBWTwy,args)
+            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,r"M${\"u}$ller Eqn 8 Real PBW",savename,mat,PBWTwx,PBWTwy,args)
                     #Position filtered to show spread
                     #The above comparison btwn the Twiss at Target with drift resulting from Muellers formalism and actual Target distrib shows that they are in strong agreement.
                             #The Mueller formalism equations with correct radiation lengths, etc produce beam sigmas within 1% in X and Y (-0.92% in X and +0.38% in Y)
@@ -622,12 +622,12 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
         PMASreturn = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
         
-        if options['initTree']:
-            (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
-            #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
-            initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+        #if options['initTree']:
+        #    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
+        #    #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
+        #    initPOutBox = rasterImage(savename,"PBW",objects_PBW["init_xy"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
     else:
-        Jmax = 0
+        jMax = 0
         pOutsideBoxes = 0
         beamArea = 0
         coreJMean = 0
@@ -635,6 +635,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         centY = 0
         rValue = 0
         rDiff = 0
+        PMASreturn = [jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]
 
         if args.gaussFit:
             from plotFit import converter,gaussianFit,voigtFit
@@ -660,6 +661,8 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         targSigsX = getMoments(targxTwissf)
         targSigsY = getMoments(targyTwissf)
         print(e8SigX,e8SigY,targSigX,targSigY)
+    else:
+        e8SigsX = [0,0];e8SigsY = [0,0]; targSigsX = [0,0]; targSigsY = [0,0]
 
     #passing lists to decrease length of argument calls
     return savename, xtarg_filtered_p/mm, ytarg_filtered_p/mm, PMASreturn,e8SigsX,e8SigsY,targSigsX,targSigsY #filter by PDG only

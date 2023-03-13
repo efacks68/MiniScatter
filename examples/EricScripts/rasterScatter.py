@@ -8,9 +8,10 @@
 #Jitter study:
     #python3 rasterScatter.py --samples 200 --saveSpread --betaSpread 10
 #Fit Gaussian and Voigt to a beamlet:
-    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7
+    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --compTargs
 #Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
-    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1e-3Jitter_200x --qpNum all --saveSpread
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1e-03Jitter --qpNum all --saveSpread --samples 202 --processes 10
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1e-03Jitter --qpNum qps --saveSpread --samples 202 --processes 10
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 #thickness dependence plot:
@@ -42,7 +43,7 @@ parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines b
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
-parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, or all")
+parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
 parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of already made csv")

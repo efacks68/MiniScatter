@@ -91,9 +91,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     else:
         if args.source == "twiss":
             name = args.twissFile+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
-            #if args.qpNum != "": #need to figure out how to get it to work for QP failures
-            #    if args.qpNum != "all":
-            #        name+="_QP"+args.qpNum
+            if args.qpNum != "": #need to figure out how to get it to work for QP failures
+                if args.qpNum == "qps":
+                    name+="_QP"+args.qpNum
             #name = "failure_QP"+args.qpNum+"_{:.0f}MeV_emit{:.2f},{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)
         elif args.source == "csv":
             name = args.beamFile
@@ -131,7 +131,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = name + "_edges"
 
     #Append Sample Ending
-    if args.betaSpread == 0:
+    if args.betaSpread == 0 and args.source != "twiss":
         name = name + sampEnding
 
     #Calculate periods  
