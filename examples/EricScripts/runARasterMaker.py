@@ -50,9 +50,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/(betaY/mm)]]) #[mm]
 
     #Calculate Envelope Center Angle
-    dBPM93to94 = 3031 #[mm] from OpenXAL(?)
-    dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
-    dBPM93toTarg = 21222 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
+    dBPM93to94 = 2592.5 #[mm] from OpenXAL(?)
+    dBPM93toPBW = 20064.5 #[mm] Updated from SynopticViewer 15.3.23, assuming it is the 2nd to last, in between 2 Valves
+    dBPM93toTarg = 23814.5 #or is it 21222? [mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
     dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
     envXAngle = args.rX / dBPM93to94 #x' = beam x distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
     envYAngle = args.rY / dBPM93to94 #y' not radians, as per Kyrre 2.11.22
@@ -85,15 +85,16 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         else:
             sampEnding = "_"+str(sample-1) #this is the variant
 
+    name="test"
     #Pick name based on beam; default: "PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03"
     if options['dependence'] == "RA":
         name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)
     else:
         if args.source == "twiss":
-            name = args.twissFile+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
-            if args.qpNum != "": #need to figure out how to get it to work for QP failures
-                if args.qpNum == "qps":
-                    name+="_QP"+args.qpNum
+            if args.beamClass == "qpFail":#gets the QP # from getTwiss
+                name=args.twissFile+"_QP"+args.qpNum
+                print(name)
+            name = name+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
             #name = "failure_QP"+args.qpNum+"_{:.0f}MeV_emit{:.2f},{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)
         elif args.source == "csv":
             name = args.beamFile
@@ -157,8 +158,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
                 beamletY = envYCenOff[jj] + 2 * sRasterYAmpl[jj] / pi * asin(sin(2 * pi / periodY[jj] * tjj_ii )) #[mm]
 
                 #Calculate the total Beamlet Angle = Envelope Center Angle + the angle given to each beamlet by the Raster Magnets
-                beamletXAngle = beamletX / dBPM93toTarg + envXAngle #[mm]
-                beamletYAngle = beamletY / dBPM93toTarg + envYAngle #[mm]
+                beamletXAngle = beamletX / dBPM93toPBW + envXAngle #[mm] #changed bc the beamlet generation occurs at the PBW, not Target
+                beamletYAngle = beamletY / dBPM93toPBW + envYAngle #[mm]   #assume it changes distributions slightly, but not significantly
 
                 #save total beamlet position
                 centroids[i,0] = beamletX

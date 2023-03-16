@@ -154,7 +154,7 @@ def findFit(data,guess,lims,nBins):
     #print(data)
     bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    savefig(pwd+"hist.png"); print(pwd+"hist.png")
+    #savefig(pwd+"hist.png"); print(pwd+"hist.png")
     #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
 
@@ -1666,7 +1666,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
     if fileName != "":  
             statsName = fileName+".csv"
     else:
-        statsName = statsPWD+"EvalStats12MarHEBTA2T.csv" #don't forget to include statsPWD!!
+        statsName = statsPWD+"EvalStats15Mar.csv" #don't forget to include statsPWD!!
 
     #print("Is file present?",osPath.isfile(statsPWD+statsName))
     writeMore = False
@@ -1730,6 +1730,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     lenbreak=False
     #How to select which entries? Make keys to search for
     pctKey = "sampleIn"+"{:.0f}Pct".format(args.betaSpread) #"(PBW_570MeV)"
+    jitterKey = "100pctField"
     pbwKey = "PBW_{:.0f}MeV".format(args.energy)
     nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
     betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
@@ -1737,7 +1738,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
     #print(nBkey,pctKey,origKey,betaKey)
     #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
-    with open(statsPWD+"EvalStats12MarHEBTA2T.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats15Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         #requires differentiating between type of run we're looking at. Can't have both in one line
@@ -1771,7 +1772,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         #if i == 6: #for finding indices out of 7sigma
                         #    print("index",i,"failed file:",row[0])
                         #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
-                        if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
+                        if re.search(nBkey,row[0]) and re.search(jitterKey,row[0]) and re.search(origKey,row[0]):
                             read[i] = float(row[ind])
                             if i == args.samples-1:
                                 lenbreak = True
@@ -1827,6 +1828,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
             #xlim(pHistLims)
 
+    if ind in {7,8}:
+        xlim(pHistLims)
+
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
@@ -1866,7 +1870,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
         savefig(name+"."+args.picFormat,bbox_inches='tight')#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)
-    print(name)
+    print(name+"."+args.picFormat)
     return mu,sigma,ampl,len(read)
 
 
@@ -1896,8 +1900,8 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
     paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6]),([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#
                     (0,[1e3,10,1])]#,(0,[1e3,10,1])]
-    pHistLims = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-    pHistLims = [[35,45],[8.0,8.80],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
+    #pHistLims = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
+    pHistLims = [[52.3,55.6],[3.475,3.66],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
     paramBins = 20#[30,35,40,30,25,25,25,25]
     #bR = round(args.samples/8)
     #paramBins = [bR,bR,round(args.samples/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
@@ -1964,7 +1968,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats12MarHEBTA2T.csv",mode='r') as csv_file:
+    with open(statsPWD+"EvalStats15Mar.csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2034,6 +2038,8 @@ def getTwiss(args,sample,paths):
         Twiss = [0.118980737408497,1085.63306926394,-65.1638312921654,0.123632934174567,136.062409365455,-8.12599512314246] #updated to HEBT-A2T Combo Twiss
     elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
         Twiss = [0.0001,0.15,0,0.0001,0.15,0]
+    else: #for jitter and qpFail cases for an initial definition
+        Twiss = [0.118980737408497,1085.63306926394,-65.1638312921654,0.123632934174567,136.062409365455,-8.12599512314246] 
 
     if args.twiss:
         Twiss = [args.twiss[0],args.twiss[1],args.twiss[2],args.twiss[3],args.twiss[4],args.twiss[5]]
@@ -2051,17 +2057,18 @@ def getTwiss(args,sample,paths):
     if args.source == "twiss":
         if args.twissFile != "":
             import csv
-            twissPWD = paths['homePWD']+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
-            if args.qpNum == "all": #for getting all samples out of betaSample OpenXAL output file
+            if args.beamClass == "jitter": #for getting all samples out of betaSample OpenXAL output file
+                print("jitter study")
                 ##
                 ## To Do : Double check this is doing what I want, along with sample appending...
                 ##
                 #for running all Twiss in OpenXAL Combo Sequence output CSV
-                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     rowNum = 0 #to increment QP number
                     for row in csv_reader:
                         if rowNum == sample: #i #not sure how to go back to QP finding...
+                            print(sample,rowNum,row[0])
                             if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
                                 um = 1e6 #if from OpenXAL 
                             elif float(row[1]) > 1e-4:
@@ -2083,17 +2090,18 @@ def getTwiss(args,sample,paths):
                             break
                         rowNum+=1
                 csv_file.close()
-            elif args.qpNum == "qps": #for getting all QPs out of OpenXAL Failure file
-                print("In QPs")
+            elif args.beamClass == "qpFail": #for getting all QPs out of OpenXAL Failure file
+                print("In QPs",args.qpNum,args.twissRowN)
                 #for running all QPs in OpenXAL Combo Sequence output CSV
-                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
-                    rowNum = 99 #to increment QP number
+                    rowNum = 0
                     ###
                     ### To Do 13 Mar: Figure out how to read in each QP in FailureHEBT-A2T_80pctField_1e-04Jitter rather than individually
                     ###
                     for row in csv_reader:
-                        if rowNum == int(row[0]): #i #not sure how to go back to QP finding...
+                        #print(row[0],args.twissRowN,rowNum)
+                        if args.twissRowN == int(row[0]): #Must use one process or else does same QP!!
                             if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
                                 um = 1e6 #if from OpenXAL 
                             elif float(row[1]) > 1e-4:
@@ -2112,12 +2120,13 @@ def getTwiss(args,sample,paths):
                                 args.qpNum = ""
                             args.qpNum += row[0]
                             print(sample,row[0],args.qpNum,Twiss)
+                            args.twissRowN += 1
                             break
                         rowNum+=1
                 csv_file.close()
-            else:
+            else: #not sure how to get this to work now...
                 #for single QP fail runs
-                with open(twissPWD+args.twissFile+".csv",mode='r') as csv_file:
+                with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     for row in csv_reader:
                         if row[0] == args.qpNum:

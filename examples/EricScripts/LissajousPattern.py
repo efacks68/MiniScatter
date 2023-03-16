@@ -9,12 +9,12 @@ parser.add_argument("--s",action='store_true',default=False)
 parser.add_argument("--ESS",action='store_true')
 parser.add_argument("--pencil",action='store_true')
 parser.add_argument("--g",action='store_true',default=False)
-parser.add_argument("--Nb",        type=int,    default=10,    help="Number of macroparticles per beamlet. Default=10")
+parser.add_argument("--Nb",        type=int,    default=100,    help="Number of macroparticles per beamlet. Default=10")
 parser.add_argument("--nP",        type=float,  default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
 parser.add_argument("--rX",        type=float,  default=0,     help="X distance from beam axis [mm]. Default=0")
 parser.add_argument("--rY",        type=float,  default=0,     help="Y distance from beam axis [mm]. Default=0")
-parser.add_argument("--aX",        type=float,  default=54.65, help="RM X Amplitude [mm]. Default=54.65")
-parser.add_argument("--aY",        type=float,  default=18.37, help="RM Y Amplitude [mm]. Default=18.37")
+parser.add_argument("--aX",        type=float,  default=48.7867, help="RM X Amplitude [mm]. Default=48.7867") #14.3.23-new RMA at PBW calculations with Synoptic Viewer distances. old - 54.65
+parser.add_argument("--aY",        type=float,  default=16.3991, help="RM Y Amplitude [mm]. Default=16.3991") #old - 18.37
 parser.add_argument("--edges",action="store_true")
 parser.add_argument("--picFormat", type=str,   default="png",  choices=("png","svg","pdf"),help="Whic file format extension?")
 args = parser.parse_args()
@@ -45,8 +45,8 @@ delta_t = np.linspace(0,dt,n_tii) #[s]
 envXatBPM94 = args.rX
 envYatBPM94 = args.rY
 dBPM93to94 = 3031 #[mm] from OpenXAL(?)
-dBPM93toPBW = 16822 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
-dBPM93toTarg = 21222 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
+dBPM93toPBW = 20064.5 #[mm] PBW 4400mm upstream of Target: https://gitlab.esss.lu.se/ess-bp/ess-lattice/-/blob/HEBT_RASTER_V29/9.0_HEBT/Beam_Physics/lattice.dat
+dBPM93toTarg = 23814.5 #[mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
 dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
 envXAngle = envXatBPM94 / dBPM93to94 #x' = distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
 envYAngle = envYatBPM94 / dBPM93to94 #y' not radians, as per Kyrre 2.11.22

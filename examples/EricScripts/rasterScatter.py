@@ -5,19 +5,20 @@
 #possible commands:
 #Vary N particles for nominal convergence study
     #python3 rasterScatter.py --Nb 100 --samples 200 --saveSpread
-#Jitter study:
-    #python3 rasterScatter.py --samples 200 --saveSpread --betaSpread 10
 #Fit Gaussian and Voigt to a beamlet:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --compTargs
-#Failure QP 139 (close to nominal, but slightly 1/4 smaller X) spread approx:
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1e-03Jitter --qpNum all --saveSpread --samples 202 --processes 10
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1e-03Jitter --qpNum qps --saveSpread --samples 202 --processes 10
+#QP Jitter Study:
+    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 202 --processes 10
+#QP Failure Study, requires one process at a time to work, as of 15.3.23:
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1.0e-04Jitter --beamClass qpFail --saveSpread --processes 1
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 #thickness dependence plot:
     #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
 #raster magnet failures:
     #python3 rasterScatter.py --failure 1 --magFails 4 --savePics
+#Old Jitter study:
+    #python3 rasterScatter.py --samples 200 --saveSpread --betaSpread 10
 
 #load from CSV file name:
     #python3 rasterScatter.py --source csv --beamFile sampleIn50Pct_OrigbX1006.80,bY129.72m_beta1006.80,129.72m_N2.9e+06_NpB100 --saveGrads --saveEdges
@@ -39,7 +40,8 @@ parser = ArgumentParser()
 parser.add_argument("--sim",       type=str,   default="raster",   choices=("raster","map","beamlet","thick"), help="Type of simulation to perform")
 parser.add_argument("--source",    type=str,   default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
 parser.add_argument("--twissFile", type=str,   default="",    help="Load file with Twiss, auto look in OpenXAL folder")
-parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', or 'pencil. If other, just do --twiss. Default='ESS'")
+parser.add_argument("--twissRowN", type=int,   default=99,    help="What rowNum to use in getting QP failure Twiss")
+parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', 'pencil', QP 'fail', or 'jitter'. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
@@ -54,8 +56,8 @@ parser.add_argument("--Nb",        type=int,   default=100,   help="Number of ma
 parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
 parser.add_argument("--rX",        type=float, default=0,     help="X distance from beam axis at BPM94 [mm]. Default=0")
 parser.add_argument("--rY",        type=float, default=0,     help="Y distance from beam axis at BPM94 [mm]. Default=0")
-parser.add_argument("--aX",        type=float, default=54.65, help="RM X Amplitude [mm]. Default=54.65")
-parser.add_argument("--aY",        type=float, default=18.37, help="RM Y Amplitude [mm]. Default=18.37")
+parser.add_argument("--aX",        type=float, default=48.7867, help="RM X Amplitude [mm]. Default=48.7867") #14.3.23-new RMA at PBW calculations with Synoptic Viewer distances. old - 54.65
+parser.add_argument("--aY",        type=float, default=16.3991, help="RM Y Amplitude [mm]. Default=16.3991") #old - 18.37
 parser.add_argument("--failure",   type=float, default=0,     choices = range(0,5),  help="Which RM Failure case, 0-4. Default=0")
 parser.add_argument("--magFails",  type=int,   default=2,     choices = range(0,5),  help="Number of Raster Magnets that fail, 1-4. Default=2")
 parser.add_argument("--xlim",      type=float, default=150,   help="+/- value for horizontal axis of output rastered image [mm]. Default=150")
@@ -110,15 +112,22 @@ if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab0
     csvPWD = scratchPath+"CSVs/"
     homePWD = "/uio/hume/student-u52/ericdf/"
     statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 elif uname()[1] == "mbef-xps-13-9300":
     scratchPath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     homePWD = "/home/efackelman/"
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 else:
     csvPWD = input("Path from home to direction you like to save root files to: ")
     statsPWD = "."
-paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 'oXALPWD':oXALPWD}
+
+if args.beamClass == "qpFail":
+    from plotFit import numLines
+    args.samples = numLines(paths['oXALPWD']+args.twissFile) #dynamically gets # QPs to cycle through
+    print("There will be",args.samples,"QPs read in")
 
 def loopSamples(args,paths,i):
     #Get Twiss and run; if no samples argment defined, will run through once.

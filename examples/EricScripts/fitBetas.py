@@ -49,6 +49,8 @@ if re.search("beta",name):
     elif int(re.search("(([0-9]*)+(?=Pct))",name)[1]) == 10:
         pct = 10
         nBins = 30
+nomBX = 1085.63
+nomBY = 136.06
 
 nonzero = greater(betaX,0)
 betaX = betaX[nonzero]
@@ -78,10 +80,10 @@ elif s1.get_xlim()[1] > 1200:
     deltaX=5e-3
 else:
     deltaX=8e-4
-#s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.95, r"Nominal $\beta_{x}$= "+re.search("(([0-9]*)+(?=,))",name)[1]+" [m]", propsR)
+s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.95, r"Nominal $\beta_{x}$= "+str(nomBX)+" [m]", propsR)
 #if pct == 1:
 s1.xaxis.set_major_locator(ticker.MultipleLocator(20))
-s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muX)+"\n"+r"$\sigma$="+"{:.3f}m\n({:.3f}%)".format(sigmaX,sigmaX/muX*100), propsR)
+s1.text(s1.get_xlim()[1]*(1-deltaX), s1.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muX)+"\n"+r"$\sigma$="+"{:.3f}[m]\n({:.3f}%)".format(sigmaX,sigmaX/muX*100), propsR)
 title1=r"Distribution of $\beta_x$ Values for "+str(pct)+"% Range"
 #print(title1)
 plt.setp(s1,title=title1,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
@@ -96,10 +98,10 @@ elif s2.get_xlim()[1] > 150:
     deltaY=5e-3
 else:
     deltaY=8e-4
-#s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.95, r"Nominal $\beta_{y}$= "+re.search("(([0-9]*)+(?=m_))",name)[1]+" [m]", propsR)
+s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.95, r"Nominal $\beta_{y}$= "+str(nomBY)+" [m]", propsR)
 #if pct == 1:
 s2.xaxis.set_major_locator(ticker.MultipleLocator(2))
-s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muY)+"\n"+r"$\sigma$="+"{:.3f}m\n({:.3f}%)".format(sigmaY,sigmaY/muY*100), propsR)
+s2.text(s2.get_xlim()[1]*(1-deltaY), s2.get_ylim()[1]*0.85,r"$\mu$="+"{:.3f} [m]".format(muY)+"\n"+r"$\sigma$="+"{:.3f}[m]\n({:.3f}%)".format(sigmaY,sigmaY/muY*100), propsR)
 title2=r"Distribution of $\beta_y$ Values for "+str(pct)+"% Range"
 plt.setp(s2,title=title2,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
 #plt.setp(s2.get_xticklabels(),rotation=45,ha="right")

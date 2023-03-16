@@ -42,7 +42,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     baseSimSetup["POSLIM"] = args.rCut #XY histogram Position Limit for a few, check RootFileWriter.cc
     #Detector distance from target center [mm] Default is 50mm behind Target
     #For multiple detector locations, make a list, e.g. [-5,5,5000] but they stack in TTree.
-    baseSimSetup["DIST"] = [4400] #Detector locations. At ESS Target location 
+    baseSimSetup["DIST"] = [3565] #Detector locations. At ESS Target location, update from Synoptic Viewer 15-3-15
 
     #For loading particles
     if args.sim == "raster" or args.sim == "map":
