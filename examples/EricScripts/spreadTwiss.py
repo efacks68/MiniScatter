@@ -84,15 +84,17 @@ if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab0
     csvPWD = scratchPath+"CSVs/"
     homePWD = "/uio/hume/student-u52/ericdf/"
     statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 elif uname()[1] == "mbef-xps-13-9300":
     scratchPath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     homePWD = "/home/efackelman/"
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 else:
-    csvPWD = input("Path from home to direction you like to save root files to: ")
+    csvPWD = input("Path from home to directory you would like to save root files to: ")
     statsPWD = "."
-paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD}
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 'oXALPWD':oXALPWD}
 
 #Constants for running scripts
 physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"

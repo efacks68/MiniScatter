@@ -11,6 +11,8 @@
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 202 --processes 10
 #QP Failure Study, requires one process at a time to work, as of 15.3.23:
     #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1.0e-04Jitter --beamClass qpFail --saveSpread --processes 1
+#individual QP Fail:
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_0.0e+00JitterJL --qpNum 100 --saveSpread --samples 202 --processes 10
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 #thickness dependence plot:
@@ -252,4 +254,5 @@ print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
 if args.samples >= 2:
     from plotFit import spreadHist
+    print(Twiss.keys)
     spreadHist(args,Twiss[0],paths,origBX[0],origBX[0],args.beamFile) #need to think about this, maybe pass whole discitonary down, but not sure...

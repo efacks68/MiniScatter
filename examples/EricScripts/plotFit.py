@@ -2068,7 +2068,7 @@ def getTwiss(args,sample,paths):
                     rowNum = 0 #to increment QP number
                     for row in csv_reader:
                         if rowNum == sample: #i #not sure how to go back to QP finding...
-                            print(sample,rowNum,row[0])
+                            #print(sample,rowNum,row[0])
                             if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
                                 um = 1e6 #if from OpenXAL 
                             elif float(row[1]) > 1e-4:
@@ -2119,13 +2119,12 @@ def getTwiss(args,sample,paths):
                             else: 
                                 args.qpNum = ""
                             args.qpNum += row[0]
-                            print(sample,row[0],args.qpNum,Twiss)
+                            #print(sample,row[0],args.qpNum,Twiss)
                             args.twissRowN += 1
                             break
                         rowNum+=1
                 csv_file.close()
-            else: #not sure how to get this to work now...
-                #for single QP fail runs
+            else: #for single QP fail runs, just give qpNum, don't change beamClass
                 with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     for row in csv_reader:

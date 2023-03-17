@@ -91,9 +91,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = "PBW_{:.0f}MeV_beta{:.2f},{:.2f}m_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,args.aX,args.aY,nParts,args.Nb)
     else:
         if args.source == "twiss":
-            if args.beamClass == "qpFail":#gets the QP # from getTwiss
+            if args.beamClass == "qpFail" or args.qpNum != "":#gets the QP # from getTwiss
                 name=args.twissFile+"_QP"+args.qpNum
-                print(name)
+                #print(name)
             name = name+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
             #name = "failure_QP"+args.qpNum+"_{:.0f}MeV_emit{:.2f},{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)
         elif args.source == "csv":
@@ -133,6 +133,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
 
     #Append Sample Ending
     if args.betaSpread == 0 and args.source != "twiss":
+        name = name + sampEnding
+    elif args.source == "twiss" and args.qpNum != "":
         name = name + sampEnding
 
     #Calculate periods  
