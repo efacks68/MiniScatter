@@ -4,15 +4,13 @@
 
 #possible commands:
 #Vary N particles for nominal convergence study
-    #python3 rasterScatter.py --Nb 100 --samples 200 --saveSpread
+    #python3 rasterScatter.py --Nb 100 --samples 202 --saveSpread
 #Fit Gaussian and Voigt to a beamlet:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --compTargs
 #QP Jitter Study:
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 202 --processes 10
-#QP Failure Study, requires one process at a time to work, as of 15.3.23:
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_1.0e-04Jitter --beamClass qpFail --saveSpread --processes 1
 #individual QP Fail:
-    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_0.0e+00JitterJL --qpNum 100 --saveSpread --samples 202 --processes 10
+    #python3 rasterScatter.py --source twiss --twissFile FailureHEBT-A2T_80pctField_0.0e+00JitterJL  --beamClass qpFail --qpNum 148 --saveSpread --samples 202 --processes 10
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 7
 #thickness dependence plot:
@@ -20,7 +18,7 @@
 #raster magnet failures:
     #python3 rasterScatter.py --failure 1 --magFails 4 --savePics
 #Old Jitter study:
-    #python3 rasterScatter.py --samples 200 --saveSpread --betaSpread 10
+    #python3 rasterScatter.py --samples 202 --saveSpread --betaSpread 10
 
 #load from CSV file name:
     #python3 rasterScatter.py --source csv --beamFile sampleIn50Pct_OrigbX1006.80,bY129.72m_beta1006.80,129.72m_N2.9e+06_NpB100 --saveGrads --saveEdges
@@ -43,14 +41,14 @@ parser.add_argument("--sim",       type=str,   default="raster",   choices=("ras
 parser.add_argument("--source",    type=str,   default="particles",choices=("particles","twiss","csv"), help="From load particles or Twiss or CSV (put name in --beamFile)")
 parser.add_argument("--twissFile", type=str,   default="",    help="Load file with Twiss, auto look in OpenXAL folder")
 parser.add_argument("--twissRowN", type=int,   default=99,    help="What rowNum to use in getting QP failure Twiss")
-parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', 'pencil', QP 'fail', or 'jitter'. If other, just do --twiss. Default='ESS'")
+parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', 'pencil','qpFail'(expects a qpNum), or 'jitter'. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--csvFile",   type=str,   default="",    help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats18Mar2", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
@@ -125,11 +123,6 @@ else:
     csvPWD = input("Path from home to direction you like to save root files to: ")
     statsPWD = "."
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 'oXALPWD':oXALPWD}
-
-if args.beamClass == "qpFail":
-    from plotFit import numLines
-    args.samples = numLines(paths['oXALPWD']+args.twissFile) #dynamically gets # QPs to cycle through
-    print("There will be",args.samples,"QPs read in")
 
 def loopSamples(args,paths,i):
     #Get Twiss and run; if no samples argment defined, will run through once.

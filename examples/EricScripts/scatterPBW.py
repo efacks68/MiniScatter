@@ -41,6 +41,6 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
 
     from plotFit import saveStats
     #print("saveStats start",datetime.now())
-    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,"",args.reBin)
+    saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,"",args.reBin,args)
 
     print("Simulation took ",datetime.now()-origin,"s long",sep="")

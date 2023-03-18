@@ -638,7 +638,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         PMASreturn = [jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]
 
         if args.gaussFit:
-            from plotFit import converter,gaussianFit,voigtFit
+            from plotFit import converter,gaussianFit
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
             (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths) #convert from TH2D to numpy map

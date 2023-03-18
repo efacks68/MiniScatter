@@ -800,37 +800,37 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
     if axis == "y" or axis == "Y":
-        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2)
+        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1)#,p2*y1,p2*5,p2,p2*y2)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
         f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
         f2.SetParLimits(1,p2*0.25,p0*y1) #
         f2.SetParLimits(2,p1, p0*r*2) #
-        f2.SetParLimits(3,p2, p2*y1) #p3=11,22
-        f2.SetParLimits(4,p2, p2*y2) #p5=22,300
-        f2.SetParLimits(5,p2, p2*y2) #p5=22,300
-        #f2.SetParLimits(6,p2,p2*y2) #p5=22,300
-        f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
+        f2.SetParLimits(3,p2, p2*y2*y2) #p3=11,22
+        #f2.SetParLimits(4,p2, p2*y2) #p5=22,300
+        #f2.SetParLimits(5,p2, p2*y2) #p5=22,300
+        ##f2.SetParLimits(6,p2,p2*y2) #p5=22,300
+        #f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
     elif axis == "x" or axis == "X":
         f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2)
         #print(9532,16.3,395,36.5,6511,14,2,334)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
         f2.SetParLimits(0,p0*r,p0*y1)
         f2.SetParLimits(1,p2*0.25,p2*y1)
-        f2.SetParLimits(2,p2, p0*r*2)
-        f2.SetParLimits(3,p2, p2*y1)
-        f2.SetParLimits(4,p2, p2*y2)
-        f2.SetParLimits(5,p2, p2*y2)
-        #f2.SetParLimits(6,0.1,p0)
-        f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
+        f2.SetParLimits(2,p2, p0*0.5)
+        f2.SetParLimits(3,p2, p2*y2*y2)
+        #f2.SetParLimits(4,p2, p2*y2)
+        #f2.SetParLimits(5,p2, p2*y2)
+        ##f2.SetParLimits(6,0.1,p0)
+        #f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
     f2_res = proj.Fit(f2, 'RSQ')
-    print("Gaussian",f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+    print("Gaussian",f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3))#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
@@ -864,7 +864,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     differencePG = differenceNG/total*100
-    coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
+    coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3)]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
     print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNG,total,differencePG))#,"\n")#,coeffs)
     
     
@@ -1443,12 +1443,6 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
     from numpy import sum as npSum,argpartition,max as npMax,min as npMin,ndenumerate#,ndenumerate,argmax,argmin,amax,amin,
     from math import ceil
 
-    ##Set conspicuous initial values in case not found
-    #avgMaxSumGradX = 0
-    #avgMaxSumGradY = 0
-    #avgMinSumGradX = 0
-    #avgMinSumGradY = 0
-    
     sumGradX = npSum(gradX,axis=0)
     sumGradY = npSum(gradY,axis=1)
     #print(len(sumGradY),npMin(sumGradY))
@@ -1468,30 +1462,6 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
         if val == npMax(sumGradX):
             lefInd = idx[0]+a
             #print("lef",val,idx[0])
-    #print([topInd,botInd,lefInd,rigInd])
-    ##n=6 #this gave pretty even results
-    ##argpartition implemented like this selects the maximum n values
-    ##  argpartition sorts and puts the passed k in the k-th index. 
-    ##    I call the final n indices, meaning the n greater than k, 
-    #maxSumGradXInds = argpartition(sumGradX,-n)[-n:]
-    #minSumGradXInds = argpartition(sumGradX,n)[n:]
-    #maxSumGradYInds = argpartition(sumGradY,-n)[-n:]
-    #minSumGradYInds = argpartition(sumGradY,n)[n:]
-    #print("len",len(minSumGradYInds),minSumGradYInds[-n:])
-    ##then those max are summed 
-    #for i in range(n):
-    #    avgMaxSumGradX += maxSumGradXInds[i]
-    #    avgMaxSumGradY += maxSumGradYInds[i]
-    #    avgMinSumGradX += minSumGradXInds[i]
-    #    avgMinSumGradY += minSumGradYInds[i]
-    #    print("ind",minSumGradYInds[i])
-    ##print("gradCalcs",round(avgMaxSumGradY/n),round(avgMinSumGradY/n),round(avgMaxSumGradX/n),round(avgMinSumGradX/n))
-
-    ##and averaged by the number of points. Ideally this would find the peak of the gradient
-    #topInd = ceil(avgMinSumGradY/n) #is ceil necessary?
-    #botInd = round(avgMaxSumGradY/n)
-    #lefInd = round(avgMaxSumGradX/n)
-    #rigInd = ceil(avgMinSumGradX/n)
 
     lim=550
     if topInd > lim:
@@ -1589,43 +1559,6 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     #print("R = ",rValue,rDiff)
     #print("Converted in",datetime.now() - start)
 
-#    #Doesn't work, 12 Feb
-#    from cv2 import Sobel,COLOR_BGR2GRAY
-#    nomEdges = [20,-22,-66,68]
-#    edgeImgX = Sobel(Img,-1,1,0)
-#    edgeImgY = Sobel(Img,-1,0,1)
-#    printEdges=True
-#    if printEdges:
-#        import csv
-#        G = np.sqrt(edgeImgX**2 + edgeImgY**2)
-#        with open(name+"_edges.csv",mode = 'w',newline=None) as edge_file:
-#            edge_writer = csv.writer(edge_file,delimiter = ',')
-#            edge_writer.writerows(G)
-#        edge_file.close()
-#        print(name+"_edges.csv")
-#    for idx, val in np.ndenumerate(edgeImgX):
-#        if val == 1:
-#            lefInd = idx
-#        if val == -1:
-#            rigInd = idx
-#    for idx, val in np.ndenumerate(edgeImgY):
-#        if val == 1:
-#            topInd = idx
-#        if val == -1:
-#            botInd = idx
-#    EI = [topInd,botInd,lefInd,rigInd]
-#    lEdge = xax[lefInd]
-#    rEdge = xax[rigInd] 
-#    bEdge = yax[botInd]
-#    tEdge = yax[topInd]
-#    dispT = np.abs(tEdge-nomEdges[0])
-#    dispB = np.abs(bEdge-nomEdges[1])
-#    dispL = np.abs(lEdge-nomEdges[2])
-#    dispR = np.abs(rEdge-nomEdges[3])
-#    print("Beam moved ",dispT,",",dispB,"vertical and",dispL,",",dispR,"horizontally")
-#    dispY = (dispT+dispB)/2
-#    dispX = (dispL+dispR)/2
-
     #Edges
     #Not great, may need to reshape and average. Not sure how to do that...
     #from plotFit import findEdges
@@ -1657,16 +1590,16 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
 
 
-def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,fileName,reBin):
+def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,fileName,reBin,args):
     #save values in Stats CSV
     import csv
     from os import path as osPath
     from re import sub
-    rasterBeamFile = sub(".+(?<=(/CSVs/))","",rasterBeamFile)
+    rasterBeamFile = sub(".+(?<=(/CSVs/))","",rasterBeamFile) #all before CSVs gets removed
     if fileName != "":  
             statsName = fileName+".csv"
     else:
-        statsName = statsPWD+"EvalStats15Mar.csv" #don't forget to include statsPWD!!
+        statsName = statsPWD+args.statsFile+".csv" #don't forget to include statsPWD!!
 
     #print("Is file present?",osPath.isfile(statsPWD+statsName))
     writeMore = False
@@ -1729,16 +1662,17 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     i=0
     lenbreak=False
     #How to select which entries? Make keys to search for
-    pctKey = "sampleIn"+"{:.0f}Pct".format(args.betaSpread) #"(PBW_570MeV)"
-    jitterKey = "100pctField"
+    
     pbwKey = "PBW_{:.0f}MeV".format(args.energy)
     nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
     betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
     failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
+    qpKey = "QP"+args.qpNum
+    print(qpKey)
     #print(nBkey,pctKey,origKey,betaKey)
     #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
-    with open(statsPWD+"EvalStats15Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+args.statsFile+".csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         #requires differentiating between type of run we're looking at. Can't have both in one line
@@ -1755,44 +1689,63 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                     i+=1
                 if lenbreak:
                     break
-        else: #PBW files:
-            if args.failure != 0: #RM fail
-                for row in csv_reader:
-                    if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
-                        read[i] = float(row[ind]) #[mm-mrad]
-                        if i == args.samples-1:
-                            lenbreak = True
-                            break
-                        i+=1
-                    if lenbreak:
+        elif args.failure != 0: #RM fails, though only PBW... files at this time
+            for row in csv_reader:
+                if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
+                    read[i] = float(row[ind]) #[mm-mrad]
+                    if i == args.samples-1:
+                        lenbreak = True
                         break
-            else:
-                if args.qpNum != "":
-                    for row in csv_reader:
-                        #if i == 6: #for finding indices out of 7sigma
-                        #    print("index",i,"failed file:",row[0])
-                        #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
-                        if re.search(nBkey,row[0]) and re.search(jitterKey,row[0]) and re.search(origKey,row[0]):
-                            read[i] = float(row[ind])
-                            if i == args.samples-1:
-                                lenbreak = True
-                                break
-                            i+=1
-                        if lenbreak:
-                            break
-                else: #nominal
-                    for row in csv_reader:
-                        #if i == 44: #for finding indices out of 7sigma
-                        #    print("index",i,"failed file:",row[0])
-                        #print(re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
-                        if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]):
-                            read[i] = float(row[ind]) #[mm-mrad]
-                            if i == args.samples-1:
-                                lenbreak = True
-                                break
-                            i+=1
-                        if lenbreak:
-                            break
+                    i+=1
+                if lenbreak:
+                    break
+        elif args.beamClass == "jitter": #for jitter studies from OXAL
+            pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
+            jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"Jitter"
+            print(pctKey,nBkey,jitterKey,origKey)
+            for row in csv_reader:
+                #if i == 6: #for finding indices out of 7sigma
+                #    print("index",i,"failed file:",row[0])
+                #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
+                if re.search(nBkey,row[0]) and re.search(jitterKey,row[0]) and re.search(pctKey,row[0]):
+                    read[i] = float(row[ind])
+                    if i == args.samples-1:
+                        lenbreak = True
+                        break
+                    i+=1
+                if lenbreak:
+                    break
+        elif args.beamClass == "qpFail": #for individual QP spread given in qpNum from OXAL twissFile 
+            pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
+            jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"JitterJL"
+            print("qpFail",pctKey,nBkey,origKey,qpKey,jitterKey)
+            for row in csv_reader:
+                #if i == 6: #for finding indices out of 7sigma
+                #    print("index",i,"failed file:",row[0])
+                #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
+                if re.search(nBkey,row[0]) and re.search(origKey,row[0]) and re.search(qpKey,row[0]) and re.search(pctKey,row[0]):# and re.search(jitterKey,row[0]):
+                    read[i] = float(row[ind])
+                    if i == args.samples-1:
+                        lenbreak = True
+                        print(row[0])
+                        break
+                    i+=1
+                if lenbreak:
+                    print(row[0])
+                    break
+        else: #nominal
+            for row in csv_reader:
+                #if i == 44: #for finding indices out of 7sigma
+                #    print("index",i,"failed file:",row[0])
+                #print("nominal",re.search(failKey,row[0]))#re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
+                if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) and not re.search("failure",row[0]):
+                    read[i] = float(row[ind]) #[mm-mrad]
+                    if i == args.samples-1:
+                        lenbreak = True
+                        break
+                    i+=1
+                if lenbreak:
+                    break
     csv_file.close()
 
     nonEmpty = greater(read,-750) #remove unused elements
@@ -1861,10 +1814,15 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
         text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
     else:
         text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+
     if args.twissFile == "":
-        name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}betaSpreadNom".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
+        name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
     else:
-        name=statsPWD+args.twissFile+args.qpNum+"Nb{:.0f}_{:.0f}x{:.0f}betaSpreadNom".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
+        name=statsPWD+args.twissFile+"QP"+args.qpNum+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
+
+    if args.failure != 0:
+            name +="_failure"+str(args.failure)
+
     if args.saveSpread:
         tight_layout()
         savefig(name+"."+args.picFormat,bbox_inches='tight')#,pad_inches=0)
@@ -1889,8 +1847,9 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     #from os import uname
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
+    print("statsFile:",args.statsFile)
 
-    paramName=["jMax","beamPOut","coreJMean","rValue"]#,"rDiff"] #len=6 #"coreArea",,"centX","centY"
+    paramName=["jMax","beamPOut"]#,"coreJMean","rValue"]#,"rDiff"] #len=6 #"coreArea",,"centX","centY"
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",#,r"Core Area [mm$^2$]",
                 r"Core Average Current Density [$\mu$A/cm$^2$]",#,"Beam Center X [mm]","Beam Center Y [mm]",
                 "R Value"]#,"R Difference Value"]
@@ -1901,10 +1860,8 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6]),([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#
                     (0,[1e3,10,1])]#,(0,[1e3,10,1])]
     #pHistLims = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-    pHistLims = [[52.3,55.6],[3.475,3.66],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
+    pHistLims = [[50,56],[3.3,4],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
     paramBins = 20#[30,35,40,30,25,25,25,25]
-    #bR = round(args.samples/8)
-    #paramBins = [bR,bR,round(args.samples/5),bR,bR,bR,bR,bR] #the coreArea hist goes bonkers with auto--shrugs--
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
     ampl = zeros(len(paramName))
@@ -1968,7 +1925,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     i=0
     lenbreak=False
     key = "(N2.9e+05protons)" #"(PBW_570MeV)"
-    with open(statsPWD+"EvalStats15Mar.csv",mode='r') as csv_file:
+    with open(statsPWD+args.statsFile+".csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
         for row in csv_reader:
@@ -2038,7 +1995,7 @@ def getTwiss(args,sample,paths):
         Twiss = [0.118980737408497,1085.63306926394,-65.1638312921654,0.123632934174567,136.062409365455,-8.12599512314246] #updated to HEBT-A2T Combo Twiss
     elif args.beamClass == 'pencil': #"pencil" beam of ~0 emittance
         Twiss = [0.0001,0.15,0,0.0001,0.15,0]
-    else: #for jitter and qpFail cases for an initial definition
+    else: #for twiss source, jitter and qpFail cases for an initial definition
         Twiss = [0.118980737408497,1085.63306926394,-65.1638312921654,0.123632934174567,136.062409365455,-8.12599512314246] 
 
     if args.twiss:
@@ -2053,11 +2010,15 @@ def getTwiss(args,sample,paths):
             betaY = float(re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(m_N)))",args.beamFile)[0])
             print(betaX,betaY)
 
+    #The backup of the Twiss #should I make this a backup of everything??
+    origBX = Twiss[1]
+    origBY = Twiss[4]
+
     #Tailored to OpenXAL failure input
     if args.source == "twiss":
         if args.twissFile != "":
             import csv
-            if args.beamClass == "jitter": #for getting all samples out of betaSample OpenXAL output file
+            if args.beamClass == "jitter": #for getting all samples out of jitter OpenXAL output file
                 print("jitter study")
                 ##
                 ## To Do : Double check this is doing what I want, along with sample appending...
@@ -2080,28 +2041,17 @@ def getTwiss(args,sample,paths):
                             Twiss[3] = float(row[4])*um #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
-                            #Adjusts names so the files are in order when it is a QP failure
-                            if len(row[0]) == 2:
-                                args.qpNum = "0"
-                            else: 
-                                args.qpNum = ""
-                            args.qpNum += row[0]
-                            #print(rowNum,args.qpNum,Twiss)
                             break
                         rowNum+=1
                 csv_file.close()
-            elif args.beamClass == "qpFail": #for getting all QPs out of OpenXAL Failure file
+            elif args.beamClass == "qpFail": #changed to this is the single QP study, since only care about 1-3 per section
                 print("In QPs",args.qpNum,args.twissRowN)
                 #for running all QPs in OpenXAL Combo Sequence output CSV
                 with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
-                    rowNum = 0
-                    ###
-                    ### To Do 13 Mar: Figure out how to read in each QP in FailureHEBT-A2T_80pctField_1e-04Jitter rather than individually
-                    ###
                     for row in csv_reader:
-                        #print(row[0],args.twissRowN,rowNum)
-                        if args.twissRowN == int(row[0]): #Must use one process or else does same QP!!
+                        #print(row[0],args.qpNum)
+                        if args.qpNum == row[0]: #Must use one process or else does same QP!!
                             if float(row[1]) < 1e-4: #Be sure emittance is correctly formatted
                                 um = 1e6 #if from OpenXAL 
                             elif float(row[1]) > 1e-4:
@@ -2113,18 +2063,10 @@ def getTwiss(args,sample,paths):
                             Twiss[3] = float(row[4])*um #[mm-mrad]
                             Twiss[4] = float(row[5])
                             Twiss[5] = float(row[6])
-                            #Adjusts names so the files are in order when it is a QP failure
-                            if len(row[0]) == 2:
-                                args.qpNum = "0"
-                            else: 
-                                args.qpNum = ""
-                            args.qpNum += row[0]
-                            #print(sample,row[0],args.qpNum,Twiss)
-                            args.twissRowN += 1
                             break
-                        rowNum+=1
                 csv_file.close()
-            else: #for single QP fail runs, just give qpNum, don't change beamClass
+            else: #not sure what for, since single QP runs takes over above...
+                print("Else case in getTwiss from twissFile")
                 with open(paths['oXALPWD']+args.twissFile+".csv",mode='r') as csv_file:
                     csv_reader = csv.reader(csv_file, delimiter=',')
                     for row in csv_reader:
@@ -2144,119 +2086,5 @@ def getTwiss(args,sample,paths):
                 csv_file.close()
         else: print("I need a --twissFile argument")
 
-    
-    #The backup of the Twiss
-    origBX = Twiss[1]
-    origBY = Twiss[4]
-    #If want to do this one set at a time, do this.
-    #if args.betaSpread != 0:
-    #    origBX = Twiss[1]
-    #    origBY = Twiss[4]
-    #    print(args.betaSpread,"% Spread around BetaX ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBX,origBX-origBX*args.betaSpread/100,origBX+origBX*args.betaSpread/100)) #requires 3sigma
-    #    print(args.betaSpread,"% Spread around BetaY ({:.1f}m) ranges: {:.1f}-{:.1f}".format(origBY,origBY-origBY*args.betaSpread/100,origBY+origBY*args.betaSpread/100))
-    #    #Assuming the "scale" in the following function is the %
-    #    from numpy.random import default_rng
-    #    rng = default_rng()
-    #    Twiss[1] = rng.normal(loc=origBX,scale=origBX*args.betaSpread/100/3) #%/3 so 3sigma range = range
-    #    Twiss[4] = rng.normal(loc=origBY,scale=origBY*args.betaSpread/100/3)
-    #    print("New BetaX: {:.1f}m, BetaY: {:.1f}m".format(Twiss[1],Twiss[4]))
-    #If want to write sample to CSV and read in, follow Carl's way.
-    if args.betaSpread != 0:
-        #requires that a Twiss is defined above
-        origBX = Twiss[1]
-        origBY = Twiss[4]
-        #print("old",Twiss)
-
-        writeMore = False
-        #check if the file is already made
-        from os.path import isfile
-        name = paths['statsPWD']+"betaSpread_betaX{:.0f},{:.0f}m_{:.0f}Pct".format(origBX,origBY,args.betaSpread)
-        print(name)
-
-        #Don't have to manually make the file for a new %
-        if not isfile(name+".csv"):
-            #start a new file
-            import csv
-            with open(name+".csv",mode = 'w') as csv_file:
-                csv_writer = csv.writer(csv_file,delimiter = ',')
-                csv_writer.writerow(["i","Beta X [m]","Beta Y [m]"])
-                csv_file.close()
-            writeMore = True
-        else:
-            #If file present, read in values for the samples requested
-            #Get length of file, in case user requested more samples than previously made
-            #from plotFit import numLines
-            iters = numLines(name)-1
-            #print("File has",iters,"lines")
-
-            #read in what is there
-            import csv
-            with open(name+".csv",mode='r') as csv_file:
-                csv_reader = csv.reader(csv_file, delimiter=',')
-                next(csv_reader) #skips header
-                rowNum = 0
-                for row in csv_reader:
-                    #print(sample,rowNum,row[0],row[1],row[2])
-                    #for the sample passed in, get that row values
-                    if int(row[0]) == int(sample):
-                        #print("Reading",rowNum, sample,row[0],row[1],row[2])
-                        #immediately put in value as the Twiss
-                        Twiss[1] = float(row[1])
-                        Twiss[4] = float(row[2])
-                        print("Read in Betas:",Twiss[1],Twiss[4])
-                        break
-
-                    #if need to make more samples than in file, flag and exit before EOF error
-                    if int(sample) >= int(iters):
-                        print("User requested more Twiss than currently written")
-                        writeMore = True
-                        break
-
-                    rowNum += 1
-                csv_file.close()
-        #only if need to write more 
-        #print("Writing more?",writeMore)
-        if writeMore:
-            import csv, numpy as np
-            from numpy.random import default_rng
-            #save original values
-            origBX = Twiss[1]
-            origBY = Twiss[4]
-
-            #get a random value for betaX and betaY and saves into Twiss array
-            Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
-            Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-            if Twiss[4] <= 50 or Twiss [1] <= 50: #make sure not too small
-                Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
-                Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                if Twiss[4] <= 50 or Twiss [1] <= 50:
-                    Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
-                    Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                    if Twiss[4] <= 50 or Twiss [1] <= 50:
-                        Twiss[1] = default_rng().normal(loc=origBX,scale=origBX*args.betaSpread/100)
-                        Twiss[4] = default_rng().normal(loc=origBY,scale=origBY*args.betaSpread/100)
-                        if Twiss[4] <= 50 or Twiss [1] <= 50:
-                            Exception("Get Twiss, a Beta has been <50 four times!")
-                        #can't happen 4 times in a row that the value is 2 sigma off
-            print(origBX,origBY,"Newly written Betas:",Twiss[1],Twiss[4])
-
-            #append new value to the file so don't have to redo it
-            with open(name+".csv",mode = 'a') as csv_file:
-                csv_writer = csv.writer(csv_file,delimiter = ',')
-                csv_writer.writerow([sample,Twiss[1],Twiss[4]]) #save the betas for this sample number, to be used next time.
-                csv_file.close()
-
-        ##Yngve: calculate changed alpha as well as beta:
-        ##Erik - no need for now
-        #from numpy import sqrt
-        #origAX = Twiss[2]
-        #b1b0X = Twiss[1]/origBX
-        #Twiss[2] = origAX + 0.5*(-sqrt(4*(origAX**2) * b1b0X + 8*origAX*b1b0X + 4*b1b0X - 4 / (origBX**2))) - origAX
-        #print("{:.2f}\t\t{:.2f}\t\t{:.3f}\t\t{:.3f}".format(origBX,Twiss[1],origAX,Twiss[2]))
-        #origAY = Twiss[5]
-        #b1b0Y = Twiss[4]/origBY
-        #Twiss[5] = origAY + 0.5*(-sqrt(4*(origAY**2) * b1b0Y + 8*origAY*b1b0Y + 4*b1b0Y - 4 / (origBY**2))) - origAY
-        #print("{:.3f}\t\t{:.3f}\t\t{:.3f}\t\t{:.3f}".format(origBY,Twiss[4],origAY,Twiss[5]))
-    #print(origBX,origBY,"New Betas:",Twiss[1],Twiss[4],"new Alphas:",Twiss[2],Twiss[5])
 
     return Twiss,origBX,origBY
