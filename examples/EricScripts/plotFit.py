@@ -752,15 +752,18 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
 def numLines(filename):
     import csv
     with open(filename+".csv") as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        N = 0
-        for row in csv_reader:
-            N += 1
-        csv_file.close()
+        return sum(1 for line in csv_file) 
+        #extreme improvement from https://stackoverflow.com/questions/16108526/how-to-obtain-the-total-numbers-of-rows-from-a-csv-file-in-python
+        #csv_reader = csv.reader(csv_file, delimiter=',')
+        #N = len(list(csv_reader))
+        #N = 0
+        #for row in csv_reader:
+        #    N += 1
+        #csv_file.close()
     #from datetime import datetime
     #dt = datetime.now()
     #print("There are ",N,"lines "+dt.strftime("%H-%M-%S"))
-    return N
+    #return N
 
 
 
