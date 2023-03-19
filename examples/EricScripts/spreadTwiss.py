@@ -20,7 +20,7 @@ parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parame
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--statsFile", type=str,   default="EvalStats18Mar2", help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats19Mar2", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
@@ -57,6 +57,7 @@ parser.add_argument("--saveSpread",action="store_true",  default=False,   help="
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
 parser.add_argument("--reBin",     type=int, default=4,  help="Number of bins to make into 1 in 2D histogram for smoothing")
 parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
+parser.add_argument("--dpi",       type=int, default=100,help="DPI for pngs")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
 parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
@@ -117,4 +118,9 @@ Twiss,origBX,origBY = getTwiss(args,i,paths)
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,i,origBX,origBY)
 
 
-spreadHist(args,Twiss,paths,origBX,origBY,rasterBeamFile)
+if not args.saveFits:
+    spreadHist(args,Twiss,paths,origBX,origBY,rasterBeamFile)
+
+if args.saveFits:
+    from betaPOutFit import betaPOutFit
+    betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile)

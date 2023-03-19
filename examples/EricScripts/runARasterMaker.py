@@ -132,10 +132,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     if args.edgeRaster:
         name = name + "_edges"
 
-    #Append Sample Ending
-    if args.betaSpread == 0 and args.source != "twiss":
-        name = name + sampEnding
-    elif args.source == "twiss" and args.beamClass != "jitter":
+    #Append Sample Ending for all but jitter case 
+    if args.betaSpread == 0 and args.beamClass != "jitter":
         name = name + sampEnding
 
     #Calculate periods  

@@ -37,7 +37,7 @@ with open(path+name+".csv",mode='r') as csv_file:
 if re.search("Jitter",name):
     if int(re.search("(([0-9]*)+(?=Jitter))",name)[1]) == 4:
         pct = 1
-        nBins = 15
+        nBins = 11
     elif int(re.search("(([0-9]*)+(?=Jitter))",name)[1]) == 3:
         pct = 10
         nBins = 30
@@ -57,8 +57,8 @@ betaX = betaX[nonzero]
 betaY = betaY[nonzero]
 #print(betaX.shape)
 
-muX, sigmaX, amplX,intervalX = findFit(betaX,[len(betaX)/4,mean(betaX),std(betaX)],(0,[5e7,5e7,5e5]),nBins)
-muY, sigmaY, amplY,intervalY = findFit(betaY,[len(betaY)/4,mean(betaY),std(betaY)],(0,[5e7,5e7,5e5]),nBins)
+muX, sigmaX, amplX,intervalX = findFit(betaX,[len(betaX)/4,mean(betaX),std(betaX)],(0,[3.7e2,5e4,5e4]),nBins)
+muY, sigmaY, amplY,intervalY = findFit(betaY,[len(betaY)/4,mean(betaY),std(betaY)],(0,[3.7e2,5e4,5e4]),nBins)
 
 plt.clf()
 fig = plt.figure(figsize=(15,5))
@@ -72,7 +72,7 @@ propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcol
 
 s1.hist(betaX,bins=nBins)
 s1.plot(intervalX, gaussian(intervalX,amplX,muX,sigmaX), "r--", linewidth=2)
-s1.set_xlim([990,1220])#750,1350
+s1.set_xlim([980,1230])#750,1350
 if s1.get_xlim()[1] > 1700:
     #print()
     deltaX=1e-2
@@ -91,7 +91,7 @@ plt.setp(s1,title=title1,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
 
 s2.hist(betaY,bins=nBins)
 s2.plot(intervalY, gaussian(intervalY,amplY,muY,sigmaY), "r--", linewidth=2)
-s2.set_xlim([125,149])#95,165
+s2.set_xlim([120,150])#95,165
 if s2.get_xlim()[1] > 200:
     deltaY=1e-2
 elif s2.get_xlim()[1] > 150:

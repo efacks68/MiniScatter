@@ -108,7 +108,7 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     name = savename+".png" #I'd prefer to have it overwrite old files for now
     print(name) #show so it is easy to find the file
     plt.tight_layout()
-    plt.savefig(name,bbox_inches="tight")
+    plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
     #plt.show()
     plt.close() #be sure to close the plot
 
@@ -152,7 +152,7 @@ def findFit(data,guess,lims,nBins):
 
     close()
     #print(data)
-    bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
+    bin_heights, bin_borders, _ = hist(data,bins='auto',label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #savefig(pwd+"hist.png"); print(pwd+"hist.png")
     #print(len(bin_borders))
@@ -415,7 +415,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     name = savename+"_TwissFit"+axis+"'"+dt.strftime("%H-%M-%S") +".png"##
     #plt.show()
     plt.tight_layout()
-    plt.savefig(name,bbox_inches="tight")
+    plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
     plt.close()
     print(name)
 
@@ -596,7 +596,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     #plt.show()
     if args.savePics:
         plt.tight_layout()
-        plt.savefig(name,bbox_inches="tight")
+        plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
     plt.close()
     print(name)
 
@@ -733,7 +733,7 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     name = savename+"_"+fitlabel+"_"+dt.strftime("%H-%M-%S")##
     #plt.show()
     plt.tight_layout
-    plt.savefig(name+".pdf",bbox_inches="tight")
+    plt.savefig(name+".pdf",bbox_inches='tight',dpi=args.dpi)
     plt.close()
     print(name)
 
@@ -1075,8 +1075,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #        Img[i][j] = Img[i][j] * C #[uA/cm^2]
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
-    print(sample,"PMAS:",fPMAS-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, nominal A: {:.0f}mm^2, RVal {:.3f}, Jmin {:.1f}, % Out TA {:.2f}"\
-                .format(jMax,coreArea,coreJMean,128*42,rValue,jMin,pOutsideBoxes[0]))
+    print(sample,"PMAS:",fPMAS-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, RVal {:.5f}, % Out TA {:.2f}"\
+                .format(jMax,coreArea,coreJMean,rValue,pOutsideBoxes[0]))
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
 
     if args.gaussFit:
@@ -1171,7 +1171,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         #if isfile(name+"*.png"):
         #  print("already present")
         tight_layout()
-        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight')
+        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)
         close(fig)
         close()
         print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
@@ -1297,16 +1297,20 @@ def rCompare(Im,Nb,paths,reBin):
     #Find reference files
     if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
         if Nb == 100: #do fill in from args
+            print("RCompare Nb 100")
             if reBin == 5:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
             elif reBin == 4:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1006.80,129.72m_RMamp55,18mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
             elif reBin == 1 or reBin == 2:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+06_NpB100_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
+        elif Nb == 200:
+            print("RCompare Nb 200")
+            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
         elif Nb == 500:
-              Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N1.4e+07_NpB500_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
         else: #Nb=10
-            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_4_runW_QBZ_TargetImage.csv"),delimiter=",")
+            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+05_NpB10_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
             #Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         
@@ -1323,7 +1327,9 @@ def rCompare(Im,Nb,paths,reBin):
         for j in range(leny):
             #Iref[j,i] += offset
             if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            div[j,i] = ( ( ( (Im[j,i] + offset) / (Iref[j,i] + offset) - 1) ** 2 ) / (leny * lenx) )
+            div[j,i] = ( ( ( (Im[j,i]) / (Iref[j,i]) - 1) ** 2 ) / (leny * lenx) )
+            #if div[j,i] != 0:
+            #    print(j,i, div[j,i])
     rDiv = np.sqrt(np.sum(div))
 
     #for i in range(lenx):
@@ -1332,7 +1338,7 @@ def rCompare(Im,Nb,paths,reBin):
     #        if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
     #        diff[j,i] = ( ( ( (Im[j,i] + offset) - (Iref[j,i] + offset) ) ) / (leny * lenx) ) #
     rDiff = 0#np.sqrt(np.sum(diff))
-
+    #print(rDiff)
     return rDiv,rDiff
 
 
@@ -1420,7 +1426,7 @@ def findEdges(Img,jMax,graph,savename,xax,yax,args):
         bc.set_label(r"d$\bf{J}$/dy",labelpad=3,fontsize=12)
         #plt.setp(ax3,xlim=(-100,100),ylim=(-100,100))
         plt.tight_layout()
-        plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat,bbox_inches='tight')
+        plt.savefig(savename+str(promY)+"_GradPics."+args.picFormat,bbox_inches='tight',dpi=args.dpi)
         print(savename,promY,"_GradPics.",args.picFormat,sep="")
         plt.close()
 
@@ -1700,8 +1706,6 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         lenbreak = True
                         break
                     i+=1
-                if lenbreak:
-                    break
         elif args.beamClass == "jitter": #for jitter studies from OXAL
             pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
             jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"Jitter"
@@ -1716,8 +1720,6 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         lenbreak = True
                         break
                     i+=1
-                if lenbreak:
-                    break
         elif args.beamClass == "qpFail": #for individual QP spread given in qpNum from OXAL twissFile 
             pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
             jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"JitterJL"
@@ -1733,9 +1735,6 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         print(row[0])
                         break
                     i+=1
-                if lenbreak:
-                    print(row[0])
-                    break
         else: #nominal
             for row in csv_reader:
                 #if i == 44: #for finding indices out of 7sigma
@@ -1747,8 +1746,6 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         lenbreak = True
                         break
                     i+=1
-                if lenbreak:
-                    break
     csv_file.close()
 
     nonEmpty = greater(read,-750) #remove unused elements
@@ -1756,8 +1753,8 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     #if ind == 13:
     #    print(read)
-    pFitLims = (0,[args.samples,100,500])
-    print(len(read),"guess",paramName, args.samples/4,mean(read),std(read),paramBins,len(read),pFitLims)
+    #pFitLims = (0,[args.samples,100,500])
+    print("N",len(read),"guess",paramName, "A",args.samples/4,"Mu",mean(read),"s",std(read),"bins",paramBins,"fitLims",pFitLims)
     #sanity check on values
     #print(read)
     for i in range(len(read)):
@@ -1796,9 +1793,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     if mu > 25:
         delta = 3e-4
     elif mu > 8.5 and mu <= 25:
-        delta = 2e-4
+        delta = 4e-4
     elif mu >2 and  mu <= 8.5:
-        delta = 1.2e-4
+        delta = 3e-4
     else: #mu<1
         delta=1e-6
         xticks(rotation=45)
@@ -1809,9 +1806,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     #    xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2)
     text(xlim()[1]*(1-delta), ylim()[1]*0.97, "Beam Twiss at PBW:", propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.90, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.83, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.75, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
+    text(xlim()[1]*(1-delta), ylim()[1]*0.79, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
 
     if sigma <1e-2:
         text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
@@ -1828,7 +1825,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     if args.saveSpread:
         tight_layout()
-        savefig(name+"."+args.picFormat,bbox_inches='tight')#,pad_inches=0)
+        savefig(name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)
     print(name+"."+args.picFormat)
@@ -1852,19 +1849,24 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     from numpy import zeros
     print("statsFile:",args.statsFile)
 
-    paramName=["jMax","beamPOut"]#,"coreJMean","rValue"]#,"rDiff"] #len=6 #"coreArea",,"centX","centY"
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",#,r"Core Area [mm$^2$]",
-                r"Core Average Current Density [$\mu$A/cm$^2$]",#,"Beam Center X [mm]","Beam Center Y [mm]",
-                "R Value"]#,"R Difference Value"]
-    #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]","Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,10,13]#,14]#9#,11,12,
-    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$",""]#,""]#r"mm$^2$",,"mm","mm"
+    paramName=["jMax","beamPOut","rValue"]#"coreArea","coreJMean","centX","centY","rDiff"] #len=6 
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area","R Value"]
+                #r"Core Area [mm$^2$]",r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
+                #]#,"R Difference Value"]
+    #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]",
+        #"Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
+    ind = [7,8,13]#,14]#9,10,11,12,
+    unit=[r"$\mu$A/cm$^2$","%",""]#r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm"]#,""
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),#([10,1e1,20],[5e6,1e6,1e6]),([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#
-                    (0,[1e3,10,1])]#,(0,[1e3,10,1])]
-    #pHistLims = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-    pHistLims = [[50,56],[3.3,4],[25,40],[.072,.073]]#,[4.55,4.6]] #[5000,8000],,[-10,10],[-10,10]#if range is outside this, the binning is off...
-    paramBins = 20#[30,35,40,30,25,25,25,25]
+                        #jMax             Pout              rVal           coreArea                coreJMean       
+    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,10,1])]#([10,1e1,20],[5e6,1e6,1e6]),(0,[1e3,100,500]),
+                        #centX                                  centY                   
+                    #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
+    #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
+                    #jMax       Pout       rVal        coreArea  coreJMean  centX   centY    
+    pHistLims = [[51.5,55.6],[3.45,3.9],[.072,.073]]#,[5000,8000],[25,40],[-10,10],[-10,10]#,[4.55,4.6]] 
+    paramBins = [20,20,20]#,20,20,20,20,20]
+
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
     ampl = zeros(len(paramName))
@@ -1971,7 +1973,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom".format(len(read),args.betaSpread)
     if args.saveSpread:
         plt.tight_layout()
-        savefig(name+"."+args.picFormat)
+        savefig(name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)
     close()
     print(len(read),paramName,mu,sigma)
     print(name)
