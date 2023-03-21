@@ -782,6 +782,8 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
 
+    ROOT.gStyle.SetOptFit(100)
+
     #Project center slice 
     if   axis == "y" or axis == "Y": 
         proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
@@ -803,50 +805,61 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
-    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    g=5
+    if g == 4:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    elif g == 3:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
+    elif g == 2:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    elif g == 5:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
     if axis == "y" or axis == "Y":
-        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1)#,p2*y1,p2*5,p2,p2*y2)
+        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2,p2,p2*y2)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
         f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
         f2.SetParLimits(1,p2*0.25,p0*y1) #
-        f2.SetParLimits(2,p1, p0*r*2) #
-        f2.SetParLimits(3,p2, p2*y2*y2) #p3=11,22
-        #f2.SetParLimits(4,p2, p2*y2) #p5=22,300
-        #f2.SetParLimits(5,p2, p2*y2) #p5=22,300
-        ##f2.SetParLimits(6,p2,p2*y2) #p5=22,300
-        #f2.SetParLimits(7,p2, p2*y2*2) #p7 =300,3000
+        f2.SetParLimits(2,p1, p0) #
+        f2.SetParLimits(3,p2, p0) #p3=11,22
+        f2.SetParLimits(4,p2, p0) #p5=22,300
+        f2.SetParLimits(5,p2, p0) #p5=22,300
+        f2.SetParLimits(6,p1, p0*y2) #p5=22,300
+        f2.SetParLimits(7,p2, p0*y2) #p7 =300,3000
+        f2.SetParLimits(8,p1, p0*y2) #p5=22,300
+        f2.SetParLimits(9,p2, p0*y2*y2) #p7 =300,3000
     elif axis == "x" or axis == "X":
-        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2)
+        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2,p2,p2*y2)
         #print(9532,16.3,395,36.5,6511,14,2,334)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
         f2.SetParLimits(0,p0*r,p0*y1)
         f2.SetParLimits(1,p2*0.25,p2*y1)
         f2.SetParLimits(2,p2, p0*0.5)
-        f2.SetParLimits(3,p2, p2*y2*y2)
-        #f2.SetParLimits(4,p2, p2*y2)
-        #f2.SetParLimits(5,p2, p2*y2)
-        ##f2.SetParLimits(6,0.1,p0)
-        #f2.SetParLimits(7,p2*y2*0.5,p2*y2*2)
+        f2.SetParLimits(3,p2, p0)
+        f2.SetParLimits(4,p2, p0)
+        f2.SetParLimits(5,p2, p0)
+        f2.SetParLimits(6,p1, p0*y2)
+        f2.SetParLimits(7,p2, p0*y2)
+        f2.SetParLimits(8,p1, p0*y2) #p5=22,300
+        f2.SetParLimits(9,p2, p0*y2*y2) #p7 =300,3000
     f2_res = proj.Fit(f2, 'RSQ')
     print("Gaussian",f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3))#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
+
         c1 = ROOT.TCanvas()
-        proj.Draw()
+        proj.Draw("E0")
         f2.SetLineColor(ROOT.kRed)
-        f2.Draw('same')
+        f2_res.Draw('same')
         #f1.SetLineColor(ROOT.kRed)
         #f1.Draw('same')
         if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-maxim,maxim)
         elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
         c1.SetLogy()
-        c1.Print(name+"_"+axis+"GaussFit"+str(maxim)+".pdf")
+        c1.Print(name+"_"+axis+str(g)+"GaussFit"+str(maxim)+".pdf")
 
     #    import numpy as np
     #    import matplotlib.pyplot as plt
@@ -864,13 +877,18 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     #    plt.savefig(name+"FitDifference.png")
     #    plt.close()
 
-    differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
+    #total=f2_res.GetNDF()
+    Gchi2 = f2_res.Chi2()
+    differenceNG = 0#f2_res.GetProb()
+    #print(ndf,chisq,prob)
+
+    #differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
-    differencePG = differenceNG/total*100
+    #differencePG = differenceNG/total*100
     coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3)]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis," difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNG,total,differencePG))#,"\n")#,coeffs)
+    print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f}".format(differenceNG,total,Gchi2))#,"\n")#,coeffs)
     
-    
+    """
     #Now do for Lorentzian
     #Define a gaussian function and fit it to the projection
     f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
@@ -882,7 +900,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     print("initial Gaussian fit parameters:",p0,p1,p2)
 
     #https://root.cern/doc/master/fitConvolution_8py.html
-    f3 = ROOT.TF1('f3L','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    f3 = ROOT.TF1('f3L','[0] * [1]/(x**2 + [1]**2) + [2] * exp(-x*x/(2*[3]*[3])) ',-maxim,maxim)#+ [4] * exp(-x*x/(2*[5]*[5]))
     #f3L = ROOT.TF1('f3L','[0] * [1]/(x**2 + [1]**2)',-maxim,maxim)
     #f3G = ROOT.TF1('f3G','[2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
     #f3C = ROOT.TF1Convolution('f3L','f3G',-maxim,maxim,True)
@@ -899,18 +917,21 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
     f3.SetParLimits(1,0,p0*y2*y2)
     f3.SetParLimits(2,0,p0*y2*y2)
     f3.SetParLimits(3,0,p0*y2*y2)
+    f3.SetParLimits(4,0,p0*y2*y2)
+    f3.SetParLimits(5,0,p0*y2*y2)
     f3_res = proj.Fit(f3, 'RSQ')
-
-    differenceNL = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f3.Integral(-maxim,maxim)
-    total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
+    Vchi2 = f3_res.Chi2()
+    """
+    differenceNL = 0#proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f3.Integral(-maxim,maxim)
+    total = 1#proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     differencePL = differenceNL/total*100
-    coeffsL = [f3.GetParameter(0),f3.GetParameter(1),f3.GetParameter(2),f3.GetParameter(3)]
-    print("Voigt",coeffsL)
-    print(axis," L difference: {:.0f},\t total: {:.0f},\t{:.3f}%".format(differenceNL,total,differencePL))#,"\n")#,coeffs)
-
+    coeffsL = [0,0,0]#[f3.GetParameter(0),f3.GetParameter(1),f3.GetParameter(2),f3.GetParameter(3)]
+    #print("Voigt",coeffsL)
+    #print(axis," L difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f}".format(differenceNL,total,Vchi2))#,"\n")#,coeffs)
+    """
     if saveFits: #if uncommented it opens a canvas even if false...?
         c2 = ROOT.TCanvas()
-        proj.Draw()
+        proj.Draw('E0')
         f3.SetLineColor(ROOT.kRed)
         f3.Draw('same')
         #print("hope this works")
@@ -921,7 +942,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         proj.GetXaxis().SetRangeUser(-maxim,maxim)
         c2.SetLogy()
         c2.Print(name+"_"+axis+"LorentzFit"+str(maxim)+".pdf")
-
+    """
     #    import numpy as np
     #    import matplotlib.pyplot as plt
     #    plt.close()
@@ -1078,6 +1099,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     print(sample,"PMAS:",fPMAS-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, RVal {:.5f}, % Out TA {:.2f}"\
                 .format(jMax,coreArea,coreJMean,rValue,pOutsideBoxes[0]))
     print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]))
+    print("Beam Center at (X,Y): ({:.0f},{:.0f})".format(centX,centY))
 
     if args.gaussFit:
                                            #(hist,     axis, width,maxim,options,name,   y1,y2,saveFits)
@@ -1165,6 +1187,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
             #print("Edges printed!!")
             name+="_Edges"
+            ax.text(xlim[0]*0.90, ylim[1]*0.75,"Beam Center:({:.1f},{:.1f}) [mm]".format(centX,centY),backgroundcolor='w')
 
         dt = datetime.now()
         #from os.path import isfile
@@ -1297,7 +1320,7 @@ def rCompare(Im,Nb,paths,reBin):
     #Find reference files
     if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
         if Nb == 100: #do fill in from args
-            print("RCompare Nb 100")
+            #print("RCompare Nb 100")
             if reBin == 5:
                 Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
             elif reBin == 4:
@@ -1581,9 +1604,9 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     dispY = (dispT+dispB)/2
     dispX = (dispL+dispR)/2
     beamArea = (np.abs(edges[0])+np.abs(edges[1]))*(np.abs(edges[3])+np.abs(edges[2]))
-    #Need to displat beam Center index in X,Y, not displacement 
-    centX = edges[2] + edges[3]
-    centY = edges[0] + edges[1]
+    #Need to display beam Center index in X,Y, not displacement 
+    centX = (edges[2] + edges[3]) / 2
+    centY = (edges[0] + edges[1]) / 2
     #print("Beam Center at ",centX,",",centY)
 
     return jMax,pOut,rValue,edges,EI,beamArea,centX,centY,rDiff #make this a list!
@@ -1714,7 +1737,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                 #if i == 6: #for finding indices out of 7sigma
                 #    print("index",i,"failed file:",row[0])
                 #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
-                if re.search(nBkey,row[0]) and re.search(jitterKey,row[0]) and re.search(pctKey,row[0]):
+                if re.search(nBkey,row[0]) and re.search(args.twissFile,row[0]) and re.search(pctKey,row[0]):
                     read[i] = float(row[ind])
                     if i == args.samples-1:
                         lenbreak = True
@@ -1781,7 +1804,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             title("{:.0f} Samples with {:.2e} Protons".format(len(read),nPs))
             #xlim(pHistLims)
 
-    if ind in {7,8}:
+    if ind in {7,8,10}:
         xlim(pHistLims)
 
     xlabel(paramLabel)
@@ -1849,23 +1872,23 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     from numpy import zeros
     print("statsFile:",args.statsFile)
 
-    paramName=["jMax","beamPOut","rValue"]#"coreArea","coreJMean","centX","centY","rDiff"] #len=6 
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area","R Value"]
-                #r"Core Area [mm$^2$]",r"Core Average Current Density [$\mu$A/cm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
+    paramName=["jMax","beamPOut","coreJMean","rValue"]#"coreArea","coreJMean","centX","centY","rDiff"] #len=6 
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]","R Value"]
+                #r"Core Area [mm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 #]#,"R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]",
         #"Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,13]#,14]#9,10,11,12,
-    unit=[r"$\mu$A/cm$^2$","%",""]#r"mm$^2$",r"$\mu$A/cm$^2$","mm","mm"]#,""
+    ind = [7,8,10,13]#,14]#9,11,12,
+    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$",""]#r"mm$^2$","mm","mm"]#,""
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-                        #jMax             Pout              rVal           coreArea                coreJMean       
-    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,10,1])]#([10,1e1,20],[5e6,1e6,1e6]),(0,[1e3,100,500]),
+                        #jMax             Pout               coreJMean         rVal           coreArea               
+    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,10,1])]#([10,1e1,20],[5e6,1e6,1e6]),
                         #centX                                  centY                   
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-                    #jMax       Pout       rVal        coreArea  coreJMean  centX   centY    
-    pHistLims = [[51.5,55.6],[3.45,3.9],[.072,.073]]#,[5000,8000],[25,40],[-10,10],[-10,10]#,[4.55,4.6]] 
-    paramBins = [20,20,20]#,20,20,20,20,20]
+                    #jMax       Pout    coreJMean  rVal        coreArea    centX   centY    
+    pHistLims = [[51.5,55.6],[3.45,3.9],[45,46.25],[.072,.073]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
+    paramBins = [20,20,20,20]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))

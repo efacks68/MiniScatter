@@ -12,7 +12,6 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile):
     #from plotFit import findFit, gaussian
     from math import floor,log10
 
-    args.statsFile="EvalStats18Mar2"
     betas = zeros(args.samples)
     jMaxes = zeros(args.samples)
     pOuts = zeros(args.samples)
@@ -21,15 +20,18 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile):
     pOuts.fill(-750)
     #print(Twiss,beamFile)
     i=0
-
-
-
-    axis="Y"#"x"
-    if axis=="Y":
+    axis="Y"#x"
+    if axis in {"Y","y"}:
         ind = 5 #2 for x, 3 for y
-    else:
+    elif axis in {"X","x"}:
         ind=2
-    lenbreak=False
+
+    if re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-03":
+        deltaX = 0.999
+        deltaY = 1.005
+    elif re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-04":
+        deltaX = 0.9998
+        deltaY = 1.001
     #How to select which entries? Make keys to search for
 
     pbwKey = "PBW_{:.0f}MeV".format(args.energy)
@@ -73,13 +75,13 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile):
                     i+=1
         elif args.beamClass == "jitter": #for jitter studies from OXAL
             pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
-            jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"Jitter"
+            jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"Jitter"#_{:.0f}x".format(args.samples)
             print(pctKey,nBkey,jitterKey,origKey)
             for row in csv_reader:
                 #if i == 6: #for finding indices out of 7sigma
                 #    print("index",i,"failed file:",row[0])
                 #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
-                if re.search(nBkey,row[0]) and re.search(jitterKey,row[0]) and re.search(pctKey,row[0]):
+                if re.search(nBkey,row[0]) and re.search(args.twissFile,row[0]) and re.search(pctKey,row[0]):
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
                     pOuts[i] = float(row[8])
@@ -166,7 +168,7 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile):
         plt.xlabel(r"$\beta_x$ [m]")
     plt.ylabel("% Outside Target Area")
 
-    plt.text(ax_nstd.get_xlim()[1]*.999,ax_nstd.get_ylim()[0]*1.005,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="right",va="bottom")
+    plt.text(ax_nstd.get_xlim()[1]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="right",va="bottom")
 
     ax_nstd.legend(loc="upper left")
     plt.tight_layout()

@@ -24,6 +24,8 @@ def beamletScatter(args,Twiss,i,paths):
     elif args.t == 0.1:
         args.material = "Vac"
     args.beamFile = ""
+    #if args.gaussFit and not args.compTargs:
+    #    options['MiniRoot'] = True
     if args.compTargs:
         options['targetTree'] = True
         options['MCS'] = True

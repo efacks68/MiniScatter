@@ -1,6 +1,9 @@
 #plot spread of observables from spread of Twiss
-#python3 spreadTwiss.py --betaSpread 50 --samples 200 --saveSpread
-#python3 spreadTwiss.py --samples 200 --saveSpread --Nb 100
+    #python3 spreadTwiss.py --samples 200 --saveSpread --Nb 100
+#Jitter:
+    #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 200
+#QP Fail:
+    #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_QP100_80pctField_1.0e-04Jitter_200x  --beamClass qpFail --qpNum 100 --saveSpread --samples 200
 
 from argparse import ArgumentParser
 from plotFit import spreadHist,getTwiss
@@ -20,7 +23,7 @@ parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parame
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--statsFile", type=str,   default="EvalStats19Mar2", help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats20Mar", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")

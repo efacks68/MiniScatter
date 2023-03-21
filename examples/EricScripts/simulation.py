@@ -114,8 +114,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         if beamFile != "": #from beamFile name which was made in runARasterMaker, could be for twiss
             outname = beamFile+"_runW"
         else: #This would get used for a beamlet
-            outname = "PBW_{:.0f}MeV_eX{:.0f}um,eY{:.0f}um_bX{:.0f}m,bY{:.0f}m_aX{:.0f},aY{:.0f}_t{:.0f}mm_N{:.0e}".format(args.energy,Twiss[0]*1e3,Twiss[3]*1e3,Twiss[1],Twiss[4],Twiss[2],Twiss[5],args.t,baseSimSetup["N"])
-
+            outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
+            if options['MiniRoot']:
+                outname+="_miniR"
         if args.PBIP:
             outname = outname + "_PBIP"
             #PBIP Magnet
@@ -641,7 +642,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             from plotFit import converter,gaussianFit
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths) #convert from TH2D to numpy map
+            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args.reBin) #convert from TH2D to numpy map
             maxim = 500
             xBinSize = xax[maxim+1]-xax[maxim]
             yBinSize = yax[maxim+1]-yax[maxim]

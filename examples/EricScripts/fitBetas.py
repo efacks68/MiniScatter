@@ -1,3 +1,6 @@
+#fitBetas.py
+#python3 fitBetas.py HEBT-A2T_100pctField_1.0e-04Jitter_250x
+#
 import csv,sys,re
 from plotFit import findFit,gaussian
 from numpy import zeros,mean,std,greater
@@ -31,6 +34,7 @@ with open(path+name+".csv",mode='r') as csv_file:
         betaY[rowNum] = float(row[bY])
         #print(rowNum,"Read in Betas:",betaX[rowNum],betaY[rowNum])
         rowNum+=1
+        if rowNum == 200: break
 
 #print(betaX,"\n\n",betaY)
 #Set Bins by %
@@ -40,7 +44,7 @@ if re.search("Jitter",name):
         nBins = 11
     elif int(re.search("(([0-9]*)+(?=Jitter))",name)[1]) == 3:
         pct = 10
-        nBins = 30
+        nBins = 12
 
 if re.search("beta",name):
     if int(re.search("(([0-9]*)+(?=Pct))",name)[1]) == 1:
@@ -106,7 +110,7 @@ title2=r"Distribution of $\beta_y$ Values for "+str(pct)+"% Range"
 plt.setp(s2,title=title2,xlabel=r"$\beta$ [m]",ylabel="Counts [a.u.]")
 #plt.setp(s2.get_xticklabels(),rotation=45,ha="right")
 
-plt.tight_layout()
+#plt.tight_layout()
 plt.savefig("../../../Pictures/"+name+"Spread.png",bbox_inches='tight')
 print("../../../Pictures/"+name+"Spread.png")
 

@@ -6,7 +6,7 @@
 #Vary N particles for nominal convergence study
     #python3 rasterScatter.py --Nb 100 --samples 202 --saveSpread
 #Fit Gaussian and Voigt to a beamlet:
-    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --compTargs
+    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --reBin 1 --compTargs
 #QP Jitter Study:
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 202 --processes 10
 #individual QP Fail:
@@ -246,7 +246,7 @@ else:
 
 print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
 
-if args.samples >= 2:
+if args.saveSpread:
     from plotFit import spreadHist
     print(Twiss.keys)
     spreadHist(args,Twiss[0],paths,origBX[0],origBX[0],args.beamFile) #need to think about this, maybe pass whole discitonary down, but not sure...

@@ -50,10 +50,10 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     covY = gemtY/mm * np.asarray([[betaY/mm,-alphY],[-alphY,(1+alphY**2)/(betaY/mm)]]) #[mm]
 
     #Calculate Envelope Center Angle
-    dBPM93to94 = 2592.5 #[mm] from OpenXAL(?)
+    dBPM93to94 = 2592.5 #[mm] from OpenXAL
     dBPM93toPBW = 20064.5 #[mm] Updated from SynopticViewer 15.3.23, assuming it is the 2nd to last, in between 2 Valves
     dBPM93toTarg = 23814.5 #or is it 21222? [mm] from Synoptic Viewer https://confluence.esss.lu.se/pages/viewpage.action?pageId=222397499
-    dPBWtoTarg = 4400 #[mm] from lattice and Synoptic
+    dPBWtoTarg = 3565 #[mm] from lattice and Synoptic
     envXAngle = args.rX / dBPM93to94 #x' = beam x distance from beamline axis at BPM94, assume Cross Over at BPM93 / distance BPM 93 to 94
     envYAngle = args.rY / dBPM93to94 #y' not radians, as per Kyrre 2.11.22
     beamletXAngle = 0 #default
@@ -66,7 +66,6 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     envYCenOff = envYCenterOffset * np.ones(N_t) #[mm]
 
     #Since generating particles just before PBW, must scale a0 by dPBWtoTarg * envAngle = (1- dPBWtoTarg / dBPM93toTarg)
-    #amplScale = 1 - dPBWtoTarg / dBPM93toTarg #double check you account for Z before PBW in MiniScatter! beam production plane in GEANT, not exact PBW center!
     amplScale = 1 #Cyrille said the RM Amplitude is already scaled
     sRasterXAmpl = args.aX * amplScale * np.ones(N_t) #[mm]
     sRasterYAmpl = args.aY * amplScale * np.ones(N_t) #[mm]
@@ -109,9 +108,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         if args.betaSpread != 0:
             name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts,args.Nb)
     if args.rX != 0:
-        name = name + "_X{:.0f}mrad".format(envXAngle*1e3)
+        name = name + "_rX{:.1f}mm{:.2f}mrad".format(args.rX,envXAngle*1e3)
     if args.rY != 0:
-        name = name + "_Y{:.0f}mrad".format(envYAngle*1e3)
+        name = name + "_rY{:.1f}mm{:.2f}mrad".format(args.rY,envYAngle*1e3)
     print(name,"sample:",sample)
 
     #Raster Magnet Failure Options
