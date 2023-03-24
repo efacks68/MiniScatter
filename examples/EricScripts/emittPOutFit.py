@@ -1,7 +1,7 @@
 #betaPOutFit.py
 #with Confidence Ellipse fitting from https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
 
-def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
+def emittPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     import csv,re,matplotlib.pyplot as plt
     from matplotlib.patches import Ellipse
     import matplotlib.transforms as transforms
@@ -22,16 +22,16 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     i=0
     #axis="x"#x"
     if axis in {"Y","y"}:
-        ind = 5  #beta-5, emitt-4, alpha-6
+        ind = 4  #beta-5, emitt-4, alpha-6
     elif axis in {"X","x"}:
-        ind = 2 #beta-2, emitt-2,alpha-3
+        ind = 1 #beta-2, emitt-1,alpha-3
 
     if re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-03":
-        deltaX = .999
-        deltaY = 1.002
+        deltaX = 1-1e-14
+        deltaY = 1.001
         pct=10
     elif re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-04":
-        deltaX = .999
+        deltaX = 1-2e-14
         deltaY = 1.0003
         pct=1
     #How to select which entries? Make keys to search for
@@ -157,19 +157,19 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     slope, intercept, r, p, se = linregress(betas, pOuts)
     plt.plot(betas,slope*betas+intercept,c='g',alpha=0.5,label="Fit")
     if axis in {"Y","y"}:
-        plt.title(r"$\beta_y$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
-        plt.xlabel(r"$\beta_y$ [m]")
+        plt.title(r"$\epsilon_y$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
+        plt.xlabel(r"$\epsilon_y$ [mm-mrad]")
     elif axis in {"X","x"}:
-        plt.title(r"$\beta_x$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
-        plt.xlabel(r"$\beta_x$ [m]")
+        plt.title(r"$\epsilon_x$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
+        plt.xlabel(r"$\epsilon_x$ [mm-mrad]")
     plt.ylabel("% Outside Target Area")
 
-    plt.text(ax_nstd.get_xlim()[1]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="right",va="bottom")
+    plt.text(ax_nstd.get_xlim()[1]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4e}\n% = {:.3e}".format(r**2,slope)+r"$\epsilon$"+" + {:.3e}".format(intercept),ha="right",va="bottom")
 
     ax_nstd.legend(loc="upper left")
     plt.tight_layout()
-    print(paths['statsPWD']+args.twissFile+"_{:.0f}pBetaVpOut".format(pct)+axis+".png")
-    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pBetaVpOut".format(pct)+axis+".png")
+    print(paths['statsPWD']+args.twissFile+"_{:.0f}pEmittanceVpOut".format(pct)+axis+".png")
+    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pEmittanceVpOut".format(pct)+axis+".png")
 
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     import matplotlib.pyplot as plt

@@ -105,6 +105,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         elif args.beamClass == "Twiss":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_RMamp{:.0f},{:.0f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,
                         nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)
+        if args.sim == "map":
+            name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,
+                        nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)
         if args.betaSpread != 0:
             name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts,args.Nb)
     if args.rX != 0:
@@ -117,19 +120,24 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     idcy = round(N_t * (1 - args.magFails / 4 )) #produces which quarter:end is 0
     if args.failure == 1: #Horizontal Fail
         sRasterXAmpl[idcy:] = 0 # no RM amplitude for magFails-th quarter of pulse
-        name = name + "_failure1-" + str(args.magFails)+"f"
+        name = name + "_failure1-{:.0f}f".format(args.magFails)
     elif args.failure == 2: # Vertical Fail
         sRasterYAmpl[idcy:] = 0
-        name = name + "_failure2-" + str(args.magFails)+"f"
+        name = name + "_failure2-{:.0f}f".format(args.magFails)
     elif args.failure == 3: # H & V Fails
         sRasterXAmpl[idcy:] = 0
         sRasterYAmpl[idcy:] = 0
-        name = name + "_failure3-" + str(args.magFails)+"f"
+        name = name + "_failure3-{:.0f}f".format(args.magFails)
     elif args.failure == 4: # Correlated Motion
-        Fy = Fx
-        name = name + "_failure4-" + str(args.magFails)+"f"
+        f4mult = 1
+        Fy = f4mult * Fx
+        name = name + "_failure4-{:.0f}f".format(args.magFails)
+        if f4mult != 1:
+            name = name + "_failure4x{:0.2f}-{:.0f}f".format(f4mult,args.magFails)
     if args.edgeRaster:
         name = name + "_edges"
+    if args.rCut != 1e3: #standard is 1m, which gets a 2mm^2 bin size
+        name = name + "_rCut{:.0f}mm".format(args.rCut)
 
     #Append Sample Ending for all but jitter case 
     if args.betaSpread == 0 and args.beamClass != "jitter":

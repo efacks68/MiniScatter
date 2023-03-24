@@ -18,8 +18,8 @@ if re.search("beta",name): #from plotFit getTwiss
 elif re.search("Jitter",name): #from OpenXAL
     path = "../../../../OpenXAL/OXALNotebooks/failureTwiss/"
     n = numLines(path+name)
-    bX = 2
-    bY = 5
+    bX = 1
+    bY = 4
 
 betaX=zeros(n)
 betaY=zeros(n)

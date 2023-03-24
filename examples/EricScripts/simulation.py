@@ -112,6 +112,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
 
         #Start output name
         if beamFile != "": #from beamFile name which was made in runARasterMaker, could be for twiss
+            #print("t!=0 beamFile",beamFile)
             outname = beamFile+"_runW"
         else: #This would get used for a beamlet
             outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
@@ -134,9 +135,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             baseSimSetup["MAGNET"].append(m2)
 
     #print("setup name end",datetime.now())
-    if options['physList'] == "QGSP_BERT_EMZ":
+    if args.physList == "QGSP_BERT_EMZ":
         outname = outname + "_QBZ"
-    elif options['physList'] == "FTFP_BERT_EMZ":
+    elif args.physList == "FTFP_BERT_EMZ":
         outname = outname + "_FBZ"
     else:
         outname = outname + options['physList']
@@ -147,6 +148,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         #print("\n",outname,"\n")
         outname = re.sub(".+(?<=(/CSVs/))","",outname) #removes all preceeding real name
         #print("Directories removed. Now:",outname)
+
+    #make name accessible later on
+    args.beamFile = outname
 
     #Find which folder root file is in and check if complete
     #loc = findRoot(savename) #still need to work on this function
@@ -596,7 +600,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)
                     #The above comparison btwn PBW Exit Twiss and Target distrib shows that the beam distrib transforms during the drift from PBW Exit.
                             #That it isn't a mere drift, but the MCS causes a 14% larger beam in Y and 10% larger beam in X.
-            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,r"M${\"u}$ller Eqn 8 Real PBW",savename,mat,PBWTwx,PBWTwy,args)
+            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,r"M${\"u}$ller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
                     #Position filtered to show spread
                     #The above comparison btwn the Twiss at Target with drift resulting from Muellers formalism and actual Target distrib shows that they are in strong agreement.
                             #The Mueller formalism equations with correct radiation lengths, etc produce beam sigmas within 1% in X and Y (-0.92% in X and +0.38% in Y)

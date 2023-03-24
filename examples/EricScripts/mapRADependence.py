@@ -12,7 +12,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
-    options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'MiniRoot':True  }
+    options     = {'physList':args.physList, 'dependence':"RA", 'zoff':zoff, 'MiniRoot':True  }
 
     #Important things
     if args.t == 0:
@@ -23,8 +23,6 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
     #For the input amplitude range selection, 'short' or 'long'
     amplRatio = (args.aX + 0.001) / (args.aY + 0.001) #so no /zero
-    defaultRMAmplX = 54.65
-    defaultRMAmplY = 18.37
     if args.ampl == 's':
         #rXAmps = np.array([args.aX,49,50,51,52,53,54])
         rXAmps = np.array([args.aX,49,51,53,57])
@@ -61,12 +59,12 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
         rYAmps = np.linspace(args.startY,args.eY,args.Nstep)#Y
         rXRange = args.eX-args.startX
         print(args.startX,args.eX,args.Nstep,"\n",rXAmps,"\n",rYAmps)
-        print("there are ",args.Nstep*args.Nstep,"points to plot. Expect that number of minutes.")
+        print("there are ",args.Nstep*args.Nstep,"points to plot. Expect that number/6 hours.")
         #print("there are ",args.NstepX*args.NstepY,"points to plot. Expect that number of minutes.")
 
-
+    print(args.aX,args.aY)
     pOutsideBoxes = np.zeros([len(rYAmps),len(rXAmps)]) #figure out how to run N times/have spread to avg numbers
-    Jmaxes = np.zeros([len(rYAmps),len(rXAmps)])
+    coreJMeans = np.zeros([len(rYAmps),len(rXAmps)])
     #coreMeans = np.zeros([len(rYAmps),len(rXAmps)])
     #VacpOutsideBoxes = np.zeros(len(rXAmps))
 
@@ -75,7 +73,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
     #now name has beta instead of emit!
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
-    name = "RasterAmplDependence_POutBox,Imax_nP{:.1e}_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm_{:.0f}steps".format(nPs,Twiss[1],Twiss[4],rXRange,args.eY-args.startY,args.Nstep)
+    name = "RasterAmplDependence_POutBox,coreJMean_nP{:.1e}_bX{:.0f},{:.0f}m_R{:.1f},{:.1f}mm_{:.0f}steps".format(nPs,Twiss[1],Twiss[4],rXRange,args.eY-args.startY,args.Nstep)
     if os.path.isfile(mapCsvPWD+name+".csv"):
         print("Found data! Reading in!",mapCsvPWD+name)
         #from plotFit import numLines
@@ -95,7 +93,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
                     rXAmps[i-z] = row[0]
                     rYAmps[j-z] = row[1]
                     pOutsideBoxes[j-z][i-z] = row[2]
-                    Jmaxes[j-z][i-z] = row[3]
+                    coreJMeans[j-z][i-z] = row[3]
                     #coreMeans[j-z][i-z] = row[4]
                     #VacpOutsideBoxes[line_count-z] = row[3]
                     #print(i-z,j-z,rXAmps[i-z],rYAmps[j-z],pOutsideBoxes[i-z][j-z])
@@ -108,7 +106,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
         #print("Run simulations for RA ratio",amplRatio,"\t",name)
         for i in range(len(rXAmps)):
             for j in range(len(rYAmps)):
-                print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j])
+                print("\nline [",i,",",j,"]",rXAmps[i],rYAmps[j],"\t",datetime.now())
                 #Create Rastered Beam file, runARasterMaker checks if the CSV is already present
                 args.aX = rXAmps[i]
                 args.aY = rYAmps[j]
@@ -124,7 +122,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
                 TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
                 (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
-                [Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff] = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths)
+                [Jmax,pOutsideBoxes[j][i],beamArea,coreJMeans[j][i],centX,centY,rValue,chi2] = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths,sample)
 
                 #rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,sample)
                 ##Send raster beam file to runPBW which simulates with MiniScatter or opens already run data. Full PBW model
@@ -135,7 +133,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
                 ##VacpOutsideBoxes[i] = noPBWPOutBox
                 print(datetime.now().strftime("%H-%M-%S"))
                 from plotFit import saveStats
-                saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmaxes[j][i],pOutsideBoxes[j][i],beamArea,coreJMean,centX,centY,rValue,rDiff,"MapRMA")
+                saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes[j][i],beamArea,coreJMeans[j][i],centX,centY,rValue,chi2,"MapRMA",args.reBin,args)
             print("time elapsed",datetime.now()-origin)
 
         #Save values for future quick use
@@ -143,22 +141,22 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
         print("Writing CSV")
         with open(mapCsvPWD+name+".csv",mode = 'w') as csv_file:
             csv_writer = csv.writer(csv_file,delimiter = ',')
-            csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","Jmaxes [uA/mm2]"])
+            csv_writer.writerow(["Raster X Amplitude","Raster Y Amplitude","POutBox PBW","Core J Mean [uA/mm2]"])
             for i in range(len(rXAmps)):
                 for j in range(len(rYAmps)):
-                    csv_writer.writerow([rXAmps[i],rYAmps[j],pOutsideBoxes[j][i],Jmaxes[j][i]])#,VacpOutsideBoxes[i]])
+                    csv_writer.writerow([rXAmps[i],rYAmps[j],pOutsideBoxes[j][i],coreJMeans[j][i]])#,VacpOutsideBoxes[i]])
             csv_file.close()
         print("CSV written",mapCsvPWD+name)
         print("time elapsed",datetime.now()-origin)
 
     for i in range(len(rXAmps)):
         for j in range(len(rYAmps)):
-            print(rXAmps[i],rYAmps[j],pOutsideBoxes[j][i],Jmaxes[j][i])
+            print(rXAmps[i],rYAmps[j],pOutsideBoxes[j][i],coreJMeans[j][i])
 
     #Plot for parameter search analysis
     fs=14
-    minim = pOutsideBoxes.min()+0.01
-    maxim = pOutsideBoxes.max()*1.1
+    minim = pOutsideBoxes.min()*0.9999
+    maxim = pOutsideBoxes.max()*1.05
     plotRange = maxim-minim
     print(minim,maxim,plotRange)
     plt.close()
@@ -171,9 +169,9 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     ax1.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
     ax1.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
     ax1.set_title("Rastered Beam % Outside Box on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
-    cbarVals  = [minim,minim+plotRange*0.1,minim+plotRange*0.4,minim+plotRange*0.7,maxim] #make array for color bar values
-    cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
-                "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+    cbarVals  = [minim,minim+plotRange*0.25,minim+plotRange*0.5,minim+plotRange*0.75,maxim] #make array for color bar values
+    cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.2f}".format(cbarVals[1]),"{:.2f}".format(cbarVals[2]),
+                "{:.2f}".format(cbarVals[3]),"{:.2f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
     cbarLabel = "% Outside Box"
     cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=cbarVals)
     cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
@@ -182,14 +180,14 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     print("CbarVals",cbarVals)
 
     ##Max I Plot
-    minimMax = Jmaxes.min()*0.9999
-    maximMax = Jmaxes.max()*1.0001
+    minimMax = coreJMeans.min()*0.9999
+    maximMax = coreJMeans.max()*1.05
     plotRangeMax = maximMax-minimMax
-    print(Jmaxes.min(),Jmaxes.max())
-    d = ax2.pcolor(X,Y,Jmaxes,norm=LogNorm(vmin=minimMax, vmax=maximMax),shading='auto',cmap='viridis')
+    print(coreJMeans.min(),coreJMeans.max())
+    d = ax2.pcolor(X,Y,coreJMeans,norm=LogNorm(vmin=minimMax, vmax=maximMax),shading='auto',cmap='viridis')
     ax2.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
     ax2.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
-    ax2.set_title("Peak Current Density on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
+    ax2.set_title("Mean Core Current Density on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
     cbarVals2  = [minimMax,minimMax+plotRangeMax*0.25,minimMax+plotRangeMax*0.5,minimMax+plotRangeMax*0.75,maximMax] #make array for color bar values
     cbarLabels2 = ["{:.1f}".format(cbarVals2[0]),"{:.1f}".format(cbarVals2[1]),"{:.1f}".format(cbarVals2[2]),
                 "{:.1f}".format(cbarVals2[3]),"{:.1f}".format(cbarVals2[4])]
@@ -205,17 +203,19 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     #also, you have to adjust the original values in the Gaussian fitting as it keeps throwing 
     #  the "lower/upper bounds outside current parameter value." error which is about the initial value being outside the SetParamterLimit bounds
 
-    ax1.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
-    ax1.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
-    ax1.text(defaultRMAmplX+1,defaultRMAmplY+0.5,"Nominal Y, Nominal X",color="w",ha="center",va="bottom")
-    ax2.hlines(defaultRMAmplY,floor(defaultRMAmplX),ceil(defaultRMAmplX),color='orange')
-    ax2.vlines(defaultRMAmplX,defaultRMAmplY-(ylim1[1]-ylim1[0])*0.02,defaultRMAmplY+(ylim1[1]-ylim1[0])*0.02,color='orange')
-    ax2.text(defaultRMAmplX+1,defaultRMAmplY+0.5,"Nominal Y, Nominal X",color="w",ha="center",va="bottom")
+    #ax1.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
+    #ax1.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
+    ax1.text(args.aX-0.3,args.aY,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
+    #ax2.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
+    #ax2.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
+    ax2.text(args.aX-0.3,args.aY,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
 
+    ax1.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
+    ax2.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
     for i in range(len(rXAmps)):
         for j in range(len(rYAmps)):
-            ax1.text(rXAmps[i],rYAmps[j],"{:.0f}".format(Jmaxes[j][i]),color="w",ha="center",va="center")
-            ax2.text(rXAmps[i],rYAmps[j],"{:.0f}".format(pOutsideBoxes[j][i]),color="w",ha="center",va="center")
+            ax2.text(rXAmps[i],rYAmps[j],"{:.0f}".format(coreJMeans[j][i]),color="w",ha="center",va="center",fontsize=fs+4)#,fontweight="bold")
+            ax1.text(rXAmps[i],rYAmps[j],"{:.1f}".format(pOutsideBoxes[j][i]),color="w",ha="center",va="center",fontsize=fs+4)#,fontweight="bold")
     ##Set up texts to include with relevant info
     #xlim = plt.xlim()
     #ylim = plt.ylim()

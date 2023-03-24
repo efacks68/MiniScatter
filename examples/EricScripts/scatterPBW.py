@@ -10,9 +10,9 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     from runARasterMaker import runARasterMaker
 
     #Constants for running scripts
-    physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"
+    physList    = 'QGSP_BERT_EMZ' # 'QGSP_BERT_EMZ' or 'FTFP_BERT_EMZ' or 'QGSP_BERT__SS'
     zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
-    options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
+    options     = {'physList':args.physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
                     'mat3Plot':False,'MiniRoot':True }
 
