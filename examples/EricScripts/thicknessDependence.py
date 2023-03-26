@@ -84,7 +84,7 @@ def thicknessDependence(args,Twiss,sample,paths):
             print(datetime.now().strftime("%H-%M-%S"))
             from plotFit import saveStats
             statsName = "thicknessStats"
-            saveStats(paths['statsPWD'],Twiss,beamFile,Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,statsName,args.reBin)
+            saveStats(paths['statsPWD'],Twiss,beamFile,Jmaxes[i],pOutsideBoxes[i],beamArea,coreJMean,centX,centY,rValue,rDiff,statsName,args.reBin,args)
         print("time elapsed",datetime.now()-origin)
 
         #Save values for future quick use
@@ -126,10 +126,10 @@ def thicknessDependence(args,Twiss,sample,paths):
 
     print("For a beamlet",Twiss,"\nThick, % Out Box,\t Müller X, \tMüller Y,\t   Distrib X, \t    Distrib Y")
     for i in range(len(PBWT)):
-            print(PBWT[i],",    {:.3f}".format(pOutsideBoxes[i]),",  ",e8TargxReal[i],e8TargyReal[i],targxTwissf[i],targyTwissf[i])
+        print(PBWT[i],",    {:.3f}".format(pOutsideBoxes[i]),",  ",e8TargxReal[i],e8TargyReal[i],targxTwissf[i],targyTwissf[i])
 
     #Plot for parameter search analysis
-    fs=14
+    fs=18
 
     plt.scatter(PBWT,e8TargxReal,c='green',label=r"Müller $\sigma_x$",s=65)
     plt.scatter(PBWT,e8TargyReal,c='red',label=r"Müller $\sigma_y$",s=65)
@@ -137,43 +137,52 @@ def thicknessDependence(args,Twiss,sample,paths):
     plt.scatter(PBWT,targyTwissf,c='gold',label=r"GEANT4 $\sigma_y$")
 
     if args.thickInd == 0:
-        plt.xlim((0.3,args.maxThick+0.2))
-        plt.ylim((np.min(e8TargyReal)-1,np.max(e8TargxReal)+2))
+        plt.xlim((args.minThick-0.2,args.maxThick+0.2))
+        plt.ylim((np.min(e8TargyReal)-5,np.max(e8TargxReal)+4))
         plt.annotate('Actual PBW Al', #up
-        xy=(2.25, 15), xycoords='data',
-        xytext=(-35, -40), textcoords='offset points',
+        xy=(2.25, 14), xycoords='data',
+        xytext=(-35, -20), textcoords='offset points',
         arrowprops=dict(arrowstyle="->"))
         plt.annotate('Thickness: 2.25mm',
         xy=(2.25, 10.6), xycoords='data', #down
-        xytext=(-49, 46), textcoords='offset points',
+        xytext=(-49, 15), textcoords='offset points',
         arrowprops=dict(arrowstyle="->"))
         
         plt.ylabel(r"$\sigma$ at Target [mm]",fontsize=fs)
-        plt.title(r"Target Position $\sigma$ Growth with PBW Thickness",fontsize=fs+2)
+        plt.title(r"Target Position $\sigma$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
+
+        xlim = plt.xlim()
+        ylim = plt.ylim()
+        plt.text(xlim[0]+0.05,ylim[1]*0.95,"Beam Twiss at PBW:",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5)
+    
     else:
-        plt.ylabel(r"$\sigma$ at Target [mm]",fontsize=fs)
-        plt.title(r"Target Anglular $\sigma$ Growth with PBW Thickness",fontsize=fs+2)
+        plt.ylabel(r"$\sigma$ at Target [mrad]",fontsize=fs)
+        plt.title(r"Target Anglular $\sigma$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
         #plt.vlines(2.25,plt.ylim()[0],plt.ylim()[1],color="m")
         #plt.text(2.3,plt.ylim()[0]+0.1,"Actual PBW Al Thickness: 2.25mm",ha="right")
         plt.annotate('   Actual PBW Al\nThickness: 2.25mm', #up
         xy=(2.25, .00213), xycoords='data',
         xytext=(-49, -60), textcoords='offset points',
         arrowprops=dict(arrowstyle="->"))
-        
-    xlim = plt.xlim()
-    ylim = plt.ylim()
-    plt.text(xlim[0]+0.1,ylim[1]*0.96,"Beam Twiss at PBW:",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.92,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.88,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-4)
-    plt.text(xlim[0]+0.1,ylim[1]*0.84,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-4)
+
+        xlim = plt.xlim()
+        ylim = plt.ylim()
+        plt.text(xlim[0]+0.05,ylim[1]*0.97,"Beam Twiss at PBW:",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.94,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.91,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5)
+        plt.text(xlim[0]+0.05,ylim[1]*0.88,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5)
     
+
     plt.xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
 
     #handles1, labels1 = plt.gca().get_legend_handles_labels()
     #print(labels1)
     #order1=[0,1,2,3]
     #([handles1[idx] for idx in order1],[labels1[idx] for idx in order1]
-    plt.legend(ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-4)
+    plt.legend(ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
 
     plt.tight_layout()
     dt = datetime.now()

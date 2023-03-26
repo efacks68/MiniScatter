@@ -497,7 +497,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     #Create the fig with 2 plots side by side
     plt.clf()
-    fig = plt.figure(figsize=(15,6.0))
+    fig = plt.figure(figsize=(16,6.0))
     plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
     s1 = fig.add_subplot(1,2,1)
     s2 = fig.add_subplot(1,2,2)
@@ -545,54 +545,55 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     #Set various plot variables, often found through trial and error
     xlim = 6*sigmax
-    plt.setp(s1,title="X Distribution At Target after "+fitlabel,xlabel="X Position [mm]",
-            ylabel="Probability Density",xlim=([-xlim,xlim]),ylim=([1e-6,1])) #if don't set ylim, log goes to e-58
+    fs=18
+    #if don't set ylim, log goes to e-58
+    plt.setp(s1,title="X Distribution At Target after "+fitlabel,xlim=([-xlim,xlim]),ylim=([1e-6,1]))
     #s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
-    #s1.set_xlabel("X Position [mm]",fontsize=fs)
-    #s1.set_ylabel("Probability Density",fontsize=fs)
+    s1.set_xlabel("X Position [mm]",fontsize=fs)
+    s1.set_ylabel("Probability Density",fontsize=fs)
     #s1.set_xlim([-xlim,xlim])
     ##s1.set_ylim([1e-6,0.1])
     #s1.set_ylim([1e-6,1])  #if don't set, then log goes to e-58
     
     xlim1 = s1.get_xlim()
     ylim1 = s1.get_ylim()
-    s1.text(xlim1[0]*0.97,3e-2,sigmatextx,fontsize=fs-2)
+    s1.text(xlim1[0]*0.97,3e-2,sigmatextx,fontsize=fs-4)
     s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,7e-3,r"$\epsilon_{Nx}$ = "+"{:.3f} [mm*mrad]".format(PBWTwx[2]),fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,4e-3,r"$\beta_{x}$ = "+"{:.1f} [m]".format(PBWTwx[0]),fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,2.4e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
+    s1.text(xlim1[0]*0.97,6.8e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
+    s1.text(xlim1[0]*0.97,3.1e-3,r"$\beta_{x}$ = "+"{:.1f}".format(PBWTwx[0])+r"$_{[m]}$",fontsize=fs-4)
+    s1.text(xlim1[0]*0.97,1.5e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
 
     handles1, labels1 = plt.gca().get_legend_handles_labels()
     order1=[0,1,2]
-    s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=9)
+    s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-4,loc="upper right")
 
     #Set s2
-    plt.setp(s2,title="Y Distribution At Target after "+fitlabel,xlabel="Y Position [mm]",
-            ylabel="Probability Density",xlim=([-xlim,xlim]),ylim=([1e-6,1])) #if don't set ylim, log goes to e-58
+    plt.setp(s2,title="Y Distribution At Target after "+fitlabel,xlim=([-xlim,xlim]),ylim=([1e-6,1]))
+    #if don't set ylim, log goes to e-58
     #s2.set_xlim([-xlim,xlim])
     #s2.set_ylim([1e-6,1]) #if don't set, then log goes to e-58
     #s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
-    #s2.set_xlabel("Y Position [mm]",fontsize=fs)
-    #s2.set_ylabel("Probability Density",fontsize=fs)
+    s2.set_xlabel("Y Position [mm]",fontsize=fs)
+    s2.set_ylabel("Probability Density",fontsize=fs)
 
     handles2, labels2 = plt.gca().get_legend_handles_labels()
     order2=[0,1,2]
-    s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=9)
+    s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=fs-4,loc="upper right")
     ylim2=s2.get_ylim() #dynamically get the graph limits
     xlim2=s2.get_xlim()
 
-    s2.text(xlim2[0]*0.97,3e-2,sigmatexty,fontsize=fs-2)
+    s2.text(xlim2[0]*0.97,3e-2,sigmatexty,fontsize=fs-4)
     #PBWTwx = [Ibetax,Ialphx,Inemtx]
     s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,7e-3,r"$\epsilon_{Ny}$ = "+"{:.3f} [mm*mrad]".format(PBWTwy[2]),fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,4e-3,r"$\beta_{y}$ = "+"{:.1f} [m]".format(PBWTwy[0]),fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,2.4e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,6.8e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,3.1e-3,r"$\beta_{y}$ = "+"{:.1f}".format(PBWTwy[0])+r"$_{[m]}$",fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,1.5e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
 
     #Can date stamp the multi plot for easier tracking of changes, if necessary
     from datetime import datetime
     dt = datetime.now()
 
-    name = savename+"_compTargs_"+dt.strftime("%H-%M-%S")+"."+args.picFormat##
+    name = savename+"_compTargs_"+"."+args.picFormat##+dt.strftime("%H-%M-%S")
     #plt.show()
     if args.savePics:
         plt.tight_layout()
@@ -805,7 +806,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    g=5
+    g=4
     if g == 4:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 3:
@@ -845,7 +846,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         f2.SetParLimits(8,p1, p0*y2) #p5=22,300
         f2.SetParLimits(9,p2, p0*y2*y2) #p7 =300,3000
     f2_res = proj.Fit(f2, 'RSQ')
-    print("Gaussian",f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3))#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
+    print("Gaussian: {:.0f},{:.2f},{:.0f},{:.0f},{:.0f},{:.0f},{:.2f},{:.0f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
@@ -1052,29 +1053,32 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #Warning print is outside PMAS because it takes a long time
     jMaxLim = 53
     pOutLim = 4
-    centYLim = 11
-    centXLim = 14
-    rValLim = 0.20
-    nomArea = 5600
-    #if jMax >= jMaxLim or pOut >= pOutLim or rValue >= rValLim or dispY >= dispYLim or dispX >= dispXLim:
+    centYLim = 3
+    centXLim = 4
+    rValLim = 0.10
+    nomArea = 3200 #~32*100, nominal gives 34*104=3536
+    chi2Lim = 5e3
+    #print warnings if exceed limit of value:
     if jMax >= jMaxLim:
-        print("Current Density Warning: {:0.1f}".format(jMax),"uA/cm^2!")
-    elif pOutsideBox >= pOutLim:
-        print("% Outside Box Warning:",pOutsideBox,"%!")
-    elif beamArea <= nomArea:
-        print("Beam Area Warning:",beamArea,"mm^2")
-    elif centY >= centYLim:
-        print("Vertical Displacement Warning:",centY - centYLim,"mm!")
-    elif centY <= -centYLim:
-        print("Vertical Displacement Warning:",centY + centYLim,"mm!")
-    elif centX >= centXLim:
-        print("Vertical Displacement Warning:",centX - centXLim,"mm!")
-    elif centX <= -centXLim:
-        print("Horizontal Displacement Warning:",centX + centXLim,"mm!")
-    elif rValue >= rValLim:
-        print("R Value Warning",rValue)
-    else:
-        print("No Warnings!")
+        print("\tCurrent Density: {:0.1f}".format(jMax),"uA/cm^2 greater than",jMaxLim,"uA/cm^2")
+    if pOutsideBox >= pOutLim:
+        print("\t% Outside Box:",pOutsideBox,"% greater than",pOutLim,"%")
+    if args.reBin == 1:
+        if beamArea <= nomArea:
+            print("\tBeam Area:",beamArea,"mm^2, less than",nomArea,"mm^2")
+        if centY >= centYLim:
+            print("\tVertical Displacement:",centY,"mm greater than",centYLim)
+        if centY <= -centYLim:
+            print("\tVertical Displacement:",centY,"mm greater than",centYLim)
+        if centX >= centXLim:
+            print("\tVertical Displacement:",centX,"mm greater than",centXLim)
+        if centX <= -centXLim:
+            print("\tHorizontal Displacement:",centX,"mm greater than",centXLim)
+        chi2Lim = 1e4
+    if rValue >= rValLim:
+        print("\tR Value: {:.3e} above Limit: {:.3e}".format(rValue,rValLim))
+    if chi2 >= chi2Lim:
+        print("\tChi^2: {:.2e} above Limit: {:.1e}".format(chi2,chi2Lim))
 
     #print(jMax,pOutsideBox,rValue,chi2,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
@@ -1132,7 +1136,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         c = ax.pcolormesh(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
         lw=1
         col='k'
-        fs=14
+        fs=15
 
         #Set Plot Properties
         setp(ax,xlim=([-args.xlim,args.xlim]),ylim=([-args.ylim,args.ylim]),
@@ -1148,7 +1152,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ylim = ax.get_ylim()
 
         #Display beam characteristics
-        bgdbox=dict(pad=0.5,fc='w',ec='none')
+        bgdbox=dict(pad=1,fc='w',ec='none')
         propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
 
         #Show 99% box
@@ -1164,16 +1168,16 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
             ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
             ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            ax.text(xlim[1]*0.97, ylim[0]*0.43, " r = {:.5f}".format(rValue), propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.67, r"Core $\langle\bf{J}\rangle$: "+"{:.1f}".format(coreJMean)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.79, r"Peak $\langle\bf{J}\rangle$: "+"{:.1f}".format(jMax)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.89, "RM Amplitudes: {:.1f}, {:.1f}".format(args.aX,args.aY)+r"$_{[mm]}$",propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.98, options['physList'], propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.47, " r = {:.5f}".format(rValue), propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.69, r"Core $\langle\bf{J}\rangle$: "+"{:.1f} ".format(coreJMean)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.80, r"Peak $\langle\bf{J}\rangle$: "+"{:.1f} ".format(jMax)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.90, "RM Amplitudes: {:.1f}, {:.1f}".format(args.aX,args.aY)+r"$_{[mm]}$",propsR,fontsize=fs-4)
+            ax.text(xlim[1]*0.97, ylim[0]*0.99, options['physList'], propsR,fontsize=fs-4)
 
             if chi2 > 1e3:
-                ax.text(xlim[1]*0.97, ylim[0]*0.55, r"$\chi^2$"+"={:.2e}".format(chi2), propsR,fontsize=fs-4)
+                ax.text(xlim[1]*0.97, ylim[0]*0.58, r"$\chi^2$"+"={:.2e}".format(chi2), propsR,fontsize=fs-4)
             else:
-                ax.text(xlim[1]*0.97, ylim[0]*0.55, r"$\chi^2$"+"={:.0f}".format(chi2), propsR,fontsize=fs-4)
+                ax.text(xlim[1]*0.97, ylim[0]*0.58, r"$\chi^2$"+"={:.0f}".format(chi2), propsR,fontsize=fs-4)
 
             for i in range(1,len(boxes)): #make multiple boxes
                 ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
@@ -1198,10 +1202,10 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         #if isfile(name+"*.png"):
         #  print("already present")
         tight_layout()
-        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)
+        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#
         close(fig)
         close()
-        print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)
+        print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)#+"_"+dt.strftime("%H-%M-%S")
     #dt = datetime.now()
     #print(dt-start)
 
@@ -1732,7 +1736,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                     break
         elif args.failure != 0: #RM fails, though only PBW... files at this time
             for row in csv_reader:
+                #print(args.beamFile,row[0])
                 if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
+                    #print(args.beamFile,row[0])
                     read[i] = float(row[ind]) #[mm-mrad]
                     if i == args.samples-1:
                         lenbreak = True
@@ -1756,6 +1762,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                         i+=1
             else:
                 for row in csv_reader:
+                    #print(args.beamFile,row[0])
                     #if i == 6: #for finding indices out of 7sigma
                     #    print("index",i,"failed file:",row[0])
                     #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
@@ -1777,7 +1784,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                     read[i] = float(row[ind])
                     if i == args.samples-1:
                         lenbreak = True
-                        print(row[0])
+                        #print(row[0])
                         break
                     i+=1
         else: #nominal
@@ -1789,6 +1796,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                     #    print("index",i,row[0],args.beamFile,re.search(args.beamFile,row[0]))
                     #print("nominal",re.search(failKey,row[0]))#re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
                     if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) and re.search("FBZ",row[0]) and not re.search("failure",row[0]):
+                        #print(args.beamFile,row[0])
                         read[i] = float(row[ind]) #[mm-mrad]
                         if i == args.samples-1:
                             lenbreak = True
@@ -1800,7 +1808,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                     #if i == 44: #for finding indices out of 7sigma
                     #    print("index",i,"failed file:",row[0])
                     #print("nominal",re.search(failKey,row[0]))#re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
-                    if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) and not re.search("FBZ",row[0]) and not re.search("failure",row[0]):
+                    if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) and not re.search("FBZ",row[0]) and not re.search("failure",row[0]) and not re.search("mrad",row[0]):
+                    #if re.search(args.beamFile,row[0]):
+                        #print(args.beamFile,row[0])
                         read[i] = float(row[ind]) #[mm-mrad]
                         if i == args.samples-1:
                             lenbreak = True
@@ -1825,7 +1835,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     #print(mu,sigma,ampl)
 
-    _, bins, _ = hist(read,interval)#,range=pHistLims)
+    _, bins, _ = hist(read,interval)
     plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
 
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
@@ -1840,31 +1850,45 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             fieldFrac = int(re.search("(([0-9]*)+(?=pctField))",args.twissFile)[1])
             title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n & {:.0f}% QP Errors with {:.2e} Macro-Particles".format(len(read),int(args.qpNum),fieldFrac,pct,nPs))
     else:#nominal
-        title("{:.0f} Samples with {:.2e} Macro-Particles".format(len(read),nPs))
+        title("{:.0f} Nominal Samples with {:.2e} Macro-Particles".format(len(read),nPs))
 
-    if ind in {7,8,10}:
+    if args.failure == 0 and args.qpNum == "" and args.Nb > 99:
         xlim(pHistLims)
+    elif args.Nb < 99:
+        if ind in{7,8,10}:
+            xlim(pHistLims)
+    #elif args.qpNum != "":
+    #    if ind in{7,10}:
+    #        xlim(pHistLims)
+    #    if ind == 8:
+    #        xlim(2.85,5.1)
 
     xlabel(paramLabel)
     ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
+    #get values to be in a reasonable position in plots
     bgdbox=dict(pad=1,fc='w',ec='none')
-    fs=14
-    if mu > 100:
-        delta = 5e-3
-    elif mu >25 and mu <=100:
-        delta = 3e-4
-    elif mu >2 and  mu <= 25:
-        delta = 4e-4
+    fs=16
+    xRange = xlim()[1]-xlim()[0]
+    #formulate better later with xRange...
+    if mu > 7e5:                 delta = 1e-4
+    elif mu > 1e4 and mu <= 7e5: delta = 5e-4
+    elif mu > 5e3 and mu <= 1e4: delta = 1e-3
+    elif mu > 5e2 and mu <= 5e3: delta = 8e-3
+    elif mu > 48  and mu <= 5e2:
+        if xRange < 0.5:         delta = 5e-5
+        else:                    delta = 2e-4
+    elif mu > 25 and mu <= 48:   
+        if xRange < 0.5:         delta = 5e-5
+        else:                    delta = 6e-4
+    elif mu > 2  and mu <= 25:
+        if xRange < 0.2:         delta = 1e-4
+        else:                    delta = 1e-3
     else: #mu<2
         delta = 5e-3
         xticks(rotation=45)
-    #left=xlim()[0] #=7
-    #midPoint=left+(xlim()[1]-left)*0.5 #7+(11-7=4/2=2)=9,
-    #print(mu,left,midPoint)
-    #if mu < midPoint:
-    #    xlim(left=mu - (midPoint-left)) # mu=8.3<9->left=8.3-(9-7=2)=6.3 
+
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2)
     text(xlim()[1]*(1-delta), ylim()[1]*0.97, "Beam Twiss at PBW:", propsR)
     text(xlim()[1]*(1-delta), ylim()[1]*0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
@@ -1883,11 +1907,10 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
         name=statsPWD+args.twissFile+"QP"+args.qpNum+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
 
     if args.failure != 0:
-            name +="_failure"+str(args.failure)
+            name +="_failure"+str(int(args.failure))
     if args.physList == "FTFP_BERT_EMZ":
         name += "_FBZ"
     if args.saveSpread:
-        tight_layout()
         savefig(name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)
@@ -1913,7 +1936,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     print("statsFile:",args.statsFile)
 
     paramName=["jMax","beamPOut","coreJMean","rValue","chiSq"]#"coreArea","coreJMean","centX","centY","chi2"] #len=6 
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]","R Value",r"$\chi^2$"]
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]",r"$r$ Comparison",r"$\chi^2$"]
                 #r"Core Area [mm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 #]#,"R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]",
@@ -1921,13 +1944,13 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     ind = [7,8,10,13,14]#,14]#9,11,12,
     unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$","",""]#r"mm$^2$","mm","mm"]#,""
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-                        #jMax             Pout               coreJMean         rVal           chiSq               
-    paramFitLims = [(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,100,500]),(0,[1e3,10,1]),(0,[1e3,1e7,1e7])]#([10,1e1,20],[5e6,1e6,1e6]),
+                        #jMax             Pout               coreJMean         rVal           chi2               
+    paramFitLims = [(0,[1e3,500,500]),(0,[1e3,100,500]),(0,[1e3,500,500]),(0,[1e3,10,1]),(0,[1e3,1e7,1e5])]#([10,1e1,20],[5e6,1e6,1e6]),
                         #centX                                  centY                   
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-                    #jMax       Pout    coreJMean  rVal        coreArea    centX   centY    
-    pHistLims = [[51.5,55.3],[3.47,3.85],[45,46.25],[.05,.1],[30,40]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
+                    #jMax       Pout     coreJMean     rVal        chi2    coreArea    centX   centY    
+    pHistLims = [[51.5,55.3],[3.47,3.85],[45,46.25],[.025,.075],[1000,3600]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
     paramBins = [20,20,20,30,30]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))
@@ -1948,7 +1971,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
         next(csv_reader)
         for row in csv_reader:
             i+=1
-            if float(row[0]) == args.betaSpread: #No duplicates
+            if row[0] == args.beamFile: #No duplicates
                 found = True
                 foundRow = i
                 print("Values already in row",foundRow)
@@ -1958,14 +1981,21 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
         with open(paths['statsPWD']+"pOffStats.csv",mode = 'a') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter = ',')
             for i in range(len(paramName)):
-                if sigmas[i] < 1e-3:
-                    csv_writer.writerow([args.betaSpread,lens[i],paramName[i],"{:.3f} $\pm$ {:.3e}".format(mus[i],sigmas[i])]) #add JCore
-                else:
-                    csv_writer.writerow([args.betaSpread,lens[i],paramName[i],"{:.3f} $\pm$ {:.3f}".format(mus[i],sigmas[i])]) #add JCore
+                if mus[i] < 5e2:
+                    if mus[i] < 10:
+                        if sigmas[i] < 1e-2:
+                            csv_writer.writerow([args.beamFile,lens[i],paramName[i],"{:.3f} $\pm$ {:.3e}".format(mus[i],sigmas[i])])
+                        else:
+                            csv_writer.writerow([args.beamFile,lens[i],paramName[i],"{:.3f} $\pm$ {:.3f}".format(mus[i],sigmas[i])])
+                    else:
+                        csv_writer.writerow([args.beamFile,lens[i],paramName[i],"{:.1f} $\pm$ {:.2f}".format(mus[i],sigmas[i])])
+                else: #chi2 
+                    csv_writer.writerow([args.beamFile,lens[i],paramName[i],"{:.3e} $\pm$ {:.0f}".format(mus[i],sigmas[i])])
+
             csv_file.close()
     
         for i in range(len(paramName)):
-            print(args.betaSpread,lens[i],paramName[i],"{:.3f} +/- {:.3e}".format(mus[i],sigmas[i]))
+            print(args.beamFile,lens[i],paramName[i],"{:.3f} +/- {:.3f}".format(mus[i],sigmas[i]))
 
 
 
@@ -2029,7 +2059,7 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
     
     bgdbox=dict(pad=1,fc='w',ec='none')
-    fs=14
+    fs=16
     delta = 1e-3
     propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4)
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)

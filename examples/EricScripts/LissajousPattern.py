@@ -5,9 +5,7 @@ from math import pi, asin, sin
 
 #Use Argument Parser to control
 parser = argparse.ArgumentParser()
-parser.add_argument("--s",action='store_true',default=False)
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', 'pencil','qpFail'(expects a qpNum), or 'jitter'. If other, just do --twiss. Default='ESS'")
-parser.add_argument("--g",action='store_true',default=False)
 parser.add_argument("--Nb",        type=int,    default=100,    help="Number of macroparticles per beamlet. Default=10")
 parser.add_argument("--nP",        type=float,  default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
 parser.add_argument("--rX",        type=float,  default=0,     help="X distance from beam axis [mm]. Default=0")
@@ -95,8 +93,9 @@ ax.set_xticks([-1,-.5,0,.5,1])
 ax.set_yticks([-1,-.5,0,.5,1])
 ax.set_title("Lissajous Pattern")
 ax.grid(which='major')
+ax.scatter(0,0,s=10,c='r')
 plt.tight_layout()
-plt.savefig("lissajousPattern."+args.picFormat)
+plt.savefig("lissajousPattern300."+args.picFormat,dpi=500)
 plt.close()
 ####
 n=150
@@ -108,4 +107,4 @@ plt.xlabel(r"Time [$\mu$s]")
 plt.ylabel(r"Horizontal Centroid Deflection / a$_X$")
 plt.title("Waveform "+str(n)+" Periods")
 plt.tight_layout()
-plt.savefig("Sawtooth2.png")
+plt.savefig("Sawtooth300.png",dpi=500)

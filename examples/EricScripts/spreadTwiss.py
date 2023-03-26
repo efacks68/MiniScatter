@@ -4,6 +4,8 @@
     #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --saveSpread --samples 200
 #QP Fail:
     #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_QP100_80pctField_1.0e-04Jitter_200x  --beamClass qpFail --qpNum 100 --saveSpread --samples 200
+#Twiss param vs pOut
+    #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --samples 200 --saveFits
 
 from argparse import ArgumentParser
 from plotFit import spreadHist,getTwiss
@@ -18,12 +20,12 @@ parser.add_argument("--twissFile", type=str,   default="",    help="Load file wi
 parser.add_argument("--twissRowN", type=int,   default=99,    help="What rowNum to use in getting QP failure Twiss")
 parser.add_argument("--beamClass", type=str,   default="ESS", help="Determines beam Twiss: 'ESS', 'Yngve', 'pencil','qpFail'(expects a qpNum), or 'jitter'. If other, just do --twiss. Default='ESS'")
 parser.add_argument("--particle",  type=str,   default="proton",choices=("proton","electron"), help="Which particle to simulate?")
-parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03")
+parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--statsFile", type=str,   default="EvalStats20Mar", help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats25Mar", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
@@ -42,7 +44,7 @@ parser.add_argument("--edgeRaster",action="store_true",       help="Only populat
 parser.add_argument("--PBIP",      action="store_true",       default=False,   help="Is PBIP present? Default=False")
 parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au","C","Vac"),  help="What material PBW?")
 parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
-#Output Options                         Lowering the rCut increases the jMax...
+#Output Options                         Lowering the rCut decreases bin size which increases the jMax...
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")
 parser.add_argument("--noText",    action="store_true",  default=False,   help="Turns off printed text when called. Default=False")
@@ -54,22 +56,21 @@ parser.add_argument("--gaussFit",  action="store_true",  default=False,   help="
 parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
 parser.add_argument("--saveHist",  action="store_true",  default=False,   help="Saves Histogram of proton density at target for R Compare. Default=False")
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
-parser.add_argument("--picFormat", choices=("png","svg","pdf"), type=str, default="png",  help="Whic file format extension?")
+parser.add_argument("--picFormat", choices=("png","svg","pdf"), type=str, default="png",  help="Which picture format extension?")
 parser.add_argument("--matPlots",  action="store_true",  default=False,   help="Whether to do various material plots for beamlets")
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
 parser.add_argument("--reBin",     type=int, default=4,  help="Number of bins to make into 1 in 2D histogram for smoothing")
 parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
-parser.add_argument("--dpi",       type=int, default=100,help="DPI for pngs")
+parser.add_argument("--dpi",       type=int, default=500,help="DPI for pngs")
+parser.add_argument("--physList",  type=str, default="QGSP_BERT_EMZ",help="Physics List, either 'QGSP_BERT_EMZ','FTFP_BERT_EMZ', or 'QGSP_BERT__SS'")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
-parser.add_argument("--eX",     type=int,     default=60,    help="End ampl X")
-parser.add_argument("--eY",     type=int,     default=25,    help="End ampl Y")
-parser.add_argument("--startX", type=int,     default=30,    help="Start ampl for X")
-parser.add_argument("--startY", type=int,     default=10,    help="Start ampl for Y")
-parser.add_argument("--Nstep",  type=int,     default=7,     help="N steps")
-#parser.add_argument("--NstepX", type=int,     default=7,     help="N steps for X")
-#parser.add_argument("--NstepY", type=int,     default=7,     help="N steps for Y")
+parser.add_argument("--startX", type=int,     default=40,    help="Start ampl for X")
+parser.add_argument("--eX",     type=int,     default=50,    help="End ampl X")
+parser.add_argument("--startY", type=int,     default=13,    help="Start ampl for Y")
+parser.add_argument("--eY",     type=int,     default=18,    help="End ampl Y")
+parser.add_argument("--Nstep",  type=int,     default=6,     help="N steps; for defaults gives whole number values for map")
 #Thickness Dependence option:
 parser.add_argument("--minThick",type=float,  default=0.5,   help="Minimum Thickness")
 parser.add_argument("--maxThick",type=float,  default=3,     help="Maximum Thickness")
@@ -119,11 +120,17 @@ i = 0
 Twiss,origBX,origBY = getTwiss(args,i,paths)
 
 rasterBeamFile, beamXAngle, beamYAngle = runARasterMaker(args,Twiss,paths['csvPWD'],options,i,origBX,origBY)
-
+from simulation import setup
+savename,simSetup_simple1 = setup(args,args.material,rasterBeamFile,Twiss,options,paths)
 
 if not args.saveFits:
     spreadHist(args,Twiss,paths,origBX,origBY,rasterBeamFile)
 
 if args.saveFits:
+    axis = "x" #"x" or "y"
     from betaPOutFit import betaPOutFit
-    betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile)
+    from alphaPOutFit import alphaPOutFit
+    from emittPOutFit import emittPOutFit
+    betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)
+    alphaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)
+    emittPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)

@@ -1,4 +1,5 @@
-#betaPOutFit.py
+#alphaPOutFit.py
+#python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --samples 200 --saveFits
 #with Confidence Ellipse fitting from https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
 
 def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
@@ -138,8 +139,8 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
 
     print(mu[0],ax_nstd.get_ylim()[0],ax_nstd.get_ylim()[1])
     print(mu[1],ax_nstd.get_xlim()[0],ax_nstd.get_xlim()[1])
-    ax_nstd.axvline(mu[0],c='grey', lw=1)
-    ax_nstd.axhline(mu[1],c='grey', lw=1)
+    ax_nstd.axvline(mu[0],c='grey', lw=1,alpha=0.4)
+    ax_nstd.axhline(mu[1],c='grey', lw=1,alpha=0.4)
 
     ax_nstd.scatter(betas, pOuts, s=1)
 
@@ -153,22 +154,23 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     ax_nstd.scatter(mu[0], mu[1], c='red', s=3)
     #ax_nstd.set_title('Different standard deviations')
 
+    fs=16
     slope, intercept, r, p, se = linregress(betas, pOuts)
     plt.plot(betas,slope*betas+intercept,c='g',alpha=0.5,label="Fit")
     if axis in {"Y","y"}:
-        plt.title(r"$\alpha_y$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
-        plt.xlabel(r"$\alpha_y$")
+        plt.title(r"$\alpha_y$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
+        plt.xlabel(r"$\alpha_y$",fontsize=fs)
     elif axis in {"X","x"}:
-        plt.title(r"$\alpha_x$ vs. % Outside Target Area"+"\nfor {:.0f}% Variation around Nominal".format(pct))
-        plt.xlabel(r"$\alpha_x$")
-    plt.ylabel("% Outside Target Area")
+        plt.title(r"$\alpha_x$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
+        plt.xlabel(r"$\alpha_x$",fontsize=fs)
+    plt.ylabel("% Outside Target Area",fontsize=fs)
 
-    plt.text(ax_nstd.get_xlim()[0]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\alpha$"+" + {:.3f}".format(intercept),ha="left",va="bottom")
+    plt.text(ax_nstd.get_xlim()[0]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\alpha$"+" + {:.3f}".format(intercept),ha="left",va="bottom",fontsize=fs-2)
 
-    ax_nstd.legend(loc="upper right")
+    ax_nstd.legend(loc="upper right",fontsize=fs-2)
     plt.tight_layout()
     print(paths['statsPWD']+args.twissFile+"_{:.0f}pAlphaVpOut".format(pct)+axis+".png")
-    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pAlphaVpOut".format(pct)+axis+".png")
+    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pAlphaVpOut".format(pct)+axis+".png",bbox_inches='tight',dpi=args.dpi)
 
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     import matplotlib.pyplot as plt

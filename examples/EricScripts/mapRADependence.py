@@ -154,7 +154,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
             print(rXAmps[i],rYAmps[j],pOutsideBoxes[j][i],coreJMeans[j][i])
 
     #Plot for parameter search analysis
-    fs=14
+    fs=16
     minim = pOutsideBoxes.min()*0.9999
     maxim = pOutsideBoxes.max()*1.05
     plotRange = maxim-minim
@@ -168,13 +168,14 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     c = ax1.pcolor(X,Y,pOutsideBoxes,norm=LogNorm(vmin=minim, vmax=maxim),shading='auto',cmap='viridis')#,label=r"PBW % Outisde Box")
     ax1.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
     ax1.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
-    ax1.set_title("Rastered Beam % Outside Box on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
+    ax1.set_title("Rastered Beam % Outside Target Area\nwith Raster Amplitude at PBW",fontsize = fs+2)
     cbarVals  = [minim,minim+plotRange*0.25,minim+plotRange*0.5,minim+plotRange*0.75,maxim] #make array for color bar values
     cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.2f}".format(cbarVals[1]),"{:.2f}".format(cbarVals[2]),
                 "{:.2f}".format(cbarVals[3]),"{:.2f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
     cbarLabel = "% Outside Box"
-    cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=cbarVals)
-    cbar.set_label(cbarLabel,labelpad=2,fontsize=fs-2)
+    cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=None)
+    cbar.set_ticks(cbarVals)
+    cbar.set_label(cbarLabel,labelpad=2,fontsize=fs)
     #cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
     print("CbarVals",cbarVals)
@@ -192,7 +193,8 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     cbarLabels2 = ["{:.1f}".format(cbarVals2[0]),"{:.1f}".format(cbarVals2[1]),"{:.1f}".format(cbarVals2[2]),
                 "{:.1f}".format(cbarVals2[3]),"{:.1f}".format(cbarVals2[4])]
     cbarLabel2 = r"Current Density [$\mu$A/cm$^2$]"
-    cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=cbarVals2)
+    cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=None)
+    cbar2.set_ticks(cbarVals2)
     cbar2.set_label(cbarLabel2,labelpad=2,fontsize=fs-2)
     #cbar2.set_ticks(cbarVals2)
     cbar2.set_ticklabels(cbarLabels2)
@@ -205,17 +207,17 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
     #ax1.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
     #ax1.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
-    ax1.text(args.aX-0.3,args.aY,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
+    ax1.text(args.aX-0.3,args.aY-0.1,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
     #ax2.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
     #ax2.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
-    ax2.text(args.aX-0.3,args.aY,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
+    ax2.text(args.aX-0.3,args.aY-0.1,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
 
     ax1.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
     ax2.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
     for i in range(len(rXAmps)):
         for j in range(len(rYAmps)):
-            ax2.text(rXAmps[i],rYAmps[j],"{:.0f}".format(coreJMeans[j][i]),color="w",ha="center",va="center",fontsize=fs+4)#,fontweight="bold")
-            ax1.text(rXAmps[i],rYAmps[j],"{:.1f}".format(pOutsideBoxes[j][i]),color="w",ha="center",va="center",fontsize=fs+4)#,fontweight="bold")
+            ax2.text(rXAmps[i],rYAmps[j],"{:.0f}".format(coreJMeans[j][i]),color="w",ha="center",va="center",fontsize=fs+2)#,fontweight="bold")
+            ax1.text(rXAmps[i],rYAmps[j],"{:.1f}".format(pOutsideBoxes[j][i]),color="w",ha="center",va="center",fontsize=fs+2)#,fontweight="bold")
     ##Set up texts to include with relevant info
     #xlim = plt.xlim()
     #ylim = plt.ylim()
@@ -229,9 +231,8 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     #if args.ampl == 's' or args.ampl == 'l':
     #  plt.text(2*(xlim[1]-xlim[0])/7+xlim[0],ylim[1]*0.93,"Raster Amplitude H:V = 2.975",fontsize=fs-2)
     #plt.legend(loc=legloc)
-    plt.tight_layout()
     dt = datetime.now()
-    plt.savefig(mapCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
+    plt.savefig(mapCsvPWD+name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#+dt.strftime("%H-%M-%S")
     print("saved",mapCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
 
     print(datetime.now()-origin)

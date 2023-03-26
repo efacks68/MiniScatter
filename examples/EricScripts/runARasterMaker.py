@@ -93,6 +93,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
             name=args.twissFile
             if args.beamClass == "qpFail": #both get QP labels, though jitter has them generated from getTwiss
                 name=name+"_QP"+args.qpNum
+            args.beamFile = name
             #print(name)
             name = name+"_{:.0f}MeV_OrigbX1085.63,bY136.06m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.energy,betaX,betaY,nParts,args.Nb)
             #name = "failure_QP"+args.qpNum+"_{:.0f}MeV_emit{:.2f},{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_N{:.1e}_NpB{:.0f}".format(args.energy,nemtX,nemtY,betaX,betaY,alphX,alphY,nParts,args.Nb)
@@ -131,8 +132,9 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     elif args.failure == 4: # Correlated Motion
         f4mult = 1
         Fy = f4mult * Fx
-        name = name + "_failure4-{:.0f}f".format(args.magFails)
-        if f4mult != 1:
+        if f4mult == 1:
+            name = name + "_failure4-{:.0f}f".format(args.magFails)
+        elif f4mult != 1:
             name = name + "_failure4x{:0.2f}-{:.0f}f".format(f4mult,args.magFails)
     if args.edgeRaster:
         name = name + "_edges"
@@ -142,6 +144,8 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
     #Append Sample Ending for all but jitter case 
     if args.betaSpread == 0 and args.beamClass != "jitter":
         name = name + sampEnding
+    if args.source != "twiss":
+        args.beamFile = name
 
     #Calculate periods  
     periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
