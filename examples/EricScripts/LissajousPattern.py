@@ -33,12 +33,12 @@ time_length = round(t_end * args.nP ) #number of pulses, nominal = 2.86e3
 t = np.linspace(0,t_end,time_length) #array of steps of length time_length
 N_t = len(t) # number of time samples
 n_tii  = 10 
-#print("t= ",N_t, time_length,t_end)
+print("t= ",N_t, time_length,t_end)
 
 ##Raster Constants
 #Raster Frequency
-Fx = 39.953*1e3 #[kHz]39.550
-Fy = 28.7051*1e3 #[kHz]28.7051
+Fx = 39.953*1e3 #[Hz]39.550
+Fy = 28.7051*1e3 #[Hz]28.7051
 pb = 1
 periodX = pb/Fx * np.ones(N_t) #[s] used for beamlet center calculation
 periodY = pb/Fy * np.ones(N_t) #[s]

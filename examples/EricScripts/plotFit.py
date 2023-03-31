@@ -108,7 +108,7 @@ def plotFit(xs,ys,savename,xlim,ylim,material,thick):
     name = savename+".png" #I'd prefer to have it overwrite old files for now
     print(name) #show so it is easy to find the file
     plt.tight_layout()
-    plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
+    plt.savefig(name,bbox_inches='tight',dpi=500)
     #plt.show()
     plt.close() #be sure to close the plot
 
@@ -415,7 +415,7 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     name = savename+"_TwissFit"+axis+"'"+dt.strftime("%H-%M-%S") +".png"##
     #plt.show()
     plt.tight_layout()
-    plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
+    plt.savefig(name,bbox_inches='tight',dpi=500)
     plt.close()
     print(name)
 
@@ -533,7 +533,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
         label = re.sub(".+(?<=(,))","",fitlabel)
         label = label.replace(" ","")
     else:
-        label = fitlabel
+        label = "Müller Eqn 8"
     sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
     sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
 
@@ -544,11 +544,11 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
 
     #Set various plot variables, often found through trial and error
-    xlim = 6*sigmax
+    xlim = 5*sigmax
     fs=18
     #if don't set ylim, log goes to e-58
-    plt.setp(s1,title="X Distribution At Target after "+fitlabel,xlim=([-xlim,xlim]),ylim=([1e-6,1]))
-    #s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+    plt.setp(s1,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
+    s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs+2) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
     s1.set_xlabel("X Position [mm]",fontsize=fs)
     s1.set_ylabel("Probability Density",fontsize=fs)
     #s1.set_xlim([-xlim,xlim])
@@ -557,7 +557,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     
     xlim1 = s1.get_xlim()
     ylim1 = s1.get_ylim()
-    s1.text(xlim1[0]*0.97,3e-2,sigmatextx,fontsize=fs-4)
+    s1.text(xlim1[0]*0.97,5e-2,sigmatextx,fontsize=fs-4)
     s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
     s1.text(xlim1[0]*0.97,6.8e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
     s1.text(xlim1[0]*0.97,3.1e-3,r"$\beta_{x}$ = "+"{:.1f}".format(PBWTwx[0])+r"$_{[m]}$",fontsize=fs-4)
@@ -568,7 +568,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-4,loc="upper right")
 
     #Set s2
-    plt.setp(s2,title="Y Distribution At Target after "+fitlabel,xlim=([-xlim,xlim]),ylim=([1e-6,1]))
+    plt.setp(s2,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
+    s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs+2)
     #if don't set ylim, log goes to e-58
     #s2.set_xlim([-xlim,xlim])
     #s2.set_ylim([1e-6,1]) #if don't set, then log goes to e-58
@@ -582,7 +583,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     ylim2=s2.get_ylim() #dynamically get the graph limits
     xlim2=s2.get_xlim()
 
-    s2.text(xlim2[0]*0.97,3e-2,sigmatexty,fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,5e-2,sigmatexty,fontsize=fs-4)
     #PBWTwx = [Ibetax,Ialphx,Inemtx]
     s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
     s2.text(xlim2[0]*0.97,6.8e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
@@ -734,7 +735,7 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
     name = savename+"_"+fitlabel+"_"+dt.strftime("%H-%M-%S")##
     #plt.show()
     plt.tight_layout
-    plt.savefig(name+".pdf",bbox_inches='tight',dpi=args.dpi)
+    plt.savefig(name+".pdf",bbox_inches='tight',dpi=500)
     plt.close()
     print(name)
 
@@ -806,7 +807,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    g=4
+    g=5
     if g == 4:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 3:
@@ -829,8 +830,8 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         f2.SetParLimits(5,p2, p0) #p5=22,300
         f2.SetParLimits(6,p1, p0*y2) #p5=22,300
         f2.SetParLimits(7,p2, p0*y2) #p7 =300,3000
-        f2.SetParLimits(8,p1, p0*y2) #p5=22,300
-        f2.SetParLimits(9,p2, p0*y2*y2) #p7 =300,3000
+        f2.SetParLimits(8,p1, p0*y2*y2*y2) #p5=22,300
+        f2.SetParLimits(9,p2, p0*y2*y2*y2*y2) #p7 =300,3000
     elif axis == "x" or axis == "X":
         f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2,p2,p2*y2)
         #print(9532,16.3,395,36.5,6511,14,2,334)
@@ -843,10 +844,14 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         f2.SetParLimits(5,p2, p0)
         f2.SetParLimits(6,p1, p0*y2)
         f2.SetParLimits(7,p2, p0*y2)
-        f2.SetParLimits(8,p1, p0*y2) #p5=22,300
-        f2.SetParLimits(9,p2, p0*y2*y2) #p7 =300,3000
+        f2.SetParLimits(8,p1, p0*y2*y2*y2) #p5=22,300
+        f2.SetParLimits(9,p2, p0*y2*y2*y2*y2) #p7 =300,3000
     f2_res = proj.Fit(f2, 'RSQ')
-    print("Gaussian: {:.0f},{:.2f},{:.0f},{:.0f},{:.0f},{:.0f},{:.2f},{:.0f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
+    if g==4:
+        print("Gaussian: {:.0f},{:.2f},{:.0f},{:.1f},{:.1f},{:.1f},{:.0f},{:.1f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
+    elif g==5:
+        print("Gaussian: {:.0f},{:.2f},{:.0f},{:.1f},{:.1f},{:.1f},{:.0f},{:.1f},{:.2f},{:.2f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
+
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
@@ -1112,13 +1117,14 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         #add minimize function for these?
 
     if args.savePics:
-        from matplotlib.pyplot import subplots,pcolormesh,close,tight_layout,savefig,setp
+        from matplotlib.pyplot import subplots,pcolormesh,close,tight_layout,savefig,setp,title,xlabel,ylabel
+        from matplotlib.axes import Axes
         from matplotlib.patches import Rectangle
         from matplotlib.colors import LogNorm
         X, Y = np.meshgrid(xax,yax) #Set mesh of plot from the axes given from converter function
         close() #make sure no prior plotting messes up
 
-        fig,ax = subplots(dpi=150,figsize=(6.4,4.8),tight_layout=True)
+        fig,ax = subplots(dpi=args.dpi)
         #print(datetime.now().strftime("%H-%M-%S"))
     
         #Set maximum value depending on the maximum current density
@@ -1126,23 +1132,23 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         maxim = ceil(jMax / 10) * 10
         if args.maxim != 0: maxim = args.maxim #user provided maximum
         minim = 10**ceil(log10(jMin))
-        cbarVals  = [minim,minim*10,minim*100,minim*0.455,maxim] #make array for color bar values
-        cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
-                    "{:.0f}".format(cbarVals[3]),"{:.0f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+        cbarVals  = [minim,minim*10,minim*100,maxim] #make array for color bar values
+        cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),"{:.0f}".format(cbarVals[3])]
         cbarLabel = r"$\mu A / cm^2$"
         #print("Max current Density: ",Img.max(),"/",maxim,datetime.now().strftime("%H-%M-%S"))
 
         #Use pcolor to show density map, use log scale
-        c = ax.pcolormesh(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis') #viridis or magma are perceptually uniform
+        c = ax.pcolormesh(X,Y,Img,shading='auto',norm=LogNorm(vmin=minim, vmax=maxim), cmap='viridis',rasterized=True) #viridis or magma are perceptually uniform
         lw=1
-        col='k'
         fs=15
 
         #Set Plot Properties
-        setp(ax,xlim=([-args.xlim,args.xlim]),ylim=([-args.ylim,args.ylim]),
-                title="Macro-Particle Beam Distribution at "+position,ylabel="Vertical [mm]",xlabel="Horizontal [mm]")
+        setp(ax,xlim=([-args.xlim,args.xlim]),ylim=([-args.ylim-10,args.ylim]))
+        ax.set_title("Macro-Particle Beam Distribution at "+position,fontsize=fs+2)
+        ax.set_ylabel("Vertical [mm]",fontsize=fs)
+        ax.set_xlabel("Horizontal [mm]",fontsize=fs)
         cbar = fig.colorbar(c, ax=ax,pad=0.01)
-        cbar.set_label(cbarLabel,labelpad=3,fontsize=fs-2)
+        cbar.set_label(cbarLabel,fontsize=fs-1)
         cbar.set_ticks(cbarVals)
         cbar.set_ticklabels(cbarLabels)
 
@@ -1153,31 +1159,32 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
         #Display beam characteristics
         bgdbox=dict(pad=1,fc='w',ec='none')
-        propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox)
+        propsR = dict(horizontalalignment="right",verticalalignment="bottom", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4.5, transform=ax.transAxes)
+        propsL = dict(fontsize=fs-4.5, backgroundcolor = 'w',bbox=bgdbox,transform=ax.transAxes)
 
         #Show 99% box
         if not args.noBox: #for user clarity, call is noBox, include % outside text for this
             ax.add_patch(Rectangle((boxLLxs[0],boxLLys[0]),widths[0],heights[0],linewidth=lw,edgecolor=cols[0],fill=False))
-            ax.text(xlim[0]*0.90, ylim[1]*0.85, "{:.2f}".format(pOutsideBox)+r"% Outside 160x64mm$^2$ Target", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w',bbox=bgdbox)
+            ax.text(0.01, 0.925, "{:.2f}".format(pOutsideBox)+r"% Outside 160x64mm$^2$ Target", color=cols[0], fontsize = fs-2, fontweight='bold', backgroundcolor = 'w',bbox=bgdbox,transform=ax.transAxes)
         else: #yes no Boxes
             name+="_noBox"
 
         if not args.noText: #for user clarity, call is noText
-            ax.set_title("Distribution at "+position+"\n{:.3f}% of {:.2e} Total Macro-Particles".format(Pprotons,parts),fontsize=fs)
-            ax.text(xlim[0]*0.97, ylim[0]*0.66, "Beam Twiss at PBW:", fontsize=fs-3, backgroundcolor = 'w',bbox=dict(pad=1.5,fc='w',ec='none'))
-            ax.text(xlim[0]*0.97, ylim[0]*0.75, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            ax.text(xlim[0]*0.97, ylim[0]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            ax.text(xlim[0]*0.97, ylim[0]*0.95, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), fontsize=fs-4, backgroundcolor = 'w',bbox=bgdbox)
-            ax.text(xlim[1]*0.97, ylim[0]*0.47, " r = {:.5f}".format(rValue), propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.69, r"Core $\langle\bf{J}\rangle$: "+"{:.1f} ".format(coreJMean)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.80, r"Peak $\langle\bf{J}\rangle$: "+"{:.1f} ".format(jMax)+r"$\mu$A/cm$^2$", propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.90, "RM Amplitudes: {:.1f}, {:.1f}".format(args.aX,args.aY)+r"$_{[mm]}$",propsR,fontsize=fs-4)
-            ax.text(xlim[1]*0.97, ylim[0]*0.99, options['physList'], propsR,fontsize=fs-4)
+            ax.set_title("Distribution at "+position+"\n{:.2f}% of {:.2e} Total Macro-Particles".format(Pprotons,parts),fontsize=fs)
+            ax.text(0.01, 0.175, "Beam Twiss at PBW:", fontsize=fs-3, backgroundcolor = 'w',bbox=dict(pad=1.5,fc='w',ec='none'),transform=ax.transAxes)
+            ax.text(0.01, 0.13, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[mm \cdot mrad]}$", propsL)
+            ax.text(0.01, 0.08, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsL)
+            ax.text(0.01, 0.03, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsL)
+            #ax.text(0.99, 0.21, " r = {:.5f}".format(rValue), propsR)
+            ax.text(0.99, 0.14, r"Core $\langle\bf{J}\rangle$: "+"{:.1f} ".format(coreJMean)+r"$\mu$A/cm$^2$", propsR)
+            ax.text(0.99, 0.09, r"Peak $\langle\bf{J}\rangle$: "+"{:.1f} ".format(jMax)+r"$\mu$A/cm$^2$", propsR)
+            ax.text(0.99, 0.05, "RM Amplitude: {:.1f}, {:.1f}".format(args.aX,args.aY)+r"$_{[mm]}$",propsR,fontsize=fs-6)
+            ax.text(0.99, 0.01, options['physList'], propsR,fontsize=fs-6)
 
             if chi2 > 1e3:
-                ax.text(xlim[1]*0.97, ylim[0]*0.58, r"$\chi^2$"+"={:.2e}".format(chi2), propsR,fontsize=fs-4)
+                ax.text(0.99, 0.195, r"$\chi^2$"+"={:.2e}".format(chi2), propsR)
             else:
-                ax.text(xlim[1]*0.97, ylim[0]*0.58, r"$\chi^2$"+"={:.0f}".format(chi2), propsR,fontsize=fs-4)
+                ax.text(0.99, 0.195, r"$\chi^2$"+"={:.0f}".format(chi2), propsR)
 
             for i in range(1,len(boxes)): #make multiple boxes
                 ax.add_patch(Rectangle((boxLLxs[i],boxLLys[i]),widths[i],heights[i],linewidth=lw,edgecolor=cols[i],fill=False))
@@ -1189,23 +1196,23 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
         if args.saveEdges:
             edgeCol = 'k'
-            ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=1)
-            ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=1)
-            ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=1)
-            ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=1)
+            ax.hlines(edges[0],edges[2],edges[3],colors=edgeCol,linewidths=lw)
+            ax.hlines(edges[1],edges[2],edges[3],colors=edgeCol,linewidths=lw)
+            ax.vlines(edges[2],edges[1],edges[0],colors=edgeCol,linewidths=lw)
+            ax.vlines(edges[3],edges[1],edges[0],colors=edgeCol,linewidths=lw)
             #print("Edges printed!!")
             name+="_Edges"
-            ax.text(xlim[0]*0.90, ylim[1]*0.75,"Beam Center:({:.1f},{:.1f}) [mm]".format(centX,centY),backgroundcolor='w',bbox=bgdbox)
+            ax.text(0.01, 0.88,"Beam Center:({:.1f},{:.1f}) [mm]".format(centX,centY),propsL)
 
         dt = datetime.now()
         #from os.path import isfile
         #if isfile(name+"*.png"):
         #  print("already present")
         tight_layout()
-        savefig(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#
+        savefig(name+"."+args.picFormat,dpi=args.dpi)#
         close(fig)
         close()
-        print(name+"_"+dt.strftime("%H-%M-%S")+"."+args.picFormat)#+"_"+dt.strftime("%H-%M-%S")
+        print(name+"."+args.picFormat)#"_"+dt.strftime("%H-%M-%S")+
     #dt = datetime.now()
     #print(dt-start)
 
@@ -1333,17 +1340,23 @@ def rCompare(Im,Nb,paths,reBin):
                 Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
             elif reBin == 4:
                 Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-            elif reBin == 1 or reBin == 2:
+            elif reBin == 1:
                 Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
         elif Nb == 200:
             print("RCompare Nb 200")
             Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
+            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
         elif Nb == 500:
             Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
         elif Nb == 50:
             Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N1.4e+06_NpB50_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
+            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
         else: #Nb=10
             Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+05_NpB10_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
+            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
             #Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
 
@@ -1696,7 +1709,7 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
 
 def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramBins,pHistLims,origBX,origBY,beamFile):
     import csv,re
-    from matplotlib.pyplot import hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout,xticks
+    from matplotlib.pyplot import subplots,hist,savefig,close,plot,xlim,ylim,text,title,xlabel,ylabel,tight_layout,xticks
     from numpy import greater,zeros,mean,std
     #from plotFit import findFit, gaussian
     from math import floor,log10
@@ -1835,8 +1848,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     #print(mu,sigma,ampl)
 
-    _, bins, _ = hist(read,interval)
-    plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
+    fig,ax = subplots(dpi=args.dpi,figsize=(6.4,4.8))
+    _, bins, _ = ax.hist(read,interval)
+    ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
 
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
 
@@ -1845,61 +1859,42 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             pct = 1
         elif int(re.search("(([0-9]*)+(?=Jitter))",args.twissFile)[1]) == 3:
             pct = 10
-        title("{:.0f} Samples with {:.0f}% QP Errors Around Nominal\nwith {:.2e} Macro-Particles".format(len(read),pct,nPs))
+        ax.set_title("{:.0f} Samples with {:.0f}% ".format(len(read),pct)+r"$\beta$"+" Variation Around Nominal\nwith {:.2e} Macro-Particles".format(nPs))
         if args.qpNum != "":
             fieldFrac = int(re.search("(([0-9]*)+(?=pctField))",args.twissFile)[1])
-            title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n & {:.0f}% QP Errors with {:.2e} Macro-Particles".format(len(read),int(args.qpNum),fieldFrac,pct,nPs))
+            ax.set_title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n with {:.0f}% ".format(len(read),int(args.qpNum),fieldFrac,pct)+r"$\beta$"+" Variation Around Nominal with {:.2e} Macro-Particles".format(nPs))
     else:#nominal
-        title("{:.0f} Nominal Samples with {:.2e} Macro-Particles".format(len(read),nPs))
+        ax.set_title("{:.0f} Nominal Samples with {:.2e} Macro-Particles".format(len(read),nPs))
 
     if args.failure == 0 and args.qpNum == "" and args.Nb > 99:
-        xlim(pHistLims)
+        ax.set_xlim(pHistLims)
     elif args.Nb < 99:
         if ind in{7,8,10}:
-            xlim(pHistLims)
+            ax.set_xlim(pHistLims)
     #elif args.qpNum != "":
     #    if ind in{7,10}:
     #        xlim(pHistLims)
     #    if ind == 8:
     #        xlim(2.85,5.1)
 
-    xlabel(paramLabel)
-    ylabel("Counts")
+    ax.set_xlabel(paramLabel)
+    ax.set_ylabel("Counts")
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
-    #get values to be in a reasonable position in plots
+    #Values are atreasonable positions in plots due to ax.transAxes
     bgdbox=dict(pad=1,fc='w',ec='none')
     fs=16
-    xRange = xlim()[1]-xlim()[0]
-    #formulate better later with xRange...
-    if mu > 7e5:                 delta = 1e-4
-    elif mu > 1e4 and mu <= 7e5: delta = 5e-4
-    elif mu > 5e3 and mu <= 1e4: delta = 1e-3
-    elif mu > 5e2 and mu <= 5e3: delta = 8e-3
-    elif mu > 48  and mu <= 5e2:
-        if xRange < 0.5:         delta = 5e-5
-        else:                    delta = 2e-4
-    elif mu > 25 and mu <= 48:   
-        if xRange < 0.5:         delta = 5e-5
-        else:                    delta = 6e-4
-    elif mu > 2  and mu <= 25:
-        if xRange < 0.2:         delta = 1e-4
-        else:                    delta = 1e-3
-    else: #mu<2
-        delta = 5e-3
-        xticks(rotation=45)
-
-    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.97, "Beam Twiss at PBW:", propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.85, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
-    text(xlim()[1]*(1-delta), ylim()[1]*0.79, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
+    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2,transform=ax.transAxes)
+    ax.text(0.99, 0.97, "Beam Twiss at PBW:", propsR)
+    ax.text(0.99, 0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
+    ax.text(0.99, 0.84, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
+    ax.text(0.99, 0.77, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
     if args.physList == "FTFP_BERT_EMZ":
-        text(xlim()[1]*(1-delta), ylim()[1]*0.50, args.physList, propsR)
+        ax.text(0.99, 0.50, args.physList, propsR)
     if sigma <1e-2:
-        text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
+        ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
     else:
-        text(xlim()[1]*(1-delta), ylim()[1]*0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+        ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
 
     if args.twissFile == "":
         name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
@@ -1911,7 +1906,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     if args.physList == "FTFP_BERT_EMZ":
         name += "_FBZ"
     if args.saveSpread:
-        savefig(name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)#,pad_inches=0)
+        savefig(name+"."+args.picFormat,dpi=args.dpi)#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)
     print(name+"."+args.picFormat)
@@ -1950,7 +1945,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
                     #jMax       Pout     coreJMean     rVal        chi2    coreArea    centX   centY    
-    pHistLims = [[51.5,55.3],[3.47,3.85],[45,46.25],[.025,.075],[1000,3600]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
+    pHistLims = [[51.5,55.3],[3.47,3.9],[45,46.4],[.025,.075],[1000,3600]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
     paramBins = [20,20,20,30,30]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))
@@ -2065,7 +2060,6 @@ def plotSpreadBroad(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,p
     text(xlim()[1]*(1-delta), ylim()[1]*0.95,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
     name=statsPWD+paramName+"BroadHist_{:.0f}x{:.0fpOffNom".format(len(read),args.betaSpread)
     if args.saveSpread:
-        plt.tight_layout()
         savefig(name+"."+args.picFormat,bbox_inches='tight',dpi=args.dpi)
     close()
     print(len(read),paramName,mu,sigma)

@@ -1,8 +1,8 @@
-#alphaPOutFit.py
+#betaAlphaFit.py
 #python3 spreadTwiss.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-03Jitter_200x --beamClass jitter --samples 200 --saveFits
 #with Confidence Ellipse fitting from https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
 
-def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
+def betaAlphaFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     import csv,re,matplotlib.pyplot as plt
     from matplotlib.patches import Ellipse
     import matplotlib.transforms as transforms
@@ -15,21 +15,21 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
 
     betas = zeros(args.samples)
     jMaxes = zeros(args.samples)
-    pOuts = zeros(args.samples)
+    alphas = zeros(args.samples)
     betas.fill(-750) #allow better filter than nonzero?
     jMaxes.fill(-750)
-    pOuts.fill(-750)
+    alphas.fill(-750)
     #print(Twiss,beamFile)
     i=0
     #axis="x"#x"
     if axis in {"Y","y"}:
-        ind = 6  #beta-5, emitt-4, alpha-6
+        ind = 5  #beta-5, emitt-4, alpha-6
     elif axis in {"X","x"}:
-        ind = 3 #beta-2, emitt-1,alpha-3
+        ind = 2 #beta-2, emitt-2,alpha-3
 
     if re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-03":
-        deltaX = .99
-        deltaY = 1.003
+        deltaX = .999
+        deltaY = 1.002
         pct=10
     elif re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-04":
         deltaX = .999
@@ -59,7 +59,7 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
                 if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
-                    pOuts[i] = float(row[8])
+                    alphas[i] = float(row[ind+1])
                     if i == args.samples-1:
                         lenbreak = True
                         #print("lenbreak 1")
@@ -70,7 +70,7 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
                 if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
-                    pOuts[i] = float(row[8])
+                    alphas[i] = float(row[ind+1])
                     if i == args.samples-1:
                         lenbreak = True
                         #print("lenbreak 1")
@@ -87,7 +87,7 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
                 if re.search(nBkey,row[0]) and re.search(args.twissFile,row[0]) and re.search(pctKey,row[0]):
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
-                    pOuts[i] = float(row[8])
+                    alphas[i] = float(row[ind+1])
                     if i == args.samples-1:
                         #print("lenbreak 1")
                         lenbreak = True
@@ -104,7 +104,7 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
                 if re.search(nBkey,row[0]) and re.search(origKey,row[0]) and re.search(qpKey,row[0]) and re.search(pctKey,row[0]):# and re.search(jitterKey,row[0]):
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
-                    pOuts[i] = float(row[8])
+                    alphas[i] = float(row[ind+1])
                     if i == args.samples-1:
                         lenbreak = True
                         print(row[0])
@@ -120,7 +120,7 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
                 if re.search(nBkey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) and not re.search("failure",row[0]):
                     betas[i] = float(row[ind])
                     jMaxes[i] = float(row[7])
-                    pOuts[i] = float(row[8])
+                    alphas[i] = float(row[ind+1])
                     if i == args.samples-1:
                         #print("lenbreak 1")
                         lenbreak = True
@@ -130,47 +130,48 @@ def alphaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
 
     nonEmpty = greater(betas,-750) #remove unused elements
     betas = betas[nonEmpty]
-    pOuts =pOuts[nonEmpty]
+    alphas =alphas[nonEmpty]
 
     fig, ax_nstd = plt.subplots(figsize=(6, 6))
 
-    mu = mean(betas), mean(pOuts)
-    sigma = std(betas), std(pOuts)
+    mu = mean(betas), mean(alphas)
+    sigma = std(betas), std(alphas)
 
     print(mu[0],ax_nstd.get_ylim()[0],ax_nstd.get_ylim()[1])
     print(mu[1],ax_nstd.get_xlim()[0],ax_nstd.get_xlim()[1])
     ax_nstd.axvline(mu[0],c='grey', lw=1,alpha=0.4)
     ax_nstd.axhline(mu[1],c='grey', lw=1,alpha=0.4)
 
-    ax_nstd.scatter(betas, pOuts, s=1)
+    ax_nstd.scatter(betas, alphas, s=1)
 
-    confidence_ellipse(betas, pOuts, ax_nstd, n_std=1,
+    confidence_ellipse(betas, alphas, ax_nstd, n_std=1,
                     label=r'$1\sigma$', edgecolor='firebrick')
-    confidence_ellipse(betas, pOuts, ax_nstd, n_std=2,
+    confidence_ellipse(betas, alphas, ax_nstd, n_std=2,
                     label=r'$2\sigma$', edgecolor='fuchsia', linestyle='--')
-    confidence_ellipse(betas, pOuts, ax_nstd, n_std=3,
+    confidence_ellipse(betas, alphas, ax_nstd, n_std=3,
                     label=r'$3\sigma$', edgecolor='blue', linestyle=':')
 
     ax_nstd.scatter(mu[0], mu[1], c='red', s=3)
     #ax_nstd.set_title('Different standard deviations')
 
     fs=16
-    slope, intercept, r, p, se = linregress(betas, pOuts)
+    slope, intercept, r, p, se = linregress(betas, alphas)
     plt.plot(betas,slope*betas+intercept,c='g',alpha=0.5,label="Fit")
     if axis in {"Y","y"}:
-        plt.title(r"$\alpha_y$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\alpha$"+" Variations Around Nominal",fontsize=fs+2)
-        plt.xlabel(r"$\alpha_y$",fontsize=fs)
+        plt.title(r"$\beta_y$ vs. $\alpha_y$"+"\nfor {:.0f}% ".format(pct)+" Variations Around Nominal",fontsize=fs+2)
+        plt.xlabel(r"$\beta_y$ [m]",fontsize=fs)
+        plt.ylabel(r"$\alpha_y$",fontsize=fs)
     elif axis in {"X","x"}:
-        plt.title(r"$\alpha_x$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\alpha$"+" Variations Around Nominal",fontsize=fs+2)
-        plt.xlabel(r"$\alpha_x$",fontsize=fs)
-    plt.ylabel("% Outside Target Area",fontsize=fs)
+        plt.title(r"$\beta_x$ vs. $\alpha_x$"+"\nfor {:.0f}% ".format(pct)+" Variations Around Nominal",fontsize=fs+2)
+        plt.xlabel(r"$\beta_x$ [m]",fontsize=fs)
+        plt.ylabel(r"$\alpha_x$",fontsize=fs)
 
-    plt.text(0.01,0.01,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\alpha$"+" + {:.3f}".format(intercept),ha="left",va="bottom",fontsize=fs-2,transform=ax_nstd.transAxes)
+    plt.text(0.01,0.01,r"R$^2$"+" = {:.4f}\n".format(r**2)+r"$\alpha$"+" = {:.3e}".format(slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="left",va="bottom",fontsize=fs-2,transform=ax_nstd.transAxes)
 
     ax_nstd.legend(loc="upper right",fontsize=fs-2)
     plt.tight_layout()
-    print(paths['statsPWD']+args.twissFile+"_{:.0f}pAlphaVpOut".format(pct)+axis+".png")
-    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pAlphaVpOut".format(pct)+axis+".png",bbox_inches='tight',dpi=args.dpi)
+    print(paths['statsPWD']+args.twissFile+"_{:.0f}pBetaValpha".format(pct)+axis+".png")
+    plt.savefig(paths['statsPWD']+args.twissFile+"_{:.0f}pBetaValpha".format(pct)+axis+".png",bbox_inches='tight',dpi=args.dpi)
 
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     import matplotlib.pyplot as plt

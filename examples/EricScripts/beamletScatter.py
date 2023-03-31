@@ -28,6 +28,7 @@ def beamletScatter(args,Twiss,i,paths):
         options['MiniRoot'] = True
     if args.compTargs:
         options['targetTree'] = True
+    #    options['exitTree'] = True
         options['MCS'] = True
     if options['TwissFits']:
         options['initTree'] = True

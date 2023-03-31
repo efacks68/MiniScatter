@@ -158,14 +158,14 @@ def emittPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     slope, intercept, r, p, se = linregress(betas, pOuts)
     plt.plot(betas,slope*betas+intercept,c='g',alpha=0.5,label="Fit")
     if axis in {"Y","y"}:
-        plt.title(r"$\epsilon_y$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
-        plt.xlabel(r"$\epsilon_y$ [mm-mrad]",fontsize=fs)
+        plt.title(r"$\epsilon_y$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\epsilon$"+" Variations Around Nominal",fontsize=fs+2)
+        plt.xlabel(r"$\epsilon_y$ [mm-mrad]",fontsize=fs,labelpad=2)
     elif axis in {"X","x"}:
-        plt.title(r"$\epsilon_x$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
-        plt.xlabel(r"$\epsilon_x$ [mm-mrad]",fontsize=fs)
+        plt.title(r"$\epsilon_x$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\epsilon$"+" Variations Around Nominal",fontsize=fs+2)
+        plt.xlabel(r"$\epsilon_x$ [mm-mrad]",fontsize=fs,labelpad=2)
     plt.ylabel("% Outside Target Area",fontsize=fs)
 
-    plt.text(ax_nstd.get_xlim()[1]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4e}\n% = {:.3e}".format(r**2,slope)+r"$\epsilon$"+" + {:.3e}".format(intercept),ha="right",va="bottom",fontsize=fs-2)
+    plt.text(0.99,0.01,r"R$^2$"+" = {:.4e}\n% = {:.3e}".format(r**2,slope)+r"$\epsilon$"+" + {:.3e}".format(intercept),ha="right",va="bottom",fontsize=fs-2,transform=ax_nstd.transAxes)
 
     ax_nstd.legend(loc="upper left",fontsize=fs-2)
     plt.tight_layout()

@@ -16,7 +16,7 @@
     #python3 rasterScatter.py --sim map --ampl map --Nstep 6 or 11
     #python3 rasterScatter.py --sim map --ampl map --startX 43 --startY 14.5 --Nstep 8
 #thickness dependence plot:
-    #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3
+    #python3 rasterScatter.py --sim thick --stepThick 0.25 --maxThick 3 --minThick 0.0001
 #raster magnet failures:
     #python3 rasterScatter.py --failure 1 --magFails 4 --savePics
 #displacement
@@ -85,7 +85,7 @@ parser.add_argument("--gaussFit",  action="store_true",  default=False,   help="
 parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
 parser.add_argument("--saveHist",  action="store_true",  default=False,   help="Saves Histogram of proton density at target for R Compare. Default=False")
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
-parser.add_argument("--picFormat", choices=("png","svg","pdf"), type=str, default="png",  help="Which picture format extension?")
+parser.add_argument("--picFormat", choices=("png","jpeg","svg","pdf"), type=str, default="png",  help="Which picture format extension?")
 parser.add_argument("--matPlots",  action="store_true",  default=False,   help="Whether to do various material plots for beamlets")
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")

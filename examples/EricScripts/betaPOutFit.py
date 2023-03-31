@@ -158,14 +158,14 @@ def betaPOutFit(args,Twiss,paths,origBX,origBY,beamFile,axis):
     slope, intercept, r, p, se = linregress(betas, pOuts)
     plt.plot(betas,slope*betas+intercept,c='g',alpha=0.5,label="Fit")
     if axis in {"Y","y"}:
-        plt.title(r"$\beta_y$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
+        plt.title(r"$\beta_y$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\beta$"+" Variations Around Nominal",fontsize=fs+2)
         plt.xlabel(r"$\beta_y$ [m]",fontsize=fs)
     elif axis in {"X","x"}:
-        plt.title(r"$\beta_x$ vs. % Outside Target Area"+"\nfor {:.0f}% QP Errors around Nominal".format(pct),fontsize=fs+2)
+        plt.title(r"$\beta_x$ vs. % Outside Target Area"+"\nfor {:.0f}% ".format(pct)+r"$\beta$"+" Variations Around Nominal",fontsize=fs+2)
         plt.xlabel(r"$\beta_x$ [m]",fontsize=fs)
     plt.ylabel("% Outside Target Area",fontsize=fs)
 
-    plt.text(ax_nstd.get_xlim()[1]*deltaX,ax_nstd.get_ylim()[0]*deltaY,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="right",va="bottom",fontsize=fs-2)
+    plt.text(0.99,0.01,r"R$^2$"+" = {:.4f}\n% = {:.3e}".format(r**2,slope)+r"$\beta$"+" + {:.3f}".format(intercept),ha="right",va="bottom",fontsize=fs-2,transform=ax_nstd.transAxes)
 
     ax_nstd.legend(loc="upper left",fontsize=fs-2)
     plt.tight_layout()

@@ -127,10 +127,15 @@ if not args.saveFits:
     spreadHist(args,Twiss,paths,origBX,origBY,rasterBeamFile)
 
 if args.saveFits:
-    axis = "x" #"x" or "y"
     from betaPOutFit import betaPOutFit
     from alphaPOutFit import alphaPOutFit
     from emittPOutFit import emittPOutFit
-    betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)
-    alphaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)
-    emittPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,axis)
+    from betaAlphaFit import betaAlphaFit
+    #betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"x")
+    #betaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"y")
+    #alphaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"x")
+    #alphaPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"y")
+    #emittPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"x")
+    #emittPOutFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"y")
+    betaAlphaFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"x")
+    betaAlphaFit(args,Twiss,paths,origBX,origBY,rasterBeamFile,"y")

@@ -155,8 +155,8 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
     #Plot for parameter search analysis
     fs=16
-    minim = pOutsideBoxes.min()*0.9999
-    maxim = pOutsideBoxes.max()*1.05
+    minim = pOutsideBoxes.min()#*0.9999
+    maxim = pOutsideBoxes.max()#*1.05
     plotRange = maxim-minim
     print(minim,maxim,plotRange)
     plt.close()
@@ -165,37 +165,44 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     fig,(ax1,ax2) = plt.subplots(1,2,figsize=(15,6))
     plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
     from matplotlib.colors import LogNorm
-    c = ax1.pcolor(X,Y,pOutsideBoxes,norm=LogNorm(vmin=minim, vmax=maxim),shading='auto',cmap='viridis')#,label=r"PBW % Outisde Box")
+    c = ax1.pcolormesh(X,Y,pOutsideBoxes,shading='auto',cmap='viridis')#,label=r"PBW % Outisde Box") norm=LogNorm(vmin=minim, vmax=maxim),
     ax1.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
     ax1.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
     ax1.set_title("Rastered Beam % Outside Target Area\nwith Raster Amplitude at PBW",fontsize = fs+2)
     cbarVals  = [minim,minim+plotRange*0.25,minim+plotRange*0.5,minim+plotRange*0.75,maxim] #make array for color bar values
-    cbarLabels = ["{:.2f}".format(cbarVals[0]),"{:.2f}".format(cbarVals[1]),"{:.2f}".format(cbarVals[2]),
-                "{:.2f}".format(cbarVals[3]),"{:.2f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
+    cbarLabels = ["{:.1f}".format(cbarVals[0]),"{:.1f}".format(cbarVals[1]),"{:.1f}".format(cbarVals[2]),
+                "{:.1f}".format(cbarVals[3]),"{:.1f}".format(cbarVals[4])]#,"{:.1f}".format(cbarVals[5])] #make labels of Value
     cbarLabel = "% Outside Box"
-    cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=None)
-    cbar.set_ticks(cbarVals)
-    cbar.set_label(cbarLabel,labelpad=2,fontsize=fs)
+    
+    #from matplotlib.ticker import LogFormatterSciNotation#https://github.com/matplotlib/matplotlib/issues/12503
+    #class MF(LogFormatterSciNotation):
+    #    def set_locs(self, locs=None):
+    #        self._sublabels = set(cbarLabels)
+
+    #cbar = fig.colorbar(format=MF())
+    cbar = fig.colorbar(c, ax=ax1,pad=0.01,ticks=cbarVals)#,format="{:.1f}")#)
+    #cbar.set_ticks(cbarVals,labels=cbarLabels)
+    cbar.set_label(cbarLabel,labelpad=10,fontsize=fs)
     #cbar.set_ticks(cbarVals)
     cbar.set_ticklabels(cbarLabels)
     print("CbarVals",cbarVals)
-
+    
     ##Max I Plot
-    minimMax = coreJMeans.min()*0.9999
-    maximMax = coreJMeans.max()*1.05
+    minimMax = coreJMeans.min()#*0.9999
+    maximMax = coreJMeans.max()#*1.05
     plotRangeMax = maximMax-minimMax
     print(coreJMeans.min(),coreJMeans.max())
-    d = ax2.pcolor(X,Y,coreJMeans,norm=LogNorm(vmin=minimMax, vmax=maximMax),shading='auto',cmap='viridis')
+    d = ax2.pcolormesh(X,Y,coreJMeans,shading='auto',cmap='viridis')#norm=LogNorm(vmin=minimMax, vmax=maximMax),
     ax2.set_xlabel("Horizontal Raster Amplitude [mm]",fontsize=fs)
     ax2.set_ylabel("Vertical Raster Amplitude [mm]",fontsize=fs)
     ax2.set_title("Mean Core Current Density on Target\nwith Raster Amplitude at PBW",fontsize = fs+2)
     cbarVals2  = [minimMax,minimMax+plotRangeMax*0.25,minimMax+plotRangeMax*0.5,minimMax+plotRangeMax*0.75,maximMax] #make array for color bar values
-    cbarLabels2 = ["{:.1f}".format(cbarVals2[0]),"{:.1f}".format(cbarVals2[1]),"{:.1f}".format(cbarVals2[2]),
-                "{:.1f}".format(cbarVals2[3]),"{:.1f}".format(cbarVals2[4])]
+    cbarLabels2 = ["{:.0f}".format(cbarVals2[0]),"{:.0f}".format(cbarVals2[1]),"{:.0f}".format(cbarVals2[2]),
+                "{:.0f}".format(cbarVals2[3]),"{:.0f}".format(cbarVals2[4])]
     cbarLabel2 = r"Current Density [$\mu$A/cm$^2$]"
-    cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=None)
-    cbar2.set_ticks(cbarVals2)
-    cbar2.set_label(cbarLabel2,labelpad=2,fontsize=fs-2)
+    cbar2 = fig.colorbar(d, ax=ax2,pad=0.01,ticks=cbarVals2)
+    #cbar2.set_ticks(cbarVals2,labels=cbarLabels2)
+    cbar2.set_label(cbarLabel2,labelpad=10,fontsize=fs-2)
     #cbar2.set_ticks(cbarVals2)
     cbar2.set_ticklabels(cbarLabels2)
     from math import floor,ceil
@@ -207,10 +214,10 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
 
     #ax1.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
     #ax1.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
-    ax1.text(args.aX-0.3,args.aY-0.1,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
+    ax1.text(args.aX-0.3,args.aY-0.1,"Nominal",color="orange",ha="right",va="center",fontsize=fs)
     #ax2.hlines(args.aY,floor(args.aX),ceil(args.aX),color='orange',lw=2)
     #ax2.vlines(args.aX,args.aY-(ylim1[1]-ylim1[0])*0.02,args.aY+(ylim1[1]-ylim1[0])*0.02,color='orange',lw=2)
-    ax2.text(args.aX-0.3,args.aY-0.1,"Nominal",color="w",ha="right",va="center",fontsize=fs-2)
+    ax2.text(args.aX-0.3,args.aY-0.1,"Nominal",color="orange",ha="right",va="center",fontsize=fs)
 
     ax1.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
     ax2.plot(args.aX,args.aY,color="orange",marker="P",markersize=15)
