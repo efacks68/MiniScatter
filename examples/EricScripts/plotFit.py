@@ -1853,18 +1853,18 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
 
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
-
+    fs=16
     if re.search("Jitter",args.twissFile):
         if int(re.search("(([0-9]*)+(?=Jitter))",args.twissFile)[1]) == 4:
             pct = 1
         elif int(re.search("(([0-9]*)+(?=Jitter))",args.twissFile)[1]) == 3:
             pct = 10
-        ax.set_title("{:.0f} Samples with {:.0f}% ".format(len(read),pct)+r"$\beta$"+" Variation Around Nominal\nwith {:.2e} Macro-Particles".format(nPs))
+        ax.set_title("{:.0f} Samples with {:.0f}% ".format(len(read),pct)+r"$\beta$"+" Variation Around Nominal\nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
         if args.qpNum != "":
             fieldFrac = int(re.search("(([0-9]*)+(?=pctField))",args.twissFile)[1])
-            ax.set_title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n with {:.0f}% ".format(len(read),int(args.qpNum),fieldFrac,pct)+r"$\beta$"+" Variation Around Nominal with {:.2e} Macro-Particles".format(nPs))
+            ax.set_title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n with {:.0f}% ".format(len(read),int(args.qpNum),fieldFrac,pct)+r"$\beta$"+" Variation Around Nominal \nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
     else:#nominal
-        ax.set_title("{:.0f} Nominal Samples with {:.2e} Macro-Particles".format(len(read),nPs))
+        ax.set_title("{:.0f} Nominal Samples \nwith {:.2e} Macro-Particles".format(len(read),nPs),fontsize=fs)
 
     if args.failure == 0 and args.qpNum == "" and args.Nb > 99:
         ax.set_xlim(pHistLims)
@@ -1877,14 +1877,13 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     #    if ind == 8:
     #        xlim(2.85,5.1)
 
-    ax.set_xlabel(paramLabel)
-    ax.set_ylabel("Counts")
+    ax.set_xlabel(paramLabel,fontsize=fs)
+    ax.set_ylabel("Counts",fontsize=fs)
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
     #Values are atreasonable positions in plots due to ax.transAxes
     bgdbox=dict(pad=1,fc='w',ec='none')
-    fs=16
-    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-2,transform=ax.transAxes)
+    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-3,transform=ax.transAxes)
     ax.text(0.99, 0.97, "Beam Twiss at PBW:", propsR)
     ax.text(0.99, 0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
     ax.text(0.99, 0.84, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
@@ -1906,6 +1905,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     if args.physList == "FTFP_BERT_EMZ":
         name += "_FBZ"
     if args.saveSpread:
+        tight_layout()
         savefig(name+"."+args.picFormat,dpi=args.dpi)#,pad_inches=0)
     close()
     print(len(read),paramName,ampl,mu,sigma)

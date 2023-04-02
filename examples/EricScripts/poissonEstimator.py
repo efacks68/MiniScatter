@@ -19,8 +19,8 @@ sigmas2 = []
 if sys.argv[1] == "2":
     end = 5e3    #5e3,5e4
     step = 2e2   #2e2,2e3
-    binx = 50   #400,100
-    biny = 10    #200,50
+    binx = 400   #400,100
+    biny = 200    #200,50
     binS = 2     #2, 8
     locx = 2.4e3   #2.4e3, 3e4
     locy = 1.11 #1.11, 1.025
