@@ -1268,20 +1268,25 @@ def converter(hIn,saveHist,name,paths,reBin):
         if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
             import csv,re
             #Remove upper directories that may have come with name for appending outname to scratch folder
+            #print(name)
             if re.search("/PBW_",name):
                 #print("\n",outname,"\n")
                 name = re.sub(".+(?=(PBW_))","",name) #substitutes "" for all preceeding PBW_
                 #print("Histogram-removed",name)
-            if re.search("/Vac_",name):
+            elif re.search("/HEBT-A2T_",name):
+                #print("\n",outname,"\n")
+                name = re.sub(".+(?=(HEBT-A2T_))","",name) #substitutes "" for all preceeding PBW_
+                #print("Histogram-removed",name)
+            elif re.search("/Vac_",name):
                 #print("\n",outname,"\n")
                 name = re.sub(".+(?=(Vac_))","",name) #substitutes "" for all preceeding Vac_
               #print("Histogram-removed",name)
 
-        with open(paths['scratchPath']+name+".csv",mode = 'w',newline=None) as hist_file:
+        with open(paths['scratchPath']+"targetCSVs/"+name+".csv",mode = 'w',newline=None) as hist_file:
             hist_writer = csv.writer(hist_file,delimiter = ',')
             hist_writer.writerows(hOut)
         hist_file.close()
-        print(paths['scratchPath']+name+".csv")
+        print(paths['scratchPath']+"targetCSVs/"+name+".csv")
 
     return (hOut,xax,yax)
 
@@ -1366,6 +1371,7 @@ def rCompare(Im,Nb,paths,reBin):
     lenx = np.shape(Im)[0]
     leny = np.shape(Im)[1]
     chiS = np.zeros((leny,lenx))
+    pull = np.zeros((leny,lenx))
     divS = np.zeros((leny,lenx))
     threshold = 10
 
@@ -1385,16 +1391,12 @@ def rCompare(Im,Nb,paths,reBin):
             if Iref[j,i] == 0: continue
             if Im[j,i] <= threshold: continue
             chiS[j,i] = ( ( (Im[j,i] - Iref[j,i]) ** 2  ) / (Iref[j,i]) )
-            #chiS[j,i] = ( ( (Im[j,i] - Iref[j,i])  ) / np.sqrt(Iref[j,i]) )
+            pull[j,i] = ( ( (Im[j,i] - Iref[j,i])  ) / np.sqrt(Iref[j,i]) )
             #print(j,i,Im[j,i],Iref[j,i],chiS[j,i])
     chi2 = np.sum(chiS)
     #print(chi2)
 
-    #pull Value from Haavard, 23 Mar
-    #import matplotlib.pyplot as plt
-    #plt.hist(chiS)
-    #plt.savefig("pullValue.png")
-    return rDiv,chi2
+    return rDiv,chi2,pull
 
 
 
@@ -1602,7 +1604,23 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
 
     #R value for algorithm. Works when use Current Density, not Nprotons
     rValue=0;chi2=0
-    rValue,chi2 = rCompare(Img,args.Nb,paths,args.reBin)
+    rValue,chi2,pull = rCompare(Img,args.Nb,paths,args.reBin)
+    if args.savePics:
+        fs=16
+        X, Y = np.meshgrid(xax,yax)
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import LogNorm
+        fig,ax = plt.subplots(dpi=args.dpi)
+        minim = np.abs(pull.min())+0.1
+        c = ax.pcolormesh(X,Y,pull,shading='auto',norm=LogNorm(vmin=pull.min()+minim, vmax=pull.max()+minim), cmap='viridis',rasterized=True)
+        cbar = fig.colorbar(c, ax=ax,pad=0.01)
+        cbar.set_label("Pull Values",fontsize=fs-1)
+        plt.setp(ax,xlim=([-args.xlim,args.xlim]),ylim=([-args.ylim-10,args.ylim]))
+        ax.set_title("Pull Values for Beam",fontsize=fs+2)
+        ax.set_ylabel("Vertical [mm]",fontsize=fs)
+        ax.set_xlabel("Horizontal [mm]",fontsize=fs)
+        plt.savefig(paths['statsPWD']+"pull.png")
+        print("pull",pull.min(),pull.max(),paths['statsPWD']+"pull.png")
     #print("R = ",rValue,chi2)
     #print("Converted in",datetime.now() - start)
 
