@@ -152,7 +152,7 @@ def findFit(data,guess,lims,nBins):
 
     close()
     #print(data)
-    bin_heights, bin_borders, _ = hist(data,bins='auto',label="histogram")
+    bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #savefig(pwd+"hist.png"); print(pwd+"hist.png")
     #print(len(bin_borders))
@@ -1051,7 +1051,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
     #from plotFit import PMAS
     sPMAS=datetime.now()#.strftime("%H-%M-%S"))
-    jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,chi2 = PMAS(ImgJ,args,parts,xax,yax,name,paths) #,dispY,dispX
+    jMax,pOutsideBox,rValue,edges,EI,beamArea,centX,centY,chi2 = PMAS(ImgJ,args,parts,xax,yax,name,paths,sample) #,dispY,dispX
     fPMAS = datetime.now()
     #print(EI)#"finished PMAS in",datetime.now()-sPMAS)#.strftime("%H-%M-%S"))
 
@@ -1259,12 +1259,13 @@ def converter(hIn,saveHist,name,paths,reBin):
     for xi in range(hIn.GetXaxis().GetNbins()):
         for yi in range(hIn.GetYaxis().GetNbins()):
             bx = hIn.GetBin(xi+1,yi+1)
-            hOut[yi,xi] = hIn.GetBinContent(bx)
+            hOut[yi,xi] = hIn.GetBinContent(bx)#*reBin #rebin now is summed, kind of... this messes up the counts if reBin!=1 is used, so this doesn't work.
 
     #Must add Overflow options!!!
 
     if saveHist: #for rValue calculations
         from os import uname
+        from os.path import isfile
         if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
             import csv,re
             #Remove upper directories that may have come with name for appending outname to scratch folder
@@ -1281,12 +1282,12 @@ def converter(hIn,saveHist,name,paths,reBin):
                 #print("\n",outname,"\n")
                 name = re.sub(".+(?=(Vac_))","",name) #substitutes "" for all preceeding Vac_
               #print("Histogram-removed",name)
-
-        with open(paths['scratchPath']+"targetCSVs/"+name+".csv",mode = 'w',newline=None) as hist_file:
-            hist_writer = csv.writer(hist_file,delimiter = ',')
-            hist_writer.writerows(hOut)
-        hist_file.close()
-        print(paths['scratchPath']+"targetCSVs/"+name+".csv")
+        if not isfile(paths['scratchPath']+"targetCSVs/"+name+".csv"):
+            with open(paths['scratchPath']+"targetCSVs/"+name+".csv",mode = 'w',newline=None) as hist_file:
+                hist_writer = csv.writer(hist_file,delimiter = ',')
+                hist_writer.writerows(hOut)
+            hist_file.close()
+            print(paths['scratchPath']+"targetCSVs/"+name+".csv")
 
     return (hOut,xax,yax)
 
@@ -1333,70 +1334,81 @@ def findRoot(savename,paths):
 
 
 
-def rCompare(Im,Nb,paths,reBin):
+def rCompare(Im,paths,args):
     import numpy as np
     from os import uname
 
     #Find reference files
     if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
-        if Nb == 100: #do fill in from args
+        if args.Nb == 100: #do fill in from args
             #print("RCompare Nb 100")
-            if reBin == 5:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"),delimiter=",")
-            elif reBin == 4:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-            elif reBin == 1:
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
-        elif Nb == 200:
+            if args.reBin == 5:
+                refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB5.csv"
+            elif args.reBin == 4:
+                refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB4.csv"
+            elif args.reBin == 1:
+                if args.beamClass == "jitter":
+                    import re
+                    if re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-04":
+                        refImgName = "HEBT-A2T_100pctField_1.0e-04Jitter_250x_570MeV_OrigbX1085.63,bY136.06m_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
+                    elif re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1] == "-03":
+                        refImgName = "HEBT-A2T_100pctField_1.0e-03Jitter_200x_570MeV_OrigbX1085.63,bY136.06m_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
+                elif args.beamClass == "ESS":
+                    refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
+                else:
+                    refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
+        elif args.Nb == 200:
             print("RCompare Nb 200")
-            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
-        elif Nb == 500:
-            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-        elif Nb == 50:
-            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N1.4e+06_NpB50_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
+            refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"
+            if args.reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"
+        elif args.Nb == 500:
+            refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"
+        elif args.Nb == 50:
+            refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N1.4e+06_NpB50_runW_QBZ_TargetImage_rB4.csv"
+            if args.reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"
         else: #Nb=10
-            Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+05_NpB10_runW_QBZ_TargetImage_rB4.csv"),delimiter=",")
-            if reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
-                Iref = np.genfromtxt(open(paths['scratchPath']+"PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"),delimiter=",")
+            refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+05_NpB10_runW_QBZ_TargetImage_rB4.csv"
+            if args.reBin == 1:#don't care about this case, just getting pics from it, need axis to be the same
+                refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_TargetImage_rB1.csv"
             #Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
-
+        
+        Iref = np.genfromtxt(open(paths['scratchPath']+refImgName),delimiter=",")
     elif uname()[1] == "mbef-xps-13-9300":
         Iref = np.genfromtxt(open("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
+        refImgName = "oops"
 
-    lenx = np.shape(Im)[0]
-    leny = np.shape(Im)[1]
-    chiS = np.zeros((leny,lenx))
-    pull = np.zeros((leny,lenx))
+    lenx = np.shape(Im)[0]-1
+    leny = np.shape(Im)[1]-1
     divS = np.zeros((leny,lenx))
-    threshold = 10
+    ndof = 0 ## of pixels
 
     for i in range(lenx):
         for j in range(leny):
             #Iref[j,i] += offset
             if Iref[j,i] == 0: continue #not great, but it produces better values 15.1.23
-            if Im[j,i] <= threshold: continue
+            if Iref[j,i] <= args.threshold: continue
             divS[j,i] = ( ( ( (Im[j,i]) / (Iref[j,i]) - 1) ** 2 ) / (leny * lenx) )
             #if div[j,i] != 0:
             #    print(j,i, div[j,i])
     rDiv = np.sqrt(np.sum(divS))
 
+    print("Reference image is:",refImgName)
+    chi2 = 0
+    pull_array = []
     for i in range(lenx):
         for j in range(leny):
-            #Iref[j,i] += offset
             if Iref[j,i] == 0: continue
-            if Im[j,i] <= threshold: continue
-            chiS[j,i] = ( ( (Im[j,i] - Iref[j,i]) ** 2  ) / (Iref[j,i]) )
-            pull[j,i] = ( ( (Im[j,i] - Iref[j,i])  ) / np.sqrt(Iref[j,i]) )
-            #print(j,i,Im[j,i],Iref[j,i],chiS[j,i])
-    chi2 = np.sum(chiS)
-    #print(chi2)
+            if Iref[j,i] < args.threshold: continue
+            ndof += 1
+            pull = ( ( (Im[j,i] - Iref[j,i])  ) / np.sqrt(Iref[j,i]) )
+            pull_array.append(pull)
+            chi2 += pull * pull
+            #print(pull,chi2)
 
-    return rDiv,chi2,pull
+    return rDiv,chi2,pull_array,ndof
 
 
 
@@ -1571,7 +1583,7 @@ def localExtrema(gradX,nx,gradY,n,xax,yax):
 
 
 #Detection Algorithm!!!
-def PMAS(Img,args,parts,xax,yax,name,paths):
+def PMAS(Img,args,parts,xax,yax,name,paths,sample):
     import numpy as np
     from numpy import ndenumerate,sum as npSum,max,abs
 
@@ -1603,24 +1615,39 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
     #print(pOut)
 
     #R value for algorithm. Works when use Current Density, not Nprotons
-    rValue=0;chi2=0
-    rValue,chi2,pull = rCompare(Img,args.Nb,paths,args.reBin)
-    if args.savePics:
+    rValue=0;chi2=0;ndof = 0;pull=0
+    #addRefImg(Img,paths,args,sample)
+
+    rValue,chi2,pull,ndof = rCompare(Img,paths,args)
+    if args.savePull:
         fs=16
         X, Y = np.meshgrid(xax,yax)
         import matplotlib.pyplot as plt
-        from matplotlib.colors import LogNorm
+        #from scipy.stats import chi2
+        mu,sigma,ampl,bins = findFit(pull,[0.1,1,1],(0,[1e3,3e5,3e5]),30)
+        plt.close()
         fig,ax = plt.subplots(dpi=args.dpi)
-        minim = np.abs(pull.min())+0.1
-        c = ax.pcolormesh(X,Y,pull,shading='auto',norm=LogNorm(vmin=pull.min()+minim, vmax=pull.max()+minim), cmap='viridis',rasterized=True)
-        cbar = fig.colorbar(c, ax=ax,pad=0.01)
-        cbar.set_label("Pull Values",fontsize=fs-1)
-        plt.setp(ax,xlim=([-args.xlim,args.xlim]),ylim=([-args.ylim-10,args.ylim]))
-        ax.set_title("Pull Values for Beam",fontsize=fs+2)
+        ax.hist(pull,bins)
+        ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
+
+        bgdbox=dict(pad=1,fc='w',ec='none')
+        propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4, transform=ax.transAxes)
+        ax.text(0.98, 0.95,r"$\mu$="+"{:.3f}".format(mu)+"\n"+r"$\sigma$="+"{:.3f}".format(sigma), propsR)
+
+        ##c = ax.pcolormesh(X,Y,pull,shading='auto',norm=LogNorm(vmin=pull.min()+minim, vmax=pull.max()+minim), cmap='viridis',rasterized=True)
+        ##cbar = fig.colorbar(c, ax=ax,pad=0.01)
+        ##cbar.set_label("Pull Values",fontsize=fs-1)
+        if max(pull) < 5: xlim = 5
+        elif max(pull) <10: xlim = 10
+        elif max(pull) <15: xlim = 15
+        elif max(pull) <20: xlim = 20
+        else: xlim=max(pull)
+        plt.setp(ax,xlim=([-xlim,xlim]))
+        ax.set_title("Pull Values for Beam\nThreshold: "+str(args.threshold)+" particles; "+str(len(pull))+" Pixels Counted",fontsize=fs+2)
         ax.set_ylabel("Vertical [mm]",fontsize=fs)
         ax.set_xlabel("Horizontal [mm]",fontsize=fs)
-        plt.savefig(paths['statsPWD']+"pull.png")
-        print("pull",pull.min(),pull.max(),paths['statsPWD']+"pull.png")
+        plt.savefig(name+"_pull"+str(args.threshold)+".png")
+        print("pull",name+"_pull"+str(args.threshold)+".png")
     #print("R = ",rValue,chi2)
     #print("Converted in",datetime.now() - start)
 
@@ -1633,7 +1660,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths):
             Img[i][j] = Img[i][j] * C #[uA/cm^2] #redefinition was messing with proton sum, but not necessary for final algorithm
     jMax = max(Img)
     #sumCharge = np.sum(Img)+1
-    #print("PMAS Sum",sumTot)
+    print("PMAS Sum",sumTot,jMax)
 
     #Edges
     #Not great, may need to reshape and average. Not sure how to do that...
@@ -1746,8 +1773,8 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
     qpKey = "QP"+args.qpNum
     print(args.beamFile)
-    #print(nBkey,pctKey,origKey,betaKey)
-    #print(re.search(nBkey,beamFile) , re.search(pctKey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
+    print(nBkey,origKey,betaKey)
+    print(re.search(nBkey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
     with open(statsPWD+args.statsFile+".csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
@@ -1782,7 +1809,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             if args.physList == "FTFP_BERT_EMZ":
                 print("in FTFP")
                 for row in csv_reader:
-                    #if i == 0: #for finding indices out of 7sigma
+                    #if i in {0,1,10,50,100,150,199}: #for finding indices out of 7sigma
                     #    print("index",i,row[0],args.beamFile,re.search(args.beamFile,row[0]))
                     #print("nominal",re.search(failKey,row[0]))#re.search(nBkey,row[0]) , re.search(pbwKey,row[0]) , (re.search(betaKey,row[0])))
                     if re.search(nBkey,row[0]) and re.search(args.twissFile,row[0]) and re.search(pctKey,row[0]) and re.search("FBZ",row[0]):
@@ -1794,8 +1821,8 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             else:
                 for row in csv_reader:
                     #print(args.beamFile,row[0])
-                    #if i == 6: #for finding indices out of 7sigma
-                    #    print("index",i,"failed file:",row[0])
+                    #if i in {1,10,50,100,150,199}: #for finding indices out of 7sigma
+                    #    print("index",i,"file:",row[0],row[ind])
                     #print(re.search(nBkey,row[0]) , re.search(jitterKey,row[0]) , (re.search(origKey,row[0])))
                     if re.search(nBkey,row[0]) and re.search(args.twissFile,row[0]) and re.search(pctKey,row[0]):
                         read[i] = float(row[ind])
@@ -1857,7 +1884,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     #pFitLims = (0,[args.samples,100,500])
     print("N",len(read),"guess",paramName, "A",args.samples/4,"Mu",mean(read),"s",std(read),"bins",paramBins,"fitLims",pFitLims)
     #sanity check on values
-    #print(read)
+    #print(mean(read),len(read))
     for i in range(len(read)):
         if read[i] < mean(read)-std(read)*7 or read[i] > mean(read)+std(read)*7:
             print(read[i],", index",i,"is outside 7 sigma!")
@@ -1865,7 +1892,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
                               #gaussian(x,  amplitude,          mu,      sigma)
     mu, sigma,ampl,interval = findFit(read,[args.samples/4,mean(read),std(read)],pFitLims,paramBins)
     #print(mu,sigma,ampl)
-
+    close()
     fig,ax = subplots(dpi=args.dpi,figsize=(6.4,4.8))
     _, bins, _ = ax.hist(read,interval)
     ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
@@ -1901,17 +1928,30 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
 
     #Values are atreasonable positions in plots due to ax.transAxes
     bgdbox=dict(pad=1,fc='w',ec='none')
-    propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-3,transform=ax.transAxes)
-    ax.text(0.99, 0.97, "Beam Twiss at PBW:", propsR)
-    ax.text(0.99, 0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
-    ax.text(0.99, 0.84, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
-    ax.text(0.99, 0.77, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
-    if args.physList == "FTFP_BERT_EMZ":
-        ax.text(0.99, 0.50, args.physList, propsR)
-    if sigma <1e-2:
-        ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
+    if mu < (pHistLims[0]+(pHistLims[1]-pHistLims[0])*0.5):
+        propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-3,transform=ax.transAxes)
+        ax.text(0.99, 0.97, "Beam Twiss at PBW:", propsR)
+        ax.text(0.99, 0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
+        ax.text(0.99, 0.84, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
+        ax.text(0.99, 0.77, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
+        if sigma <1e-2:
+            ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
+        else:
+            ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+        if args.physList == "FTFP_BERT_EMZ":
+            ax.text(0.99, 0.50, args.physList, propsR)
     else:
-        ax.text(0.99, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+        propsR = dict(horizontalalignment="left",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-3,transform=ax.transAxes)
+        ax.text(0.01, 0.97, "Beam Twiss at PBW:", propsR)
+        ax.text(0.01, 0.91, r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",propsR)
+        ax.text(0.01, 0.84, r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$", propsR)
+        ax.text(0.01, 0.77, r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]), propsR)
+        if sigma <1e-2:
+            ax.text(0.01, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.2e}".format(sigma)+unit, propsR)
+        else:
+            ax.text(0.01, 0.65,r"$\mu$="+"{:.3f}".format(mu)+unit+"\n"+r"$\sigma$="+"{:.3f}".format(sigma)+unit, propsR)
+        if args.physList == "FTFP_BERT_EMZ":
+            ax.text(0.01, 0.50, args.physList, propsR)    
 
     if args.twissFile == "":
         name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
@@ -1948,23 +1988,23 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     from numpy import zeros
     print("statsFile:",args.statsFile)
 
-    paramName=["jMax","beamPOut","coreJMean","rValue","chiSq"]#"coreArea","coreJMean","centX","centY","chi2"] #len=6 
+    paramName=["jMax","beamPOut","coreJMean","chiSq"]#"rValue","coreArea","coreJMean","centX","centY","chi2"] #len=6 
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]",r"$r$ Comparison",r"$\chi^2$"]
                 #r"Core Area [mm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
                 #]#,"R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]",
         #"Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
-    ind = [7,8,10,13,14]#,14]#9,11,12,
-    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$","",""]#r"mm$^2$","mm","mm"]#,""
+    ind = [7,8,10,14]#,14]#9,11,12,
+    unit=[r"$\mu$A/cm$^2$","%",r"$\mu$A/cm$^2$",""]#r"mm$^2$","mm","mm"]#,"",""
                 #   ampl, mu, sigma                  ([10,1e3,20],[5e3,1e4,1e3])
-                        #jMax             Pout               coreJMean         rVal           chi2               
-    paramFitLims = [(0,[1e3,500,500]),(0,[1e3,100,500]),(0,[1e3,500,500]),(0,[1e3,10,1]),(0,[1e3,1e7,1e5])]#([10,1e1,20],[5e6,1e6,1e6]),
+                        #jMax             Pout               coreJMean          chi2                                       rVal    
+    paramFitLims = [(0,[1e3,500,500]),(0,[1e3,100,500]),(0,[1e3,500,500]),(0,[1e3,1e7,1e5])]#([10,1e1,20],[5e6,1e6,1e6]),(0,[1e3,10,1]),
                         #centX                                  centY                   
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
-                    #jMax       Pout     coreJMean     rVal        chi2    coreArea    centX   centY    
-    pHistLims = [[51.5,55.3],[3.47,3.9],[45,46.4],[.025,.075],[1000,3600]]#,[5000,8000],[-10,10],[-10,10]#,[4.55,4.6]] 
-    paramBins = [20,20,20,30,30]#,20,20,20,20,20]
+                    #jMax       Pout  coreJMean    chi2    coreArea    centX   centY         rVal 
+    pHistLims = [[51.5,57],[3.47,3.9],[40,46.4],[3800,6700]]#,[5000,8000],[-10,10],[-10,10] ,[.025,.075]
+    paramBins = [20,20,20,20]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))
     sigmas = zeros(len(paramName))
@@ -1972,7 +2012,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     lens = zeros(len(paramName))
     for i in range(len(paramName)):
         print(paramName[i],paramFitLims[i],paramBins)
-        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins,pHistLims[i],origBX,origBY,beamFile)
+        mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins[i],pHistLims[i],origBX,origBY,beamFile)
         #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],pFitLims[i],paramBins[i])
 
     import csv
@@ -2198,3 +2238,57 @@ def getTwiss(args,sample,paths):
 
 
     return Twiss,origBX,origBY
+
+
+def addRefImg(Img,paths,args,sample):
+    import csv,numpy as np,re,os
+    refImg = np.zeros(np.shape(Img),dtype=int)
+    lenx = np.shape(Img)[0]
+    leny = np.shape(Img)[1]
+    i=0;j=0;counter=1
+    name = paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv"
+    
+    if sample == 0:
+        with open(paths['scratchPath']+args.beamFile+"_refImg_"+str(1)+".csv",mode='w') as csv_file:
+            csv_writer = csv.writer(csv_file,delimiter = ',')
+            csv_writer.writerows(Img)
+            csv_file.close()
+        print(paths['scratchPath']+args.beamFile+"_refImg_"+str(1)+".csv")
+    else:
+        counter = sample+counter
+        #while not os.path.isfile(name):
+        #    counter+=1
+        #    name = paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv"
+        #    if counter == int(1e4):break
+        #print(counter,name)
+
+        #find # of images used in refImg, it will be appended to the name
+        #counter = re.search("((?<=(Img_))\d+)",)
+
+
+        #read in current refImg
+        with open(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv",mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            for row in csv_reader:
+                for i in range(lenx):
+                    refImg[j,i] = row[i]
+                j+=1
+        csv_file.close()
+        
+        print(refImg,refImg[100,100])
+        print(counter)
+
+        #add new Img to refImg
+        for i in range(lenx):
+            for j in range(leny):
+                refImg[j,i] += Img[j,i]
+                refImg[j,i] /= counter
+        print(counter)
+
+        with open(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv",mode='w') as csv_file:
+            csv_writer = csv.writer(csv_file,delimiter = ',')
+            csv_writer.writerows(refImg)
+            csv_file.close()
+        print(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv")
+
+        #os.remove(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter-1)+".csv")
