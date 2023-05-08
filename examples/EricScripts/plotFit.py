@@ -431,14 +431,13 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
 
 
 
-def toTarget(TwPm,label):
+def Drift(TwPm,label,driftLength):
     #Extend the distributions to the Target Location
     import numpy as np
     #Twiss=[beta,alpha,gemt,gamma]
     PBWexitBetaMx = np.array([[TwPm[0],-TwPm[1]],[-TwPm[1],TwPm[3]]])
 
-    d_PBW_Targ = 4.4 #[m] Is this correct?
-    drift_PBW_Targ = np.array([ [1, d_PBW_Targ],[ 0, 1]])
+    drift_PBW_Targ = np.array([ [1, driftLength/1000],[ 0, 1]]) #[m]
     Calc_PBW_Targ = np.linalg.multi_dot([drift_PBW_Targ,PBWexitBetaMx,np.transpose(drift_PBW_Targ)])
     #print(label,"PBWexit:",PBWexitBetaMx,"\n",drift_PBW_Targ,"\n",Calc_PBW_Targ)
 
@@ -753,6 +752,10 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
 
 def numLines(filename):
     import csv
+    if filename[-1] != "v":
+        #print(filename)
+        filename.append(".csv")
+        #print(filename)
     with open(filename+".csv") as csv_file:
         return sum(1 for line in csv_file) 
         #extreme improvement from https://stackoverflow.com/questions/16108526/how-to-obtain-the-total-numbers-of-rows-from-a-csv-file-in-python
@@ -780,17 +783,26 @@ def numLines(filename):
 
 
 
-def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
+def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
+    def plot(proj,ext):
+        ca = ROOT.TCanvas()
+        proj.Draw()
+        #proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        #ca.SetLogy()
+        picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
+        ca.Print(picpath+"MCNPXDataROOT2D_"+ext+".png")
+        print(picpath+"MCNPXDataROOT2D_"+ext+".png")
 
     ROOT.gStyle.SetOptFit(100)
-
+    #plot(hist,"test")
     #Project center slice 
     if   axis == "y" or axis == "Y": 
         proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
     elif axis == "x" or axis == "X":
         proj = hist.ProjectionX(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
+    #plot(proj,"proj"+axis)
     differenceNG = 100
     total = 100
     differencePG = 100
@@ -807,7 +819,7 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    g=5
+    g=4
     if g == 4:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 3:
@@ -862,10 +874,10 @@ def gaussianFit(hist,axis,width,maxim,options,name,y1,y2,saveFits):
         f2_res.Draw('same')
         #f1.SetLineColor(ROOT.kRed)
         #f1.Draw('same')
-        if axis == "y" or axis == "Y": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        if axis == "y" or axis == "Y":  proj.GetXaxis().SetRangeUser(-maxim,maxim)
         elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
         c1.SetLogy()
-        c1.Print(name+"_"+axis+str(g)+"GaussFit"+str(maxim)+".pdf")
+        c1.Print(name+"_"+axis+str(g)+"GaussFit"+str(maxim)+".png")
 
     #    import numpy as np
     #    import matplotlib.pyplot as plt
@@ -1064,7 +1076,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     nomArea = 3200 #~32*100, nominal gives 34*104=3536
     chi2Lim = 5e3
     #print warnings if exceed limit of value:
-    if jMax >= jMaxLim:
+    """if jMax >= jMaxLim:
         print("\tCurrent Density: {:0.1f}".format(jMax),"uA/cm^2 greater than",jMaxLim,"uA/cm^2")
     if pOutsideBox >= pOutLim:
         print("\t% Outside Box:",pOutsideBox,"% greater than",pOutLim,"%")
@@ -1084,7 +1096,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
         print("\tR Value: {:.3e} above Limit: {:.3e}".format(rValue,rValLim))
     if chi2 >= chi2Lim:
         print("\tChi^2: {:.2e} above Limit: {:.1e}".format(chi2,chi2Lim))
-
+    """
     #print(jMax,pOutsideBox,rValue,chi2,beamArea,dispX,dispY)
     #core = Img[EI[1]:EI[0],EI[2]:EI[3]]
     #coreJMax = core.max()
@@ -1106,14 +1118,14 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #jMax = Img.max()
     jMin = 0.9 * C * parts/3e5 #background (0 hits) will be un-colored, scaled to 1e5 parts
     print(sample,"PMAS:",fPMAS-sPMAS,"s: Jmax {:.1f}, J in core {:.0f}mm^2: {:.2f}uA/cm^2, RVal {:.5f}, Chi2 {:.2f}, % Out TA {:.2f}"\
-                .format(jMax,coreArea,coreJMean,rValue,chi2,pOutsideBoxes[0]))
-    print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]),\
-                "Beam Center at (X,Y): ({:.0f},{:.0f})".format(centX,centY))
+                .format(jMax,coreArea,coreJMean,rValue,chi2,pOutsideBoxes[0])) #sample here is not sample in rasterScatter...
+    ##print("Beam Top: {:.1f}mm, Bottom: {:.1f}mm, Left: {:.1f}mm, Right: {:.1f}mm".format(edges[0],edges[1],edges[2],edges[3]),\
+    ##            "Beam Center at (X,Y): ({:.0f},{:.0f})".format(centX,centY))
 
     if args.gaussFit:
                                            #(hist,     axis, width,maxim,options,name,   y1,y2,saveFits)
-        diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,options,savename,2,30,args.saveFits)
-        diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,options,savename,3,20,args.saveFits)
+        diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,savename,2,30,args.saveFits,False)
+        diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,savename,3,20,args.saveFits,False)
         #add minimize function for these?
 
     if args.savePics:
@@ -1357,6 +1369,8 @@ def rCompare(Im,paths,args):
                     refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
                 else:
                     refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
+                
+                #refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ_rB1_refImg.csv"
         elif args.Nb == 200:
             print("RCompare Nb 200")
             refImgName = "PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N5.8e+06_NpB200_runW_QBZ_TargetImage_rB4.csv"
@@ -1395,7 +1409,7 @@ def rCompare(Im,paths,args):
             #    print(j,i, div[j,i])
     rDiv = np.sqrt(np.sum(divS))
 
-    print("Reference image is:",refImgName)
+    ##print("Reference image is:",refImgName)
     chi2 = 0
     pull_array = []
     for i in range(lenx):
@@ -1623,7 +1637,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
         fs=16
         X, Y = np.meshgrid(xax,yax)
         import matplotlib.pyplot as plt
-        #from scipy.stats import chi2
+        #from scipy.stats import chi2 as chiSq
         mu,sigma,ampl,bins = findFit(pull,[0.1,1,1],(0,[1e3,3e5,3e5]),30)
         plt.close()
         fig,ax = plt.subplots(dpi=args.dpi)
@@ -1637,6 +1651,8 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
         ##c = ax.pcolormesh(X,Y,pull,shading='auto',norm=LogNorm(vmin=pull.min()+minim, vmax=pull.max()+minim), cmap='viridis',rasterized=True)
         ##cbar = fig.colorbar(c, ax=ax,pad=0.01)
         ##cbar.set_label("Pull Values",fontsize=fs-1)
+        #ax.set_ylabel("Vertical [mm]",fontsize=fs)
+        #ax.set_xlabel("Horizontal [mm]",fontsize=fs)
         if max(pull) < 5: xlim = 5
         elif max(pull) <10: xlim = 10
         elif max(pull) <15: xlim = 15
@@ -1644,8 +1660,8 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
         else: xlim=max(pull)
         plt.setp(ax,xlim=([-xlim,xlim]))
         ax.set_title("Pull Values for Beam\nThreshold: "+str(args.threshold)+" particles; "+str(len(pull))+" Pixels Counted",fontsize=fs+2)
-        ax.set_ylabel("Vertical [mm]",fontsize=fs)
-        ax.set_xlabel("Horizontal [mm]",fontsize=fs)
+        ax.set_ylabel("Counts",fontsize=fs)
+        ax.set_xlabel("Pull Values",fontsize=fs)
         plt.savefig(name+"_pull"+str(args.threshold)+".png")
         print("pull",name+"_pull"+str(args.threshold)+".png")
     #print("R = ",rValue,chi2)
@@ -1660,7 +1676,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
             Img[i][j] = Img[i][j] * C #[uA/cm^2] #redefinition was messing with proton sum, but not necessary for final algorithm
     jMax = max(Img)
     #sumCharge = np.sum(Img)+1
-    print("PMAS Sum",sumTot,jMax)
+   #("PMAS Sum",sumTot,jMax)
 
     #Edges
     #Not great, may need to reshape and average. Not sure how to do that...
@@ -1740,8 +1756,8 @@ def saveStats(statsPWD,Twiss,rasterBeamFile,jMax,pOutsideBoxes,beamArea,coreJMea
             csv_writer = csv.writer(csv_file, delimiter = ',')
             csv_writer.writerow([args.beamFile,Twiss[0],Twiss[1],Twiss[2],Twiss[3],Twiss[4],Twiss[5],jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,chi2])
         csv_file.close()
-        print("saved",statsName,"\n",args.beamFile,"{:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.0f}, {:.0f}, {:.3f}, {:.1f}".format(jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,chi2))#,chi2)
-        
+        print("saved",args.beamFile,"{:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.0f}, {:.0f}, {:.3f}, {:.1f}".format(jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,chi2))#,chi2)
+        #,statsName,"\n"
 
 
 
@@ -1772,9 +1788,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
     failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
     qpKey = "QP"+args.qpNum
-    print(args.beamFile)
-    print(nBkey,origKey,betaKey)
-    print(re.search(nBkey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
+    ##print(args.beamFile)
+    ##print(nBkey,origKey,betaKey)
+    ##print(re.search(nBkey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
     with open(statsPWD+args.statsFile+".csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
@@ -1805,7 +1821,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
         elif args.beamClass == "jitter": #for jitter studies from OXAL
             pctKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(pct)))",args.twissFile)[1]+"pctField"
             jitterKey = re.search("(([-+]?[0-9]*\.?[0-9]*)(?=(Jitter)))",args.twissFile)[1]+"Jitter"
-            print(pctKey,nBkey,jitterKey,origKey)
+            #print(pctKey,nBkey,jitterKey,origKey)
             if args.physList == "FTFP_BERT_EMZ":
                 print("in FTFP")
                 for row in csv_reader:
@@ -1894,17 +1910,29 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     #print(mu,sigma,ampl)
     close()
     fig,ax = subplots(dpi=args.dpi,figsize=(6.4,4.8))
-    _, bins, _ = ax.hist(read,interval)
-    ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
+    fs=16
+    if paramName == "chiSq":#chiSq
+        _, bins, _ = ax.hist(read,interval,density=True)
+        from scipy.stats import chi2 as chiSq
+        from numpy import linspace
+        #mean, var, skew, kurt = chiSq.stats(mu, moments='mvsk')
+        x = linspace(chiSq.ppf(0.001, mu), chiSq.ppf(0.999, mu), 100)
+        ax.plot(x, chiSq.pdf(x, mu),'r--', label='chi2 pdf')
+        #rv = chiSq(mu)
+        #ax.plot(x, rv.pdf(x), 'r--', lw=2, label='frozen pdf')
+        ax.set_ylabel("PDF",fontsize=fs)
+    else:
+        _, bins, _ = ax.hist(read,interval)
+        ax.plot(bins, gaussian(bins,ampl,mu,sigma), "r--", linewidth=2)
+        ax.set_ylabel("Counts",fontsize=fs)
 
     nPs = round((2*10+round(0.04*1/14*1e6)/1e3)*args.nP)*args.Nb
-    fs=16
     if re.search("Jitter",args.twissFile):
         if int(re.search("(([0-9]*)+(?=Jitter))",args.twissFile)[1]) == 4:
             pct = 1
         elif int(re.search("(([0-9]*)+(?=Jitter))",args.twissFile)[1]) == 3:
             pct = 10
-        ax.set_title("{:.0f} Samples with {:.0f}% ".format(len(read),pct)+r"$\beta$"+" Variation Around Nominal\nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
+        ax.set_title("{:.0f} Samples of {:.0f}% ".format(len(read),pct)+r"$\beta$"+" Variation Around Nominal\nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
         if args.qpNum != "":
             fieldFrac = int(re.search("(([0-9]*)+(?=pctField))",args.twissFile)[1])
             ax.set_title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n with {:.0f}% ".format(len(read),int(args.qpNum),fieldFrac,pct)+r"$\beta$"+" Variation Around Nominal \nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
@@ -1923,7 +1951,6 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     #        xlim(2.85,5.1)
 
     ax.set_xlabel(paramLabel,fontsize=fs)
-    ax.set_ylabel("Counts",fontsize=fs)
     #setp(ax,title=Title,xlabel=xLabel,ylabel=yLabel)
 
     #Values are atreasonable positions in plots due to ax.transAxes
@@ -1989,8 +2016,8 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     print("statsFile:",args.statsFile)
 
     paramName=["jMax","beamPOut","coreJMean","chiSq"]#"rValue","coreArea","coreJMean","centX","centY","chi2"] #len=6 
-    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]",r"$r$ Comparison",r"$\chi^2$"]
-                #r"Core Area [mm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",
+    paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]",r"$\chi^2$"]
+                #r"Core Area [mm$^2$]","Beam Center X [mm]","Beam Center Y [mm]",,r"$r$ Comparison"
                 #]#,"R Difference Value"]
     #"Peak Current Density [uA/cm^2]","Beam % Outside Target Area","Core Area [mm^2]",
         #"Core Average Current Density [uA/cm^2]","Beam Center X [mm]","Beam Center Y [mm]","R Divide Value","R Difference Value"
@@ -2003,7 +2030,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
                     #jMax       Pout  coreJMean    chi2    coreArea    centX   centY         rVal 
-    pHistLims = [[51.5,57],[3.47,3.9],[40,46.4],[3800,6700]]#,[5000,8000],[-10,10],[-10,10] ,[.025,.075]
+    pHistLims = [[51.5,57],[3.47,3.9],[40,46.4],[3800,5000]]#for sameRefImg, 3800,6300. For individual RefImgs, 3800,5000 #,[5000,8000],[-10,10],[-10,10] ,[.025,.075]
     paramBins = [20,20,20,20]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))

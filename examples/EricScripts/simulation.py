@@ -94,7 +94,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         #How to construct a magnet for miniScatterDriver, as per kyrsjo/MiniScatter/blob/master/examples/SiRi DeltaE-E detector.ipynb
         #Specialized PBW magnet!
         m1 = {}
-        m1["pos"]      = 24.125 #[mm] Minimum position is 24.125mm for r=88m,t=4.25,arcPhi=120!!
+        arcPhi = 120
         m1["type"]     = "PBW"
         m1["length"]   = 0 #[mm] Must be 0!
         m1["gradient"] = 0.0
@@ -105,9 +105,13 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         m1["keyval"]["waterThick"] = 2.0 #[mm]
         m1["keyval"]["al2Thick"]   = 1.25 #[mm]
         #m1["keyval"]["width"]      = 200 #[mm]
-        if args.sim == "thick":
+        if args.sim == "thick": #modifies the actual PBW to be correct thickness.
             m1["keyval"]["al1Thick"]   = options['PBWT']*0.5 #[mm]
             m1["keyval"]["al2Thick"]   = options['PBWT']*0.5 #[mm]
+        from math import pi
+        totalThickness = m1["keyval"]["al1Thick"] + m1["keyval"]["waterThick"] + m1["keyval"]["al2Thick"]
+        m1["pos"]      = (m1["keyval"]["radius"]*cos(arcPhi/2*pi/180)+totalThickness)/2 #[mm] Z0=24.125mm for r=88m,t=4.25,arcPhi=120
+        #print("z0=",m1["pos"])
         baseSimSetup["MAGNET"].append(m1)
 
         #Start output name
@@ -269,9 +273,9 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #Einit[i] = myTree.E
         myFile.Close()
 
-        from plotFit import toTarget
-        initTargx = toTarget(TwissIx,"initX")
-        initTargy = toTarget(TwissIy,"initY")
+        from plotFit import Drift
+        initTargx = Drift(TwissIx,"initX")
+        initTargy = Drift(TwissIy,"initY")
 
         if saveParts:
             from plotFit import printParticles
@@ -350,9 +354,9 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         exitxTwf = calcTwiss("Exit X Filtered","Exit X' Filtered",xexit_filtered,pxexit_filtered)
         exityTwf = calcTwiss("Exit Y Filtered","Exit Y' Filtered",yexit_filtered,pyexit_filtered)
         
-        from plotFit import toTarget
-        exitTargx = toTarget(exitxTwf,"exitX")
-        exitTargy = toTarget(exityTwf,"exitY")
+        from plotFit import Drift
+        exitTargx = Drift(exitxTwf,"exitX")
+        exitTargy = Drift(exityTwf,"exitY")
     #end of exit Distribution if
 
     #if args.PBIP:
@@ -506,7 +510,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         elif args.particle == "electron":
             partA = 0.511 #[MeV/c2]
             partZ = 1
-        gamma_rel = 1 + args.energy/partA #from PrintTwissParameters
+        gamma_rel = (args.energy+partA)/partA #from PrintTwissParameters
         beta_rel = np.sqrt(gamma_rel*gamma_rel -1 )/gamma_rel
         #Get rid of Normalized Emittance!
         Igemtx = Twiss[0]/(beta_rel*gamma_rel)
@@ -518,6 +522,9 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         PBWTwx = [Twiss[1],Twiss[2],Twiss[0]] #Twiss for each for printing on graphs
         PBWTwy = [Twiss[4],Twiss[5],Twiss[3]]
 
+
+        print("ORIGINAL:", TwissIx)
+
         ##Highland Equation Radiation Length Calculation
         p = np.sqrt((args.energy+partA)**2 - (partA)**2) #[MeV/c] #derived with Kyrre 15.6.22
         #pAppleby = beta_rel * gamma_rel * partA / c #Appleby2022 Eqn 2.16
@@ -525,27 +532,29 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
         #For PBW magnet case:
         if simSetup_simple1["THICK"] == 0.0:
+            from plotFit import Drift
             m1Len = simSetup_simple1["MAGNET"][0]["keyval"]["al1Thick"] #[mm]?
+            print("m1Len =", m1Len)
             if beamXAngle != 0: #account for angle contribution to thickness
                 m1Len = m1Len / np.cos(beamXAngle) 
             #Al Front contribution
             thetasqAl1 = 13.6 * partZ / betap * np.sqrt(m1Len/radLen) * (1 + 0.038 * np.log(m1Len/radLen))
             #             calcEq8(thetasq,      Twiss,thick,beta_rel,gamma_rel
-            Twisse8xAl1  = calcEq8(thetasqAl1,  TwissIx,m1Len,beta_rel,gamma_rel)
-            Twisse8yAl1  = calcEq8(thetasqAl1,  TwissIy,m1Len,beta_rel,gamma_rel)
-            Twisse16xAl1 = calcEq16(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel)
-            Twisse16yAl1 = calcEq16(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel)
-
+            Twisse8xAl1  = Drift(calcEq8(thetasqAl1,  TwissIx,m1Len,beta_rel,gamma_rel),"driftAl1",m1Len)
+            Twisse8yAl1  = Drift(calcEq8(thetasqAl1,  TwissIy,m1Len,beta_rel,gamma_rel),"driftAl1",m1Len)
+            Twisse16xAl1 = Drift(calcEq16(thetasqAl1, TwissIx,m1Len,beta_rel,gamma_rel),"driftAl1",m1Len)
+            Twisse16yAl1 = Drift(calcEq16(thetasqAl1, TwissIy,m1Len,beta_rel,gamma_rel),"driftAl1",m1Len)
+            #MUST ADD DRIFTS HERE, as per Kyrre 3.5.23
             #H2O contribution
             m2Len = simSetup_simple1["MAGNET"][0]["keyval"]["waterThick"]
             if beamXAngle != 0: #account for angle contribution to thickness
                 m2Len = m2Len / np.cos(beamXAngle) 
             thetasqH2O = 13.6 * partZ / betap * np.sqrt(m2Len/radLenH2O) * (1 + 0.038 * np.log(m2Len/radLenH2O))
             #             calcEq8(thetasq,          Twiss,thick,beta_rel,gamma_rel
-            Twisse8xH2O  = calcEq8(thetasqH2O,  Twisse8xAl1, m2Len,beta_rel,gamma_rel)
-            Twisse8yH2O  = calcEq8(thetasqH2O,  Twisse8yAl1, m2Len,beta_rel,gamma_rel)
-            Twisse16xH2O = calcEq16(thetasqH2O, Twisse16xAl1,m2Len,beta_rel,gamma_rel)
-            Twisse16yH2O = calcEq16(thetasqH2O, Twisse16yAl1,m2Len,beta_rel,gamma_rel)
+            Twisse8xH2O  = Drift(calcEq8(thetasqH2O,  Twisse8xAl1, m2Len,beta_rel,gamma_rel),"drifth20",m2Len)
+            Twisse8yH2O  = Drift(calcEq8(thetasqH2O,  Twisse8yAl1, m2Len,beta_rel,gamma_rel),"drifth20",m2Len)
+            Twisse16xH2O = Drift(calcEq16(thetasqH2O, Twisse16xAl1,m2Len,beta_rel,gamma_rel),"drifth20",m2Len)
+            Twisse16yH2O = Drift(calcEq16(thetasqH2O, Twisse16yAl1,m2Len,beta_rel,gamma_rel),"drifth20",m2Len)
 
             #Al Back contribution
             m3Len = simSetup_simple1["MAGNET"][0]["keyval"]["al2Thick"]
@@ -553,22 +562,33 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
                 m3Len = m3Len / np.cos(beamXAngle) 
             thetasqAl2 = 13.6 * partZ / betap * np.sqrt(m3Len/radLen) * (1 + 0.038 * np.log(m3Len/radLen))
             #          calcEq8(thetasq,          Twiss,   thick,beta_rel,gamma_rel
-            Twisse8x  = calcEq8(thetasqAl2,  Twisse8xH2O, m3Len,beta_rel,gamma_rel)
-            Twisse8y  = calcEq8(thetasqAl2,  Twisse8yH2O, m3Len,beta_rel,gamma_rel)
-            Twisse16x = calcEq16(thetasqAl2, Twisse16xH2O,m3Len,beta_rel,gamma_rel)
-            Twisse16y = calcEq16(thetasqAl2, Twisse16yH2O,m3Len,beta_rel,gamma_rel)
+            Twisse8x  = Drift(calcEq8(thetasqAl2,  Twisse8xH2O, m3Len,beta_rel,gamma_rel),"driftAl2",m3Len)
+            Twisse8y  = Drift(calcEq8(thetasqAl2,  Twisse8yH2O, m3Len,beta_rel,gamma_rel),"driftAl2",m3Len)
+            Twisse16x = Drift(calcEq16(thetasqAl2, Twisse16xH2O,m3Len,beta_rel,gamma_rel),"driftAl2",m3Len)
+            Twisse16y = Drift(calcEq16(thetasqAl2, Twisse16yH2O,m3Len,beta_rel,gamma_rel),"driftAl2",m3Len)
+
+            totalThickness = m1Len+m2Len+m3Len
+            print(totalThickness,"mm SCATTER:", Twisse8x, Twisse16x)
 
         elif simSetup_simple1["THICK"] != 0.0: #if only one layer (MiniScatter "target")
+            #need to check if this starts at 0 or is centered on 0!!
+            from plotFit import Drift
             ##Highland Equation Radiation Length Calculation for single layer
             if beamXAngle != 0: #account for angle contribution to thickness
                 args.t = args.t / np.cos(beamXAngle) 
             thetasq = 13.6 * partZ / betap * np.sqrt(args.t/radLen) * (1 + 0.038 * np.log(args.t/radLen)) #from Eq 5
             #print("\nradLen: {:.2f}, p: {:.3e}, gamma: {:.3f}, beta: {:.3f}, theta^2: {:.3e} radians".format(radLen,p,gamma_rel,beta_rel,thetasq))
-
+            print("THICKNESS:",args.t)
             Twisse8x  = calcEq8(thetasq, TwissIx,args.t,beta_rel,gamma_rel) #calculated target exit Twiss
             Twisse8y  = calcEq8(thetasq, TwissIy,args.t,beta_rel,gamma_rel)
             Twisse16x = calcEq16(thetasq,TwissIx,args.t,beta_rel,gamma_rel) #calculated 2 target exit Twiss
             Twisse16y = calcEq16(thetasq,TwissIy,args.t,beta_rel,gamma_rel)
+            totalThickness = args.t
+            Twisse8x = Drift(Twisse8x,"driftSlab",args.t)
+            Twisse8y = Drift(Twisse8y,"driftSlab",args.t)
+            Twisse16x = Drift(Twisse16x,"driftSlab",args.t)
+            Twisse16y = Drift(Twisse16y,"driftSlab",args.t)
+            print(totalThickness,"mm SCATTER:", Twisse8x, Twisse16x)
 
         ##Plotting PBW Exit distribution vs the PDF produced from the Formalism Equations
         #Displays Twiss values and calculated mu and sigma
@@ -582,11 +602,17 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
 
         #Extension to Target. Needed for compareTargets!
-        from plotFit import toTarget,compareTargets
-        e8TargxReal = toTarget(Twisse8x,"e8XReal")
-        e8TargyReal = toTarget(Twisse8y,"e8YReal")
-        e16TargxReal = toTarget(Twisse16x,"e8XReal")
-        e16TargyReal = toTarget(Twisse16y,"e8YReal")
+        from plotFit import Drift,compareTargets
+        if args.t==0:
+            z0Diff = simSetup_simple1["MAGNET"][0]["pos"] - 24.125
+        else:z0Diff=0
+        driftLength = 3565 - totalThickness #[mm]
+        e8TargxReal = Drift(Twisse8x,"e8XReal",driftLength)
+        e8TargyReal = Drift(Twisse8y,"e8YReal",driftLength)
+        e16TargxReal = Drift(Twisse16x,"e8XReal",driftLength)
+        e16TargyReal = Drift(Twisse16y,"e8YReal",driftLength)
+
+        print(z0Diff, totalThickness,driftLength,"DRIFT:", e8TargxReal, e16TargxReal)
 
         #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
         if args.compTargs:
@@ -650,13 +676,13 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             maxim = 500
             xBinSize = xax[maxim+1]-xax[maxim]
             yBinSize = yax[maxim+1]-yax[maxim]
-
+            maxim=200
             #gamma = 50
             #alpha = 50
             #voigtFit(Img,"x")#,gamma,alpha,args.xlim)
             
-            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,options,savename,2,25,args.saveFits)
-            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,options,savename,3,10,args.saveFits)
+            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,False)
+            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,savename,3,10,args.saveFits,False)
             #print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
 
     if args.sim == "thick":
