@@ -496,7 +496,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     #Create the fig with 2 plots side by side
     plt.clf()
-    fig = plt.figure(figsize=(16,6.0))
+    fig = plt.figure(figsize=(15,6.0))
     plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
     s1 = fig.add_subplot(1,2,1)
     s2 = fig.add_subplot(1,2,2)
@@ -534,20 +534,22 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     else:
         label = "Müller Eqn 8"
     sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
-    sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
+    #sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
+    sigmatextx += "\nHistogram/Müller={:.2f}".format((sigmax/Mfx[0]-1)*100)+"%"
 
     sigmatexty = r"$\sigma_{Y}$:"
     sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
     sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mhy[0])+"mm"
     sigmatexty +="\n"+label+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
-    sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
+    #sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
+    sigmatexty += "\nHistogram/Müller={:.2f}".format((sigmay/Mfy[0]-1)*100)+"%"
 
     #Set various plot variables, often found through trial and error
     xlim = 5*sigmax
     fs=18
     #if don't set ylim, log goes to e-58
     plt.setp(s1,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
-    s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs+2) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+    s1.set_title("X Distribution At Target",fontsize=fs+2) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
     s1.set_xlabel("X Position [mm]",fontsize=fs)
     s1.set_ylabel("Probability Density",fontsize=fs)
     #s1.set_xlim([-xlim,xlim])
@@ -558,7 +560,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     ylim1 = s1.get_ylim()
     s1.text(xlim1[0]*0.97,5e-2,sigmatextx,fontsize=fs-4)
     s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,6.8e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
+    s1.text(xlim1[0]*0.97,6.8e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-4)
     s1.text(xlim1[0]*0.97,3.1e-3,r"$\beta_{x}$ = "+"{:.1f}".format(PBWTwx[0])+r"$_{[m]}$",fontsize=fs-4)
     s1.text(xlim1[0]*0.97,1.5e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
 
@@ -568,11 +570,10 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     #Set s2
     plt.setp(s2,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
-    s1.set_title("X Distribution At Target after "+fitlabel,fontsize=fs+2)
+    s2.set_title("Y Distribution At Target",fontsize=fs+2)
     #if don't set ylim, log goes to e-58
     #s2.set_xlim([-xlim,xlim])
     #s2.set_ylim([1e-6,1]) #if don't set, then log goes to e-58
-    #s2.set_title("Y Distribution At Target after "+fitlabel,fontsize=fs)
     s2.set_xlabel("Y Position [mm]",fontsize=fs)
     s2.set_ylabel("Probability Density",fontsize=fs)
 
@@ -585,7 +586,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     s2.text(xlim2[0]*0.97,5e-2,sigmatexty,fontsize=fs-4)
     #PBWTwx = [Ibetax,Ialphx,Inemtx]
     s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,6.8e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm*mrad]}$",fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,6.8e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-4)
     s2.text(xlim2[0]*0.97,3.1e-3,r"$\beta_{y}$ = "+"{:.1f}".format(PBWTwy[0])+r"$_{[m]}$",fontsize=fs-4)
     s2.text(xlim2[0]*0.97,1.5e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
 
@@ -753,9 +754,11 @@ def plot1DRaster(targx,targy,fitlabel,savename,mat,position):
 def numLines(filename):
     import csv
     if filename[-1] != "v":
-        #print(filename)
-        filename.append(".csv")
-        #print(filename)
+        pass
+    else:
+        print(filename)
+        filename-=".csv"
+        print(filename)
     with open(filename+".csv") as csv_file:
         return sum(1 for line in csv_file) 
         #extreme improvement from https://stackoverflow.com/questions/16108526/how-to-obtain-the-total-numbers-of-rows-from-a-csv-file-in-python
@@ -798,11 +801,17 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     ROOT.gStyle.SetOptFit(100)
     #plot(hist,"test")
     #Project center slice 
+    integral = hist.Integral()
+    hist.Scale(1/integral)
+    sum = hist.Integral()
+    print(integral,sum)
+
     if   axis == "y" or axis == "Y": 
         proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
     elif axis == "x" or axis == "X":
-        proj = hist.ProjectionX(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
+        proj = hist.ProjectionX(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width)) #why?
     #plot(proj,"proj"+axis)
+    print("bin",hist.GetYaxis().FindBin(width))
     differenceNG = 100
     total = 100
     differencePG = 100
@@ -812,57 +821,64 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
     f1_res = proj.Fit(f1, 'RSQ')
     #print(f1_res)
-    p0 = f1.GetParameter(0)
-    p1 = f1.GetParameter(1)
-    p2 = f1.GetParameter(2)
+    p0 = f1.GetParameter(0) #weight
+    p1 = f1.GetParameter(1) #mu
+    p2 = f1.GetParameter(2) #sigma
     print("initial Gaussian fit parameters:",p0,p1,p2)
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    g=4
-    if g == 4:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    g=3
+    if g == 1:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
+    elif g ==2:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
     elif g == 3:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
-    elif g == 2:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    elif g == 4:
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 5:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
     if axis == "y" or axis == "Y":
-        f2.SetParameters(p0*(1-r),p2,p0*r*r,p2*y1,p2*y1,p2*5,p2,p2*y2,p2,p2*y2)
+        f2.SetParameters(p0,p2,p0,p2,p0*y2**2,p2*y2**2,p2*y2**3,p2*y2**3,p2*y2**5,p2*y2**5)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*0.5,p0*y1) #p0=8e4,7e5
-        f2.SetParLimits(1,p2*0.25,p0*y1) #
-        f2.SetParLimits(2,p1, p0) #
-        f2.SetParLimits(3,p2, p0) #p3=11,22
-        f2.SetParLimits(4,p2, p0) #p5=22,300
-        f2.SetParLimits(5,p2, p0) #p5=22,300
-        f2.SetParLimits(6,p1, p0*y2) #p5=22,300
-        f2.SetParLimits(7,p2, p0*y2) #p7 =300,3000
-        f2.SetParLimits(8,p1, p0*y2*y2*y2) #p5=22,300
-        f2.SetParLimits(9,p2, p0*y2*y2*y2*y2) #p7 =300,3000
+        f2.SetParLimits(0,p0*0.5,p0*(1+r))       #weight1
+        f2.SetParLimits(1,p2*0.5,p2*(1+r))       #sigma1
+        f2.SetParLimits(2,p0*(1-r*y1),p0*(1+r))      #weight2
+        f2.SetParLimits(3,p2*(1-r*y1),p2*(1+r))      #sigma2
+        f2.SetParLimits(4,p0*y1, p0*y2**8)     #weight3
+        f2.SetParLimits(5,p2*y1, p2*y2**8)     #sigma3
+        f2.SetParLimits(6,p0*y2**2, p0*y2**8)  #weight4
+        f2.SetParLimits(7,p2*y2**2, p0*y2**8)  #sigma4
+        f2.SetParLimits(8,p0*y2**4, p0*y2**10) #weight5
+        f2.SetParLimits(9,p2*y2**4, p0*y2**10) #sigma5
     elif axis == "x" or axis == "X":
-        f2.SetParameters(p0*(1-r),p2,p0*r,p2*2,p2*y1,p2*y1,p2,p2*y2,p2,p2*y2)
-        #print(9532,16.3,395,36.5,6511,14,2,334)
+        f2.SetParameters(p0,p2,p0*y1*2,p2*y1*2,p0*y2**2,p2*y2**2,p2*y2**3,p2*y2**3,p2*y2**5,p2*y2**5)
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*r,p0*y1)
-        f2.SetParLimits(1,p2*0.25,p2*y1)
-        f2.SetParLimits(2,p2, p0*0.5)
-        f2.SetParLimits(3,p2, p0)
-        f2.SetParLimits(4,p2, p0)
-        f2.SetParLimits(5,p2, p0)
-        f2.SetParLimits(6,p1, p0*y2)
-        f2.SetParLimits(7,p2, p0*y2)
-        f2.SetParLimits(8,p1, p0*y2*y2*y2) #p5=22,300
-        f2.SetParLimits(9,p2, p0*y2*y2*y2*y2) #p7 =300,3000
+        f2.SetParLimits(0,p0*r,p0*(1+r))       #weight1
+        f2.SetParLimits(1,p2*r,p2*(1+r))       #sigma1
+        f2.SetParLimits(2,p0*(1-r),p0*y2)      #weight2
+        f2.SetParLimits(3,p2*(1-r),p2*y2)      #sigma2
+        f2.SetParLimits(4,p0*y2, p0*y2**6)     #weight3
+        f2.SetParLimits(5,p2*y2, p2*y2**6)     #sigma3
+        f2.SetParLimits(6,p0*y2**2, p0*y2**8)  #weight4
+        f2.SetParLimits(7,p2*y2**2, p0*y2**8)  #sigma4
+        f2.SetParLimits(8,p0*y2**4, p0*y2**10) #weight5
+        f2.SetParLimits(9,p2*y2**4, p0*y2**10) #sigma5
     f2_res = proj.Fit(f2, 'RSQ')
-    if g==4:
-        print("Gaussian: {:.0f},{:.2f},{:.0f},{:.1f},{:.1f},{:.1f},{:.0f},{:.1f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
+    if g==1:
+        print("Gaussian: {:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1)))
+    elif g==2:
+        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3)))
+    elif g==3:
+        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5)))
+    elif g==4:
+        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
     elif g==5:
-        print("Gaussian: {:.0f},{:.2f},{:.0f},{:.1f},{:.1f},{:.1f},{:.0f},{:.1f},{:.2f},{:.2f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
+        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
 
     #print(f2_res)
 
@@ -993,7 +1009,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     #from plotFit import converter
 
     #print(datetime.now().strftime("%H-%M-%S"))
-    (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths,args.reBin) #convert from TH2D to numpy map
+    (Img, xax, yax) = converter(histogram2D,args.saveHist,name,paths,args,False) #convert from TH2D to numpy map
     #print(datetime.now().strftime("%H-%M-%S"))
     xBinSize = xax[round(len(xax)*0.5)+1]-xax[round(len(xax)*0.5)]
     yBinSize = yax[round(len(xax)*0.5)+1]-yax[round(len(xax)*0.5)]
@@ -1243,14 +1259,25 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
 
 
-def converter(hIn,saveHist,name,paths,reBin):
+def converter(hIn,saveHist,name,paths,args,density):
     import ROOT
-    from numpy import zeros
+    from numpy import zeros,linspace
 
-    if reBin > 1:
+    if args.sim == "beamlet":
+        nParts= args.Nbeamlet
+    elif args.sim == "raster":
+        t_pulse = round(0.04 * 1/14 * 1e6) # mus
+        pulse_start = 10 #why have a delay?
+        t_end = (2* pulse_start + t_pulse) /1000# - 2 #2.857 ms
+        time_length = round(t_end * args.nP) #number of pulses, nominal = 2.86e3
+        t = linspace(0,t_end,time_length) #array of steps of length time_length
+        N_t = len(t)
+        nParts = N_t*10*args.Nb
+
+    if args.reBin > 1:
         #print("Rebinning")
         oldName=hIn.GetName()
-        hIn = hIn.Rebin2D(reBin,reBin,oldName+"_"+str(reBin))
+        hIn = hIn.Rebin2D(args.reBin,args.reBin,oldName+"_"+str(args.reBin))
         #print("Shape of old:",hIn.GetXaxis().GetNbins(),"\nShape of New:",hIn.GetXaxis().GetNbins())
 
     #Get X axis from ROOT
@@ -1267,12 +1294,18 @@ def converter(hIn,saveHist,name,paths,reBin):
     
     hOut = zeros( (len(yax), len(xax)) ) #2D Image map
 
+    #if density:
+    #    integral = hIn.Integral()
+    #    hIn.Scale(1/integral)
+    #    print(integral,1/integral)
     #Fill Image map with 2D histogram values
     for xi in range(hIn.GetXaxis().GetNbins()):
         for yi in range(hIn.GetYaxis().GetNbins()):
             bx = hIn.GetBin(xi+1,yi+1)
-            hOut[yi,xi] = hIn.GetBinContent(bx)#*reBin #rebin now is summed, kind of... this messes up the counts if reBin!=1 is used, so this doesn't work.
-
+            if density:
+                hOut[yi,xi] = hIn.GetBinContent(bx)/nParts#*reBin #rebin now is summed, kind of... this messes up the counts if reBin!=1 is used, so this doesn't work.
+            else:
+                hOut[yi,xi] = hIn.GetBinContent(bx)
     #Must add Overflow options!!!
 
     if saveHist: #for rValue calculations
@@ -2319,3 +2352,117 @@ def addRefImg(Img,paths,args,sample):
         print(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter)+".csv")
 
         #os.remove(paths['scratchPath']+args.beamFile+"_refImg_"+str(counter-1)+".csv")
+
+def fitGaussians(Img,Error,path,lim,axis,gauss):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    print(np.shape(Img))
+    if axis in {"y","Y"}:
+        lenX = np.shape(Img)[1]
+        proj = Img[:,round(lenX/2)-1:round(lenX/2)+1]
+        if Error.all() != 1:
+            projErr = Error[:,round(lenX/2)-1:round(lenX/2)+1]
+        else:
+            projErr = None
+        label = "Y"
+        #print(lenX)
+        #print(np.shape(proj))
+        proj = (proj[:,0] + proj[:,1]) / 2
+        if Error.all() != 1:
+            projErr = (projErr[:,0] + projErr[:,1]) / 2
+    elif axis in {"x","X"}:
+        lenX = np.shape(Img)[0]
+        proj = Img[round(lenX/2)-1:round(lenX/2)+1,:]
+        if Error.all() != 1:
+            projErr = Error[round(lenX/2)-1:round(lenX/2)+1,:]
+        else:
+            projErr = None
+        label = "X"
+        #print(lenX)
+        #print(np.shape(proj))
+        proj = (proj[0,:] + proj[1,:]) / 2
+        if Error.all() != 1:
+            projErr = (projErr[0,:] + projErr[1,:]) / 2
+    #print(np.shape(proj))
+    x = np.linspace(-lim,lim,len(proj))
+
+    if Error.all() != 1:
+        plt.errorbar(x,proj,yerr=projErr,ecolor="y",elinewidth=1,fmt='.',markersize=2)
+    else:
+        plt.scatter(x,proj,s=2)
+    plt.yscale("log")
+    plt.ylim(1e-7,3e-1)
+    #plt.xlim(-100,100)
+    plt.savefig(path+"proj"+label+".png",dpi=300)
+
+    def func1(x,a1,s1):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2))
+    def func2(x,a1,s1,a2,s2):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2))
+    def func3(x,a1,s1,a2,s2,a3,s3):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2))
+    def func4(x,a1,s1,a2,s2,a3,s3,a4,s4):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2))
+    def func5(x,a1,s1,a2,s2,a3,s3,a4,s4,a5,s5):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2)) + a5 * npExp(-x**2 / (2*s5**2))
+
+    from scipy.optimize import curve_fit #https://www.datatechnotes.com/2020/09/curve-fitting-with-curve-fit-function-in-python.html
+    from numpy import exp as npExp
+
+    params1, covs1 = curve_fit(func1, x, proj,sigma=projErr)
+    print("params1: ", params1)
+    print("covariance: ", covs1)
+    yfit1 = params1[0] * npExp(-x**2 / (2*params1[1]**2))
+    plt.plot(x, yfit1, label="1Gaussian")
+
+    if gauss in {2,3,4,5}:
+        params2, _ = curve_fit(func2, x, proj,p0=[params1[0],params1[1],1,1],sigma=projErr)#,bounds=((params1[0]-1e-3,params1[0]+1e-3),(params1[1]-1e-3,params1[1]+1e-3),(0,1e5),(0,1e5)))
+        print("params2: ", params2)
+        #print("covariance: ", covs2)
+        yfit2 = params2[0] * npExp(-x**2 / (2*params2[1]**2)) + params2[2] * npExp(-x**2 / (2*params2[3]**2))
+        plt.plot(x, yfit2, label="2Gaussian")
+
+    if gauss in {3,4,5}:
+        params3, _ = curve_fit(func3, x, proj,p0=(params1[0],params1[1],1,1,1,1),sigma=projErr)
+        print("params3: ", params3)
+        #print("covariance: ", covs3)
+        yfit3 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2))
+        plt.plot(x, yfit3, label="3Gaussian")
+
+    if gauss in {4,5}:
+        #a=18
+        #x1=[]
+        #y1=[]
+        #for i in range(a):
+        #    x1.append(x[i])
+        #    x1.append(x[-i])
+        #    y1.append(proj[i])
+        #    y1.append(proj[-i])
+        #x1.remove(-76.0)
+        #y1.remove(1.254665e-05)
+        #print(x1,y1)
+        #plt.scatter(x1,y1)
+        #params4, _ = curve_fit(func2, x1, y1,p0=(params3[4],params3[5],0.1,100))
+        params4, _ = curve_fit(func4, x, proj,p0=(params1[0],params1[1],params3[2],params3[3],1,1,1,1),sigma=projErr)
+        print("params4: ", params4)
+        #print("covariance: ", covs4)
+        #yfit4 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2)) + params4[2]*npExp(-x**2 / (2*params4[3]**2)) #p
+        yfit4 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) #p
+        plt.plot(x, yfit4, label="4Gaussian")
+
+        if gauss ==5:
+            params5, _ = curve_fit(func5, x, proj,sigma=projErr)
+            print("params5: ", params5)
+            #print("covariance: ", covs5)
+            yfit5 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) + params5[8] * npExp(-x**2 / (2*params5[9]**2))
+            plt.plot(x, yfit5, label="5Gaussian")
+
+    plt.legend()
+    plt.savefig(path+"proj"+label+".png",dpi=600)
+    print(path+"proj"+label+".png")
+    plt.close()

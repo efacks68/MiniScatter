@@ -222,7 +222,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     from simulation import setup
     #def                        setup(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options):
     savename,simSetup_simple1 = setup(args,mat,beamFile,Twiss,options,paths)
-    
+    #print(savename,simSetup_simple1)
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
     import miniScatterDriver
@@ -626,7 +626,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)
                     #The above comparison btwn PBW Exit Twiss and Target distrib shows that the beam distrib transforms during the drift from PBW Exit.
                             #That it isn't a mere drift, but the MCS causes a 14% larger beam in Y and 10% larger beam in X.
-            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,r"Müller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
+            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Müller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
                     #Position filtered to show spread
                     #The above comparison btwn the Twiss at Target with drift resulting from Muellers formalism and actual Target distrib shows that they are in strong agreement.
                             #The Mueller formalism equations with correct radiation lengths, etc produce beam sigmas within 1% in X and Y (-0.92% in X and +0.38% in Y)
@@ -669,21 +669,25 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         PMASreturn = [jMax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff]
 
         if args.gaussFit:
-            from plotFit import converter,gaussianFit
+            from plotFit import converter,gaussianFit,fitGaussians
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args.reBin) #convert from TH2D to numpy map
+            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args,True) #convert from TH2D to numpy map
             maxim = 500
             xBinSize = xax[maxim+1]-xax[maxim]
             yBinSize = yax[maxim+1]-yax[maxim]
             maxim=200
-            #gamma = 50
-            #alpha = 50
-            #voigtFit(Img,"x")#,gamma,alpha,args.xlim)
-            
-            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,False)
-            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,savename,3,10,args.saveFits,False)
+            yBinSize = 200
+            xBinSize = 200
+            Error = np.ones((2,2))
+            #fitGaussians(Img,Error,paths["statsPWD"],maxim,"y",5)
+            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,True)
+            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,savename,3,10,args.saveFits,True)
             #print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
+            if args.savePics:
+                from plotFit import rasterImage
+                PMASreturn = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths,0)
+
 
     if args.sim == "thick":
         from plotFit import getMoments
