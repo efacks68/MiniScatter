@@ -100,7 +100,7 @@ cbar = fig.colorbar(c, ax=ax,pad=0.01)
 cbar.set_label(cbarLabel,fontsize=fs-1)
 #cbar.set_ticks(cbarVals)
 #cbar.set_ticklabels(cbarLabels)
-picpath=statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 tight_layout()
 savefig(picpath+refImgName+".png")#
 close(fig)

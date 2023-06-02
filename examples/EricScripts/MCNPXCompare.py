@@ -15,7 +15,7 @@ def decode(path,file,lenx,leny,ind):
     if file[-1] != "v":
         print(file)
         file+=".csv"
-        print(file)
+        print(path+file)
     with open(path+file,mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
@@ -34,13 +34,13 @@ def decode(path,file,lenx,leny,ind):
                 print("ending",j)
                 break
     csv_file.close()
-    #print(Img.shape)
+    print(Img.shape)
     return Img,Error
 
 #path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/examples/EricScripts/"
 path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
-file = "ProtonDensityMaps_570MeV"
-filename = "ProtonDensityMap2_570MeV"
+file = "MCNP_ProtonDensity_570MeV"
+filename = "MCNP_ProtonDensityMap_570MeV"
 ind = 2
 lenx=77
 lowx = -76
@@ -98,7 +98,7 @@ def plot2DMPL(Img,ImgName,picpath):
 
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
 filename = file+"_2DMCNPXData"
-#plotMPL(Img,filename,picpath)
+plot2DMPL(Img,filename,picpath)
 
 with open(path+filename,mode='w') as csv_file:
     csv_writer = csv.writer(csv_file,delimiter = ',')
@@ -128,13 +128,13 @@ for xi in range(lenx):
 #c1.Print(picpath+filename+"_ROOT2D.png")
 
 #Fit
-yBinSize = 200
+yBinSize = 4
 width=yBinSize
 xBinSize = 200
-maximx = 760
-maximy = 2000
+maximx = 100
+maximy = 100
 savename = picpath+filename+"GaussiansFit"
-from plotFit import gaussianFit,fitGaussians
+from plotFit import gaussianFit,fitGaussians,gaussian2DFit
 def plot2DROOT(proj,ext,name):
         ca = ROOT.TCanvas()
         proj.Draw()
@@ -143,17 +143,27 @@ def plot2DROOT(proj,ext,name):
         ca.Print(name+"_ROOT2D_"+ext+".png")
         print(name+"_ROOT2D_"+ext+".png")
 
-def plot1DMPL(x,Img,ImgName,picpath,lab):
+def plot1DMPL(x,Img,ImgName,picpath,lab,axis):
     import matplotlib.pyplot as plt
-    plt.scatter(x,Img,label=lab)
-    plt.xlim(-40,40)
+    from numpy import ndenumerate
+    for i in range(len(Img)):
+        if Img[i] == 0: Img[i] = float('nan')
+    plt.semilogy(x,Img,label=lab)
+    #plt.yscale("log")
+    plt.xlim(-200,200)
+    plt.ylim(1e-8,1)
+    plt.grid(True,which='both')#,axis="y",color='r', linestyle='-', linewidth=0.7)
+    #plt.minorticks_on()
+    #plt.grid(b=True,which='minor',axis="y",color='b', linestyle='--', linewidth=0.7)
+    plt.xlabel(axis+" Axis [mm]")
+    plt.ylabel(r"Density / proton / cm$^2$")
     plt.legend()
-    plt.title(ImgName)
+    plt.title("Scattered Pencil Beam Density at Target")
     plt.savefig(picpath+ImgName+".png")
     print(picpath+ImgName+".png")
     if lab == "GEANT4": plt.close()
 
-def compare(ImgMCNP,ImgName,picpath,lim,axis):
+def compare(ImgMCNP,ImgName,picpath,lim,axis,histMCNP):
     from plotFit import converter
     from sys import path as sysPath
     from os import chdir
@@ -168,19 +178,19 @@ def compare(ImgMCNP,ImgName,picpath,lim,axis):
     parser.add_argument("--Nb",        type=int,   default=100,   help="Number of macroparticles per beamlet. Default=10")
     parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
     parser.add_argument("--reBin",     type=int, default=1,  help="Number of bins to make into 1 in 2D histogram for smoothing")
-    parser.add_argument("--Nbeamlet",type=float, default=1e7)
+    parser.add_argument("--Nbeamlet",type=float, default=9e6)
     parser.add_argument("--sim",       type=str,   default="beamlet")
     args = parser.parse_args()
     
     simSetup_simple1 = {'PHYS': 'QGSP_BERT_EMZ', 'ZOFFSET': '*-1', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
-                        'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.9, 'POSLIM': 1000.0, 
-                        'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': 10000000.0, 
+                        'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
+                        'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': 1e8, 
                         'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
                                                             'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
-                        'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/', 'OUTNAME': 'PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N1e+07_QBZ'}
+                        'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/', 'OUTNAME': 'PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N1e+08_QBZ'}
     TRYLOAD = True 
-    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-    (ImgGeant4, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],True,"PencilBeamHist",paths,args,True) #convert from TH2D to numpy map
+    (twiss_PBW, numPart_PBW, objects_PBW_G) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
+    (ImgGeant4, xax, yax) = converter(objects_PBW_G["tracker_cutoff_xy_PDG2212"],True,"PencilBeamHist",paths,args,True) #convert from TH2D to numpy map
     from numpy import linspace
     a=1
     if axis in {"y","Y"}:
@@ -191,7 +201,7 @@ def compare(ImgMCNP,ImgName,picpath,lim,axis):
         lenG = np.shape(ImgGeant4)[1]
         projG = ImgGeant4[:,round(lenG/2)-a:round(lenG/2)+a]
         projG = (projG[:,0] + projG[:,1]) / (a*2+1)
-        projG = projG[round(lenG/2)-round(len(projM)/2):round(lenG/2)+round(len(projM)/2)]
+        projG = projG[round(lenG/2)-round(len(projM)/2):round(lenG/2)+round(len(projM)/2)]/0.04
     elif axis in {"x","X"}:
         lenM = round(np.shape(ImgMCNP)[0])
         projM = ImgMCNP[round(lenM/2)-a:round(lenM/2)+a,:]
@@ -200,17 +210,18 @@ def compare(ImgMCNP,ImgName,picpath,lim,axis):
         lenG = np.shape(ImgGeant4)[0]
         projG = ImgGeant4[round(lenG/2)-a:round(lenG/2)+a,:]
         projG = (projG[0,:] + projG[1,:]) / (a*2+1)
-        projG = projG[round(lenG/2)-round(len(projM)/2):round(lenG/2)+round(len(projM)/2)]
+        projG = projG[round(lenG/2)-round(len(projM)/2):round(lenG/2)+round(len(projM)/2)]/0.04
     xM = linspace(-lim,lim,len(projM))
     xG = linspace(-lim,lim,len(projG))
-    print("M",lenM/2-a,len(xM),len(projM))#,"\n",projM)
-    print("G",round(lenG/2)-a,len(xG),len(projG))#,"\n",projG)
-    plot1DMPL(xM,projM,ImgName+axis,picpath,"MCNP")
-    plot1DMPL(xG,projG,ImgName+axis,picpath,"GEANT4")
-    
+    print("M",lenM/2-a,len(xM),len(projM),"G",round(lenG/2)-a,len(xG),len(projG))#,"\n",projG)
+    plot1DMPL(xM,projM,ImgName+axis,picpath,"MCNP",axis)
+    plot1DMPL(xG,projG,ImgName+axis,picpath,"GEANT4",axis)
+    #diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW_G["tracker_cutoff_xy_PDG2212"],axis,yBinSize,maximx,savename+"GEANT4",2,25,True,True)
+    #diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histMCNP,axis,yBinSize,maximx,savename+"MCNP",2,25,True,True)
+    #diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussian2DFit(objects_PBW_G["tracker_cutoff_xy_PDG2212"],axis,200,maximx,savename+"GEANT4",2,25,True,True)
 
 
-axis="x"
+
 #if   axis == "y" or axis == "Y": 
 #    proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
 #elif axis == "x" or axis == "X":
@@ -218,8 +229,8 @@ axis="x"
 #plot2DROOT(proj,"proj"+axis,picpath+filename)
 #fitGaussians(Img,Error,picpath,100,"y",1)#y
 #fitGaussians(Img,Error,picpath,highx,"x",3)#y
-compare(Img,"ComboImages",picpath,highx,"X")
-compare(Img,"ComboImages",picpath,highy,"Y")
+compare(Img,"ComboImages",picpath,highx,"X",hist)
+compare(Img,"ComboImages",picpath,highy,"Y",hist)
 #diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(hist,"y",yBinSize,maximx,savename,2,25,True,True)
 #diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(hist,"x",xBinSize,maximy,savename,3,10,True,True)
 

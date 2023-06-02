@@ -13,7 +13,7 @@
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --reBin 1
     #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e7 --compTargs --savePics
 #QP Jitter Study:
-    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-04Jitter_250x --beamClass jitter
+    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-04Jitter_500x --beamClass jitter
 #individual QP Fail:
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_QP116_80pctField_1.0e-04Jitter_200x --beamClass qpFail --qpNum 116
 #Map RA Dependence:
@@ -58,7 +58,7 @@ parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parame
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
 parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--statsFile", type=str,   default="EvalStats25Apr", help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats27Apr", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
@@ -93,6 +93,7 @@ parser.add_argument("--savePull",  action="store_true",  default=False,   help="
 parser.add_argument("--picFormat", choices=("png","jpeg","svg","pdf"), type=str, default="png",  help="Which picture format extension?")
 parser.add_argument("--matPlots",  action="store_true",  default=False,   help="Whether to do various material plots for beamlets")
 parser.add_argument("--saveSpread",action="store_true",  default=False,   help="Saves PMAS parameter spread histograms. Default=False")
+parser.add_argument("--saveParts", action="store_true",  default=False,   help="Saves initial Particle info in MiniScatter format(x,px,y,py,z,E). Default=False")
 parser.add_argument("--compTargs", action="store_true",  default=False,   help="Whether to compare Mueller formula with Target beamlet")
 parser.add_argument("--reBin",     type=int, default=4,  help="Number of bins to make into 1 in 2D histogram for smoothing")
 parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
@@ -256,7 +257,7 @@ else:
         print("it works!")
         mapRADependence(args,Twiss,i,paths,origBX,origBY)
 
-print("Simulation took ",datetime.now()-origin,"s long\n",sep="")
+print("All Simulations took ",datetime.now()-origin,"s long\n",sep="")
 
 if args.saveSpread:
     from plotFit import spreadHist

@@ -6,7 +6,7 @@
 def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     from datetime import datetime
     origin = datetime.now()
-    print(origin)
+    ##print(origin)
     from runARasterMaker import runARasterMaker
 
     #Constants for running scripts
@@ -43,4 +43,4 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     #print("saveStats start",datetime.now())
     saveStats(paths['statsPWD'],Twiss,rasterBeamFile,Jmax,pOutsideBoxes,beamArea,coreJMean,centX,centY,rValue,rDiff,"",args.reBin,args)
 
-    print("Simulation took ",datetime.now()-origin,"s long",sep="")
+    print("Single Simulation took ",datetime.now()-origin,"s long",sep="")

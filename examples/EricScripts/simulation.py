@@ -230,7 +230,6 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     #import miniScatterPlots
     #constants for below use
     QUIET     = False #Reduced output, doesn't show events
-    saveParts = False
     ### Basic simulation parameters ###
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     NUM_THREADS = 8 #Number of parallel threads to use for scans
@@ -267,17 +266,13 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             myTree.GetEntry(i)
             #print(myTree.x,myTree.y,myTree.px,myTree.py,myTree.E,myTree.PDG,myTree.charge,myTree.eventID)
             xinit[i] = myTree.x *mm #[m]?
-            #pxinit[i] = myTree.px
+            pxinit[i] = myTree.px
             yinit[i] = myTree.y *mm #[m]?
-            #pyinit[i] = myTree.py
-            #Einit[i] = myTree.E
+            pyinit[i] = myTree.py
+            Einit[i] = myTree.E
         myFile.Close()
 
-        from plotFit import Drift
-        initTargx = Drift(TwissIx,"initX")
-        initTargy = Drift(TwissIy,"initY")
-
-        if saveParts:
+        if args.saveParts:
             from plotFit import printParticles
             printParticles(savename,xinit,pxinit,yinit,pyinit,Einit)
 
@@ -377,7 +372,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         pztarg = np.zeros(myTree.GetEntries())
         Etarg = np.zeros(myTree.GetEntries())
         PDGtarg = np.zeros(myTree.GetEntries())
-        #print("The length of the arrays are ",myTree.GetEntries())#len(pztarg))
+        print("The length of the arrays are ",myTree.GetEntries())#len(pztarg))
 
         for i in range(myTree.GetEntries()): #put data in arrays
             myTree.GetEntry(i)
@@ -602,7 +597,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             plotTwissFit(yexit_filtered/mm,pyexit_filtered,savename+"texitFiltered",mat,"PBW Exit","Y",args.t,thetasq,beta_rel,gamma_rel,TwissIy)
 
         #Extension to Target. Needed for compareTargets!
-        from plotFit import Drift,compareTargets
+        from plotFit import Drift,compareTargets,getMoments
         if args.t==0:
             z0Diff = simSetup_simple1["MAGNET"][0]["pos"] - 24.125
         else:z0Diff=0
@@ -616,6 +611,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
         #Now compare the MiniScatter Target distribution (targxTwissf) to initTarg, exitTarg, e8Targ and e16Targ PDFs
         if args.compTargs:
+            print("args.compTargs")
             e2t = "Extended to Target"
             #this is to look at exit distribution: #doesn't match well
             ##compareTargets(xexit/mm,yexit/mm,exitxTwf,exityTwf,TwissIx,TwissIy,"PBW Exit",savename+"PBWExit",mat,PBWTwx,PBWTwy,args)
@@ -626,7 +622,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             #compareTargets(xtarg_filtered/mm,ytarg_filtered/mm,targxTwissf,targyTwissf,exitTargx,exitTargy,"PBW Exit Twiss "+e2t,savename,mat,PBWTwx,PBWTwy,args)
                     #The above comparison btwn PBW Exit Twiss and Target distrib shows that the beam distrib transforms during the drift from PBW Exit.
                             #That it isn't a mere drift, but the MCS causes a 14% larger beam in Y and 10% larger beam in X.
-            compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Müller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
+            targSigX,targSigY = compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Müller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
                     #Position filtered to show spread
                     #The above comparison btwn the Twiss at Target with drift resulting from Muellers formalism and actual Target distrib shows that they are in strong agreement.
                             #The Mueller formalism equations with correct radiation lengths, etc produce beam sigmas within 1% in X and Y (-0.92% in X and +0.38% in Y)
@@ -634,6 +630,10 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
                     #This shows that the eq 16 calculations don't work xD
             #print(args.t)
             #print("make plots",datetime.now().strftime("%H-%M-%S"))
+            targSigsX = [targSigX,0]
+            targSigsY = [targSigY,0]
+            e8SigsX = getMoments(e8TargxReal)
+            e8SigsY = getMoments(e8TargyReal)
 
             #Target comparison plots
             if args.t == 0.1:
@@ -652,7 +652,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
         #plot1DRaster(xtarg_filtered_p/mm,ytarg_filtered_p/mm,"Traster",savename,mat,"Target")
         (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
         PMASreturn = rasterImage(savename,"Target",objects_PBW["tracker_cutoff_xy_PDG2212"],simSetup_simple1["N"],args,Twiss,options,boxes,paths,0)
-        
+    
         #if options['initTree']:
         #    (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["init_xy"])
         #    #plot1DRaster(xinit/mm,yinit/mm,"Iraster",savename,mat,"PBW")
@@ -672,13 +672,13 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             from plotFit import converter,gaussianFit,fitGaussians
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args,True) #convert from TH2D to numpy map
+            (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args,False) #convert from TH2D to numpy map
             maxim = 500
             xBinSize = xax[maxim+1]-xax[maxim]
             yBinSize = yax[maxim+1]-yax[maxim]
-            maxim=200
-            yBinSize = 200
-            xBinSize = 200
+            maxim=500
+            yBinSize = 500
+            xBinSize = 500
             Error = np.ones((2,2))
             #fitGaussians(Img,Error,paths["statsPWD"],maxim,"y",5)
             diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,True)
@@ -690,11 +690,18 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
 
     if args.sim == "thick":
-        from plotFit import getMoments
+        from plotFit import getMoments,compareTargets,findFit
         e8SigsX = getMoments(e8TargxReal)
         e8SigsY = getMoments(e8TargyReal)
         targSigsX = getMoments(targxTwissf)
         targSigsY = getMoments(targyTwissf)
+        print("getting targx",np.shape(xtarg_filteredP))
+        #_,targSigX,_,_ = findFit(xtarg_filteredP/mm,[0.01,0.1,10],(0,[1e8,1,20]),"auto")
+        #targSigX,targSigY = compareTargets(xtarg_filteredP/mm,ytarg_filteredP/mm,targxTwissf,targyTwissf,e8TargxReal,e8TargyReal,"Müller Eqn 8",savename,mat,PBWTwx,PBWTwy,args)
+        targSigsX = [targSigX,0]
+        print("getting targy")
+        #_,targSigY,_,_ = findFit(ytarg_filteredP/mm,[0.01,0.1,10],(0,[1e8,1,20]),"auto")
+        targSigsY = [targSigY,0]
         print(e8SigX,e8SigY,targSigX,targSigY)
     else:
         e8SigsX = [0,0];e8SigsY = [0,0]; targSigsX = [0,0]; targSigsY = [0,0]

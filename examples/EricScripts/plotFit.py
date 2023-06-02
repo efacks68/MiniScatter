@@ -145,28 +145,43 @@ def gaussian(x,amplitude,mu,sigma):
 def findFit(data,guess,lims,nBins):
     #with help from MSeifert in stackoverflow fit a curve to a histogram in python
     #https://stackoverflow.com/questions/35544233/fit-a-curve-to-a-histogram-in-python
-    from numpy import diff,linspace
-    from matplotlib.pyplot import hist,plot,close,savefig
+    import numpy as np
+    import matplotlib.pyplot as plt
     from scipy.optimize import curve_fit
     #from plotFit import gaussian
 
-    close()
-    #print(data)
-    bin_heights, bin_borders, _ = hist(data,bins=nBins,label="histogram")
-    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #savefig(pwd+"hist.png"); print(pwd+"hist.png")
-    #print(len(bin_borders))
-    bin_centers = bin_borders[:-1] + diff(bin_borders) / 2
+    #plt.clf()
+    #plt.figure()
 
-    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,p0=guess,bounds=lims) #p0 should be good start
-    x_interval_for_fit = linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
-    plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
+    #print(data)
+    print("here",np.shape(data))
+    #bin_heights, bin_borders, _ = plt.hist(data,bins=nBins,label="histogram")
+    bin_heights, bin_borders = np.histogram(data,bins=nBins)
+    pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+    #plt.savefig(pwd+"hist.png"); print(pwd+"hist.png")
+    print(len(bin_borders))
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    #should weight with 1/sqrt(N) check errors should be rel or abs. curve fit will take either cov matrix of input (sigma^2) could take diagonal if no correlation (1/sigma^2(weight)).
+    #  need to make array of sigmas 
+    bin_sigmas=np.sqrt(bin_heights)
+    #for idx, val in np.ndenumerate(bin_sigmas):
+    #    if val == 0: bin_sigmas[idx] = 1e-6
+
+    #Exclude bins with no data, like ROOT chi2 fitting    
+    bin_nonzero_idxs = bin_heights > 0
+    bin_heights = bin_heights[bin_nonzero_idxs]
+    bin_centers = bin_centers[bin_nonzero_idxs]
+    bin_sigmas  = bin_sigmas [bin_nonzero_idxs]
+
+    popt,_ = curve_fit(gaussian, bin_centers, bin_heights,sigma=bin_sigmas, p0=guess,bounds=lims) #p0 should be good start
+    x_interval_for_fit = np.linspace(bin_borders[0],bin_borders[-1],len(bin_borders))
+    #plt.plot(x_interval_for_fit, gaussian(x_interval_for_fit,*popt),label="fit")
     #plt.legend()
     #plt.xlim([bin_borders[0],bin_borders[-1]])
     #plt.show()
     #pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-    #savefig(pwd+"fit.png")
-    close() #be sure to close this or else these show up in the multi plots!
+    #plt.savefig(pwd+"fit.png")
+    #plt.close() #be sure to close this or else these show up in the multi plots!
     #print(popt)
     #return the mean, abs(sigma), interval #sigma can sometimes be - so must abs() it.
         #   mu,     sigma,       ampl
@@ -320,8 +335,8 @@ def plotTwissFit(xs,pxs,savename,mat,titledescr,axis,thick,thetasq,beta_rel,gamm
     print("Recalculated Twiss:","Betax: {:.2f}m, alphax: {:.2f}, Geo Emitt x: {:.3e}m".format(calcTwf[0],calcTwf[1],calcTwf[2]))
 
     #Get intervals and info about distribution
-    mux,sigmax,amplx,xinterval =    findFit(xs, [0.01,0.1,10],(0,[1,10,100]))
-    mupx,sigmapx,amply,pxinterval = findFit(pxs,[0.01,0.1,10],(0,[1,10,100])) #this is a least square fit to Gaussian, so less sensitive to outliers.
+    mux,sigmax,amplx,xinterval =    findFit(xs, [0.01,0.1,10],(0,[1,10,100]),"auto")
+    mupx,sigmapx,amply,pxinterval = findFit(pxs,[0.01,0.1,10],(0,[1,10,100]),"auto") #this is a least square fit to Gaussian, so less sensitive to outliers.
     print("Histogram   sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(sigmax,sigmapx/mm))
     print("Calculated  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Mcal[0],Mcal[1]/mm))
     print("Equation 8  sigmaTwx: {:.2f}mm, sigmaTwX': {:.2f}mrad".format(Me8[0],Me8[1]/mm))
@@ -464,9 +479,11 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     mm = 1e-3
     fs = 14
 
-    #Find fit to histogram
-    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,0.1,15],(0,[5e10,7e10,7e10]),"auto") #to accomodate 1e7 protons
-    muy,sigmay,amply,yinterval = findFit(targy,[0.01,0.1,15],(0,[5e10,7e10,7e10]),"auto")
+    #Find fit to histogram                                     #ampl,mu,sigma
+    print("compareTargs")
+    mux,sigmax,amplx,xinterval = findFit(targx,[0.01,0.1,15],(0,[5e8,100,100]),"auto") #to accomodate 1e7 protons
+    muy,sigmay,amply,yinterval = findFit(targy,[0.01,0.1,15],(0,[5e8,100,100]),"auto")
+    print("findfit: {:.3f}, {:.3f}; np: {:.3f}, {:.3f}".format(sigmax,sigmay,np.std(targx),np.std(targy)))
 
     #Find range of particles that are outside 3 sigma
     sigx=np.abs(targx)>3*sigmax# and np.abs(xs)<10*sigma)
@@ -507,8 +524,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     #Add the "best fit" line using the findFit mu and sigma for x and display sigma
     y1a = norm.pdf(binsx, mux, sigmax)
     l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Least Square")
-    y1b = norm.pdf(binsx, mux, Mhx[0])
-    l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS")
+    #y1b = norm.pdf(binsx, mux, Mhx[0])
+    #l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS") #sample RMS
     y1c = norm.pdf(binsx, mux, Mfx[0])
     l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
@@ -518,15 +535,15 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     #Add the "best fit" line using the findFit mu and sigma for Y and display sigma
     y2a = norm.pdf(binsy, muy, sigmay)
     l2a = s2.plot(binsy, y2a, "k--", linewidth=1,label="Histogram Least Square")
-    y2b = norm.pdf(binsy, muy, Mhy[0])
-    l2b = s2.plot(binsy, y2b, "r--", linewidth=2,label="Target Twiss RMS")
+    #y2b = norm.pdf(binsy, muy, Mhy[0])
+    #l2b = s2.plot(binsy, y2b, "r--", linewidth=2,label="Target Twiss RMS")
     y2c = norm.pdf(binsy, muy, Mfy[0])
     l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
     #Write texts to display sigmas
     sigmatextx = r"$\sigma_{X}$:"
     sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
-    sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
+    #sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
     import re
     if re.search(",",fitlabel): #Not sure what this is for...
         label = re.sub(".+(?<=(,))","",fitlabel)
@@ -539,7 +556,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     sigmatexty = r"$\sigma_{Y}$:"
     sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
-    sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mhy[0])+"mm"
+    #sigmatexty +="\nTwiss RMS = "+"{:.2f}".format(Mhy[0])+"mm"
     sigmatexty +="\n"+label+" RMS = "+"{:.2f}".format(Mfy[0])+"mm"
     #sigmatexty +="\n\n{:.3f}% outside".format(pOut3sigy)+r" 3$\sigma$"
     sigmatexty += "\nHistogram/Müller={:.2f}".format((sigmay/Mfy[0]-1)*100)+"%"
@@ -601,7 +618,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
         plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
     plt.close()
     print(name)
-
+    return sigmax,sigmay
 
 
 
@@ -619,7 +636,7 @@ def printParticles(savename,xinit,pxinit,yinit,pyinit,Einit):
     import csv
     from datetime import datetime
     dt = datetime.now()
-    z = -5
+    z = -1
 
     fname = savename+'.csv'
     with open(fname,mode = 'w') as part_file:
@@ -779,9 +796,48 @@ def numLines(filename):
 
 
 
+def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
+    #from Kyrre's doubleGaussian.ipynb example
+    import ROOT
+    #def plot(proj,ext):
+    #    ca = ROOT.TCanvas()
+    #    proj.Draw()
+    #    #proj.GetXaxis().SetRangeUser(-maxim,maxim)
+    #    #ca.SetLogy()
+    #    picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
+    #    ca.Print(picpath+"MCNPXDataROOT2D_"+ext+"2D.png")
+    #    print(picpath+"MCNPXDataROOT2D_"+ext+"2D.png")
 
+    ROOT.gStyle.SetOptStat("iouRMe")
+    ROOT.gStyle.SetOptFit(100)
+    ROOT.gStyle.SetStatW(0.15)
+    ROOT.gStyle.SetStatH(0.1)
+    #plot(hist,"test")
+    #Project center slice 
+    integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
+    hist.Scale(1/integral)
+    sum = hist.Integral()
+    #print(integral,sum)
+    #print(f"axis={axis}","binY",hist.GetYaxis().FindBin(-width), hist.GetYaxis().FindBin(width),"binX",hist.GetXaxis().FindBin(-width), hist.GetXaxis().FindBin(width))
 
-
+    #Define a 2D gaussian function and fit it to the projection
+    f1 = ROOT.TF2('f1','bigaus',-maxim,maxim,-maxim,maxim)
+    f1.SetNpx(500)
+    f1_res = hist.Fit(f1, 'RSQ')
+    #ca = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
+    #hist.Draw("E0")
+    #f1.SetLineColor(ROOT.kRed)
+    #f1_res.Draw('same')
+    #ca.SetLogz()
+    #ca.Print(name+"_init2D.png")
+    print(f1_res)
+    p0 = f1.GetParameter(0) #weight x 
+    p1 = f1.GetParameter(1) #mu x 
+    p2 = f1.GetParameter(2) #sigma x 
+    p3 = f1.GetParameter(3) #weight x 
+    p4 = f1.GetParameter(4) #mu x 
+    p5 = f1.GetParameter(5) #sigma x 
+    print("initial 2D Gaussian fit parameters:",p0,p1,p2,p3,p4,p5)
 
 
 
@@ -789,29 +845,34 @@ def numLines(filename):
 def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
-    def plot(proj,ext):
-        ca = ROOT.TCanvas()
-        proj.Draw()
+    #def plot(proj,ext):
+    #    ca = ROOT.TCanvas()
+    #    proj.Draw()
         #proj.GetXaxis().SetRangeUser(-maxim,maxim)
         #ca.SetLogy()
-        picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
-        ca.Print(picpath+"MCNPXDataROOT2D_"+ext+".png")
-        print(picpath+"MCNPXDataROOT2D_"+ext+".png")
+    #    picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
+    #    ca.Print(picpath+"MCNPXDataROOT2D_"+ext+".png")
+    #    print(picpath+"MCNPXDataROOT2D_"+ext+".png")
 
-    ROOT.gStyle.SetOptFit(100)
+    ROOT.gStyle.SetOptStat("iouRMe")
+    ROOT.gStyle.SetOptFit(101)
+    ROOT.gStyle.SetStatW(0.225)
+    ROOT.gStyle.SetStatH(0.125)
     #plot(hist,"test")
     #Project center slice 
-    integral = hist.Integral()
+    integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
     hist.Scale(1/integral)
     sum = hist.Integral()
-    print(integral,sum)
-
+    #print(integral,sum)
+    
     if   axis == "y" or axis == "Y": 
-        proj = hist.ProjectionY(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width))
+        g=2
+        proj = hist.ProjectionY(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
     elif axis == "x" or axis == "X":
+        g=2
         proj = hist.ProjectionX(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width)) #why?
     #plot(proj,"proj"+axis)
-    print("bin",hist.GetYaxis().FindBin(width))
+    print(f"axis={axis}","binY",hist.GetYaxis().FindBin(-width), hist.GetYaxis().FindBin(width),"binX",hist.GetXaxis().FindBin(-width), hist.GetXaxis().FindBin(width))
     differenceNG = 100
     total = 100
     differencePG = 100
@@ -819,20 +880,26 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
     #Define a gaussian function and fit it to the projection
     f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
+    f1.SetNpx(5000)
     f1_res = proj.Fit(f1, 'RSQ')
+    #ca = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
+    #proj.Draw("E0")
+    #f1.SetLineColor(ROOT.kRed)
+    #f1_res.Draw('same')
+    #ca.SetLogy()
+    #ca.Print(name+"_init.png")
     #print(f1_res)
     p0 = f1.GetParameter(0) #weight
     p1 = f1.GetParameter(1) #mu
     p2 = f1.GetParameter(2) #sigma
-    print("initial Gaussian fit parameters:",p0,p1,p2)
+    #print("initial Gaussian fit parameters:",p0,p1,p2)
 
     #Define function of a sum of multiple Gaussians to fit to projection
     r=0.1
-    g=3
     if g == 1:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
     elif g ==2:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * 1/(x**2 + [3]**2)',-maxim,maxim) #[2] * /(x**2 + [3]**2) #[2] / x ** 3 + [3]
     elif g == 3:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
     elif g == 4:
@@ -842,49 +909,89 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
-    if axis == "y" or axis == "Y":
-        f2.SetParameters(p0,p2,p0,p2,p0*y2**2,p2*y2**2,p2*y2**3,p2*y2**3,p2*y2**5,p2*y2**5)
+    if axis in {"y","Y","x","X"}: #y1 =2, y2 = 20
+        f2.SetParNames("A","#sigma","B","#gamma","w3","s3","w4","s4","w5","s5")
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*0.5,p0*(1+r))       #weight1
-        f2.SetParLimits(1,p2*0.5,p2*(1+r))       #sigma1
-        f2.SetParLimits(2,p0*(1-r*y1),p0*(1+r))      #weight2
-        f2.SetParLimits(3,p2*(1-r*y1),p2*(1+r))      #sigma2
-        f2.SetParLimits(4,p0*y1, p0*y2**8)     #weight3
-        f2.SetParLimits(5,p2*y1, p2*y2**8)     #sigma3
-        f2.SetParLimits(6,p0*y2**2, p0*y2**8)  #weight4
-        f2.SetParLimits(7,p2*y2**2, p0*y2**8)  #sigma4
-        f2.SetParLimits(8,p0*y2**4, p0*y2**10) #weight5
-        f2.SetParLimits(9,p2*y2**4, p0*y2**10) #sigma5
-    elif axis == "x" or axis == "X":
-        f2.SetParameters(p0,p2,p0*y1*2,p2*y1*2,p0*y2**2,p2*y2**2,p2*y2**3,p2*y2**3,p2*y2**5,p2*y2**5)
+        f2.SetParameter(0,p0)#weight1
+        f2.SetParLimits(0,p0*(1-r),p0*(1+r))      #weight1
+        f2.SetParameter(1,p2)#sigma1
+        f2.SetParLimits(1,p2*(1-r),p2*(1+r))       #sigma1
+
+        #f2.SetParameter(2,p0*r)#weight2
+        #f2.SetParLimits(2,0,p0) #weight2
+        #f2.SetParameter(3,p2*(1+r))#sigma2
+        #f2.SetParLimits(3,p2,p2*1e1) #sigma2
+
+        f2.SetParameter(2,0.1)#weight2
+        f2.SetParLimits(2,0,10) #weight2
+        f2.SetParameter(3,5)#1/x^3
+        f2.SetParLimits(3,0,1e2) #?
+
+        f2.SetParameter(4,p0*r**2)#weight3
+        f2.SetParLimits(4,0, p0)     #weight3
+        f2.SetParameter(5,p2*(1+2*r))#sigma3
+        f2.SetParLimits(5,p2, p2*1e1)     #sigma3
+
+        f2.SetParameter(6,p0*r**4)#weight4
+        f2.SetParLimits(6,0, p0)  #weight4
+        f2.SetParameter(7,p2*(1+3*r))#sigma3
+        f2.SetParLimits(7,p2, p2*1e1)  #sigma4
+
+        f2.SetParameter(8,p0*r**5)#weight5
+        f2.SetParLimits(8,0, p0) #weight5
+        f2.SetParameter(9,p2*(1+4*r))#sigma5
+        f2.SetParLimits(9,p2, p2*1e1) #sigma5
+
+    elif axis == "w" or axis == "W":
+        f2.SetParNames("w1","s1","w2","s2","w3","s3","w4","s4","w5","s5")
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParLimits(0,p0*r,p0*(1+r))       #weight1
-        f2.SetParLimits(1,p2*r,p2*(1+r))       #sigma1
-        f2.SetParLimits(2,p0*(1-r),p0*y2)      #weight2
-        f2.SetParLimits(3,p2*(1-r),p2*y2)      #sigma2
-        f2.SetParLimits(4,p0*y2, p0*y2**6)     #weight3
-        f2.SetParLimits(5,p2*y2, p2*y2**6)     #sigma3
-        f2.SetParLimits(6,p0*y2**2, p0*y2**8)  #weight4
-        f2.SetParLimits(7,p2*y2**2, p0*y2**8)  #sigma4
-        f2.SetParLimits(8,p0*y2**4, p0*y2**10) #weight5
-        f2.SetParLimits(9,p2*y2**4, p0*y2**10) #sigma5
+        f2.SetParameter(0,p0)#weight1
+        f2.SetParLimits(0,p0*(1-r),p0*(1+r))      #weight1
+        f2.SetParameter(1,p2)#sigma1
+        f2.SetParLimits(1,p2*(1-r),p2*(1+r))       #sigma1
+
+        #f2.SetParameter(2,p0*r)#weight2
+        #f2.SetParLimits(2,0,p0) #weight2
+        #f2.SetParameter(3,p2*(1+r))#sigma2
+        #f2.SetParLimits(3,p2,p2*1e1) #sigma2
+
+        f2.SetParameter(2,1)#weight2
+        f2.SetParLimits(2,1,1) #weight2
+        f2.SetParameter(3,0)#1/x^3
+        f2.SetParLimits(3,0,0) #?
+
+        f2.SetParameter(4,p0*r**2)#weight3
+        f2.SetParLimits(4,0, p0)     #weight3
+        f2.SetParameter(5,p2*(1+2*r))#sigma3
+        f2.SetParLimits(5,p2, p2*1e1)     #sigma3
+
+        f2.SetParameter(6,p0*r**4)#weight4
+        f2.SetParLimits(6,0, p0)  #weight4
+        f2.SetParameter(7,p2*(1+3*r))#sigma3
+        f2.SetParLimits(7,p2, p2*1e1)  #sigma4
+
+        f2.SetParameter(8,p0*r**5)#weight5
+        f2.SetParLimits(8,0, p0) #weight5
+        f2.SetParameter(9,p2*(1+4*r))#sigma5
+        f2.SetParLimits(9,p2, p2*1e1) #sigma5
+    f2.SetNpx(5000)
     f2_res = proj.Fit(f2, 'RSQ')
     if g==1:
-        print("Gaussian: {:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1)))
+        print("Gaussian: {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma")))
     elif g==2:
-        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma")))
     elif g==3:
-        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5)))
     elif g==4:
-        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
     elif g==5:
-        print("Gaussian: {:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f},{:.2f},{:.3f}".format(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
 
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
 
-        c1 = ROOT.TCanvas()
+        c1 = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
         proj.Draw("E0")
         f2.SetLineColor(ROOT.kRed)
         f2_res.Draw('same')
@@ -893,6 +1000,23 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
         if axis == "y" or axis == "Y":  proj.GetXaxis().SetRangeUser(-maxim,maxim)
         elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
         c1.SetLogy()
+
+        leg = ROOT.TLegend(0.125,0.675,0.425,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
+        leg.AddEntry(proj,"Particle Density")
+        leg.AddEntry(f2,"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{2} + #gamma^{2}}")
+        #leg.SetHeader("Fits")
+        leg.Draw("E0")
+
+        #ta = ROOT.char(6)
+        
+        #t1 = ROOT.TText(0.1,0.65,f2.GetParameter("w1"))
+        #t2 = ROOT.TText(0.1,0.60,ROOT.Form("#sigma = %.3f", f2.GetParameter("s1")))
+        #t3 = ROOT.TText(0.1,0.55,ROOT.Form("B = %.3f",f2.GetParameter("w2")))
+        #t4 = ROOT.TText(0.1,0.50,ROOT.Form("#gamma = %.3f", f2.GetParameter("s2")))
+        #t1.Draw()
+        #t2.Draw()
+        #t3.Draw()
+        #t4.Draw()
         c1.Print(name+"_"+axis+str(g)+"GaussFit"+str(maxim)+".png")
 
     #    import numpy as np
@@ -919,8 +1043,8 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     #differencePG = differenceNG/total*100
-    coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3)]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
-    print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f}".format(differenceNG,total,Gchi2))#,"\n")#,coeffs)
+    coeffsG = [f2.GetParameter("A"),f2.GetParameter("#sigma")]#,f2.GetParameter("w2"),f2.GetParameter("s2")]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
+    print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f} /".format(differenceNG,total,Gchi2),f2_res.Ndf())#,"\n")#,coeffs)
     
     """
     #Now do for Lorentzian
@@ -1294,16 +1418,16 @@ def converter(hIn,saveHist,name,paths,args,density):
     
     hOut = zeros( (len(yax), len(xax)) ) #2D Image map
 
-    #if density:
-    #    integral = hIn.Integral()
-    #    hIn.Scale(1/integral)
-    #    print(integral,1/integral)
+    if density:
+        integral = hIn.Integral()
+        hIn.Scale(1/integral)
+        print(integral,1/integral)
     #Fill Image map with 2D histogram values
     for xi in range(hIn.GetXaxis().GetNbins()):
         for yi in range(hIn.GetYaxis().GetNbins()):
             bx = hIn.GetBin(xi+1,yi+1)
             if density:
-                hOut[yi,xi] = hIn.GetBinContent(bx)/nParts#*reBin #rebin now is summed, kind of... this messes up the counts if reBin!=1 is used, so this doesn't work.
+                hOut[yi,xi] = hIn.GetBinContent(bx)#/nParts#*reBin #rebin now is summed, kind of... this messes up the counts if reBin!=1 is used, so this doesn't work.
             else:
                 hOut[yi,xi] = hIn.GetBinContent(bx)
     #Must add Overflow options!!!
@@ -1332,7 +1456,8 @@ def converter(hIn,saveHist,name,paths,args,density):
                 hist_writer = csv.writer(hist_file,delimiter = ',')
                 hist_writer.writerows(hOut)
             hist_file.close()
-            print(paths['scratchPath']+"targetCSVs/"+name+".csv")
+            print("saved Distribution at Target",paths['scratchPath']+"targetCSVs/"+name+".csv")
+        else: print("Distribution already present at:",paths['scratchPath']+"targetCSVs/"+name+".csv")
 
     return (hOut,xax,yax)
 

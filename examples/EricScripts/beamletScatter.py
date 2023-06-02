@@ -23,7 +23,9 @@ def beamletScatter(args,Twiss,i,paths):
         args.material = "Al" #overwrites potential user input. Needs work
     elif args.t == 0.1:
         args.material = "Vac"
-    args.beamFile = ""
+
+    args.beamFile = ""#/scratch2/ericdf/PBWScatter/ESS/tDependence_beta1085.63,136.06m_t2.25mm_N1e+05_runW_QBZ"
+
     if args.gaussFit and not args.compTargs:
         options['MiniRoot'] = True
     if args.compTargs:
@@ -34,6 +36,9 @@ def beamletScatter(args,Twiss,i,paths):
         options['initTree'] = True
         options['exitTree'] = True
         options['targetTree'] = True
+    if args.saveParts:
+        options['MiniRoot'] = False
+        options['initTree'] = True
     boxes = [0]#,-.25,-.375,-.45,-.50]#,0.125,0.25,0.375] #make an args for 24.11.22
 
     #Send to runPBW to simulate with MiniScatter or opens already run data
