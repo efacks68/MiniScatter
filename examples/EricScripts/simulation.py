@@ -681,8 +681,8 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
             xBinSize = 500
             Error = np.ones((2,2))
             #fitGaussians(Img,Error,paths["statsPWD"],maxim,"y",5)
-            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,True)
-            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,savename,3,10,args.saveFits,True)
+            diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"y",yBinSize,maxim,savename,2,25,args.saveFits,True,args.gauss2Fit)
+            diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(objects_PBW["tracker_cutoff_xy_PDG2212"],"x",xBinSize,maxim,savename,3,10,args.saveFits,True,args.gauss2Fit)
             #print(diffNx,diffPx,diffNy,diffPy,"\n",coeffsx,"\n",coeffsy)
             if args.savePics:
                 from plotFit import rasterImage

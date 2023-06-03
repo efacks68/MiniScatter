@@ -814,7 +814,7 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     ROOT.gStyle.SetStatH(0.1)
     #plot(hist,"test")
     #Project center slice 
-    integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
+    integral = hist.Integral(hist.GetXaxis().FindBin(-2),hist.GetXaxis().FindBin(2),hist.GetYaxis().FindBin(-2),hist.GetYaxis().FindBin(2))
     hist.Scale(1/integral)
     sum = hist.Integral()
     #print(integral,sum)
@@ -842,7 +842,7 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
 
 
-def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
+def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
     #def plot(proj,ext):
@@ -856,7 +856,7 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
     ROOT.gStyle.SetOptStat("iouRMe")
     ROOT.gStyle.SetOptFit(101)
-    ROOT.gStyle.SetStatW(0.225)
+    ROOT.gStyle.SetStatW(0.2)
     ROOT.gStyle.SetStatH(0.125)
     #plot(hist,"test")
     #Project center slice 
@@ -866,10 +866,8 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #print(integral,sum)
     
     if   axis == "y" or axis == "Y": 
-        g=2
         proj = hist.ProjectionY(axis,hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width))
     elif axis == "x" or axis == "X":
-        g=2
         proj = hist.ProjectionX(axis,hist.GetYaxis().FindBin(-width),hist.GetYaxis().FindBin(width)) #why?
     #plot(proj,"proj"+axis)
     print(f"axis={axis}","binY",hist.GetYaxis().FindBin(-width), hist.GetYaxis().FindBin(width),"binX",hist.GetXaxis().FindBin(-width), hist.GetXaxis().FindBin(width))
@@ -899,48 +897,49 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     if g == 1:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
     elif g ==2:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * 1/(x**2 + [3]**2)',-maxim,maxim) #[2] * /(x**2 + [3]**2) #[2] / x ** 3 + [3]
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4]',-maxim,maxim) #[2] / (x**2 + [3]**2) #[2] / x ** 3 + [3]
     elif g == 3:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
     elif g == 4:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 5:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
+        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
     if axis in {"y","Y","x","X"}: #y1 =2, y2 = 20
-        f2.SetParNames("A","#sigma","B","#gamma","w3","s3","w4","s4","w5","s5")
+        if g in {2,3,4,5}:   f2.SetParNames("A_{1}","#sigma_{1}","#lambda","#gamma","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}")#2
+        else:      f2.SetParNames("A_{1}","#sigma_{1}","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}","A_{5}","#sigma_{5}")
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
         f2.SetParameter(0,p0)#weight1
         f2.SetParLimits(0,p0*(1-r),p0*(1+r))      #weight1
         f2.SetParameter(1,p2)#sigma1
         f2.SetParLimits(1,p2*(1-r),p2*(1+r))       #sigma1
 
-        #f2.SetParameter(2,p0*r)#weight2
-        #f2.SetParLimits(2,0,p0) #weight2
-        #f2.SetParameter(3,p2*(1+r))#sigma2
-        #f2.SetParLimits(3,p2,p2*1e1) #sigma2
+        f2.SetParameter(2,0.1)#lambda 0.1
+        f2.SetParLimits(2,1e-9,10) #lambda 2,1e-9,10
+        f2.SetParameter(3,1e-5)#gamma 3,1e-5
+        f2.SetParLimits(3,0,5e2) #gamma 3,0,1e2
 
-        f2.SetParameter(2,0.1)#weight2
-        f2.SetParLimits(2,0,10) #weight2
-        f2.SetParameter(3,5)#1/x^3
-        f2.SetParLimits(3,0,1e2) #?
+        f2.SetParameter(4,p0*r**2)#weight2
+        f2.SetParLimits(4,0, p0)     #weight2
+        f2.SetParameter(5,p2*(1+2*r))#sigma2
+        f2.SetParLimits(5,p2, p2*5e1) #sigma2
 
-        f2.SetParameter(4,p0*r**2)#weight3
-        f2.SetParLimits(4,0, p0)     #weight3
-        f2.SetParameter(5,p2*(1+2*r))#sigma3
-        f2.SetParLimits(5,p2, p2*1e1)     #sigma3
-
-        f2.SetParameter(6,p0*r**4)#weight4
-        f2.SetParLimits(6,0, p0)  #weight4
+        f2.SetParameter(6,p0*r**4)#weight3
+        f2.SetParLimits(6,0, p0)  #weight3
         f2.SetParameter(7,p2*(1+3*r))#sigma3
-        f2.SetParLimits(7,p2, p2*1e1)  #sigma4
+        f2.SetParLimits(7,p2, p2*1e2) #sigma3
 
-        f2.SetParameter(8,p0*r**5)#weight5
-        f2.SetParLimits(8,0, p0) #weight5
-        f2.SetParameter(9,p2*(1+4*r))#sigma5
-        f2.SetParLimits(9,p2, p2*1e1) #sigma5
+        f2.SetParameter(8,p0*r**5)#weight4
+        f2.SetParLimits(8,0, p0) #weight4
+        f2.SetParameter(9,p2*(1+4*r))#sigma4
+        f2.SetParLimits(9,p2, p2*1e2) #sigma4
+
+        #f2.SetParameter("A_{5}",p0*r)#weight2
+        #f2.SetParLimits("A_{5}",0,p0) #weight2
+        #f2.SetParameter("#sigma_{5}",p2*(1+r))#sigma2
+        #f2.SetParLimits("#sigma_{5}",p2,p2*1e1) #sigma2
 
     elif axis == "w" or axis == "W":
         f2.SetParNames("w1","s1","w2","s2","w3","s3","w4","s4","w5","s5")
@@ -977,21 +976,24 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     f2.SetNpx(5000)
     f2_res = proj.Fit(f2, 'RSQ')
     if g==1:
-        print("Gaussian: {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma")))
+        print("Gaussian: {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}")))
     elif g==2:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma")))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
     elif g==3:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("A_{2}"),
+                                                                           f2.GetParameter("#sigma_{2}"),f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
     elif g==4:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
+                                                                                         f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}"),f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
     elif g==5:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A"),f2.GetParameter("#sigma"),f2.GetParameter("B"),f2.GetParameter("#gamma"),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)))
+        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
+                                                                                                       f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}"),f2.GetParameter("A_{4}"),f2.GetParameter("#sigma_{4}"),f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
 
     #print(f2_res)
 
     if saveFits: #if uncommented it opens a canvas even if false...?
 
-        c1 = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
+        c1 = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,500*8,300*8)
         proj.Draw("E0")
         f2.SetLineColor(ROOT.kRed)
         f2_res.Draw('same')
@@ -1001,9 +1003,27 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
         elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
         c1.SetLogy()
 
-        leg = ROOT.TLegend(0.125,0.675,0.425,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
-        leg.AddEntry(proj,"Particle Density")
-        leg.AddEntry(f2,"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{2} + #gamma^{2}}")
+        
+        if g==2:
+            leg = ROOT.TLegend(0.125,0.675,0.4,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
+            leg.AddEntry(proj,"Particle Density")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+        elif g==3:
+            leg = ROOT.TLegend(0.1,0.675,0.4,0.85)
+            leg.AddEntry(proj,"Particle Density")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
+        elif g==4:
+            leg = ROOT.TLegend(0.1,0.675,0.425,0.85)
+            leg.AddEntry(proj,"Particle Density")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")elif g==4:
+        elif g==5:
+            leg = ROOT.TLegend(0.1,0.675,0.45,0.85)
+            leg.AddEntry(proj,"Particle Density")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + A_{4} e^{#frac{-x^{2}}{#sigma_{4}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
+        #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{2} + #gamma^{2}}") #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{3}} + C"
         #leg.SetHeader("Fits")
         leg.Draw("E0")
 
@@ -1043,7 +1063,7 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
     #differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     #differencePG = differenceNG/total*100
-    coeffsG = [f2.GetParameter("A"),f2.GetParameter("#sigma")]#,f2.GetParameter("w2"),f2.GetParameter("s2")]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
+    coeffsG = [f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}")]#,f2.GetParameter("w2"),f2.GetParameter("s2")]#,f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7)]
     print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f} /".format(differenceNG,total,Gchi2),f2_res.Ndf())#,"\n")#,coeffs)
     
     """
@@ -1264,8 +1284,8 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
     if args.gaussFit:
                                            #(hist,     axis, width,maxim,options,name,   y1,y2,saveFits)
-        diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,savename,2,30,args.saveFits,False)
-        diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,savename,3,20,args.saveFits,False)
+        diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,savename,2,30,args.saveFits,False,args.gauss2Fit)
+        diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,savename,3,20,args.saveFits,False,args.gauss2Fit)
         #add minimize function for these?
 
     if args.savePics:
