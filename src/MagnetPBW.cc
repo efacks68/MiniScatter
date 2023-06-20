@@ -232,11 +232,11 @@ void MagnetPBW::Construct() {
 
     //Set color and line segments per circle for Visualization
     G4VisAttributes* aluminum = new G4VisAttributes(G4Colour(0.66,0.67,0.71));
-    aluminum->SetForceLineSegmentsPerCircle(100);
+    aluminum->SetForceLineSegmentsPerCircle(1000);
     targetLV->SetVisAttributes(aluminum);
     
     G4VisAttributes* water = new G4VisAttributes(G4Colour(0,1,1));
-    water->SetForceLineSegmentsPerCircle(100);
+    water->SetForceLineSegmentsPerCircle(1000);
     waterLV->SetVisAttributes(water);
 
     ConstructDetectorLV();

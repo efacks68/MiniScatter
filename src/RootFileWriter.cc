@@ -496,15 +496,15 @@ void RootFileWriter::initializeRootFile(){
         tracker_phasespaceXY_cutoff_PDG.back()[11]  = new TH2D((trackerName+"_cutoff_xy_PDG11").c_str(),
                                                                   (trackerName+" phase space (x,y) (electrons, energy > Ecut, r < Rcut)").c_str(),
                                                                   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-                                                                  1000, -phasespacehist_angLim/rad,phasespacehist_angLim/rad);
+                                                                  1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
         tracker_phasespaceXY_cutoff_PDG.back()[-11]  = new TH2D((trackerName+"_cutoff_xy_PDG-11").c_str(),
                                                                   (trackerName+" phase space (x,y) (positrons, energy > Ecut, r < Rcut)").c_str(),
                                                                   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-                                                                  1000, -phasespacehist_angLim/rad,phasespacehist_angLim/rad);
+                                                                  1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
         tracker_phasespaceXY_cutoff_PDG.back()[22]  = new TH2D((trackerName+"_cutoff_xy_PDG22").c_str(),
                                                                   (trackerName+" phase space (x,y) (photons, energy > Ecut, r < Rcut)").c_str(),
                                                                   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-                                                                  1000, -phasespacehist_angLim/rad,phasespacehist_angLim/rad);
+                                                                  1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
         tracker_phasespaceXY_cutoff_PDG.back()[2212]  = new TH2D((trackerName+"_cutoff_xy_PDG2212").c_str(),
                                                                   (trackerName+" phase space (x,y) (protons, energy > Ecut, r < Rcut)").c_str(),
                                                                   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
@@ -512,7 +512,7 @@ void RootFileWriter::initializeRootFile(){
         tracker_phasespaceXY_cutoff_PDG.back()[0]  = new TH2D((trackerName+"_cutoff_xy_PDGother").c_str(),
                                                                   (trackerName+" phase space (x,y) (other, energy > Ecut, r < Rcut)").c_str(),
                                                                   1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm,
-                                                                  1000, -phasespacehist_angLim/rad,phasespacehist_angLim/rad);
+                                                                  1000, -phasespacehist_posLim/mm,phasespacehist_posLim/mm);
         for (auto PDG : tracker_phasespaceXY_cutoff_PDG.back()) {
             PDG.second->GetXaxis()->SetTitle("X [mm]");
             PDG.second->GetYaxis()->SetTitle("Y [mm]");
