@@ -23,7 +23,8 @@ def thicknessDependence(args,Twiss,sample,paths):
     elif args.t == 0.1:
         args.materials = ["G4_Galactic"]
     args.beamFile = ""
-    args.compTargs = True
+    options['MiniRoot'] = True
+    #args.compTargs = True
     if args.compTargs:
         options['targetTree'] = True
     #    options['exitTree'] = True
@@ -163,9 +164,9 @@ def thicknessDependence(args,Twiss,sample,paths):
                 ind = idx
                 #print("ind=",idx)
         ax.vlines(2.25,targxTwissf[ind]-a-0.15,targxTwissf[ind]+a,color="m",zorder=-30)
-        ax.text(1.8,13.5,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.3f}%".format((targxTwissf[ind]/e8TargxReal[ind]-1)*100),fontsize=fs-3)
+        ax.text(1.8,13.5,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.2f}%".format((targxTwissf[ind]/e8TargxReal[ind]-1)*100),fontsize=fs-3)
         ax2.vlines(2.25,targyTwissf[ind]-b,targyTwissf[ind]+b,color="m",zorder=0)
-        ax2.text(1.8,7,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.3f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
+        ax2.text(1.8,7,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.2f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
         """plt.annotate('Actual PBW Al', #up
         xy=(2.25, 11.6), xycoords='data',
         xytext=(-35, -25), textcoords='offset points',
@@ -195,7 +196,7 @@ def thicknessDependence(args,Twiss,sample,paths):
         ax.set_ylabel(r"Angular $\sigma_x$ at Target [$\mu$rad]",fontsize=fs)
         ax.set_title(r"Target Anglular $\sigma_x$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
         ax.vlines(2.25,targxTwissf[ind]-a-0.2,targxTwissf[ind]+a,color="m")
-        ax.text(1.8,ax.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.3f}%".format((e8TargxReal[ind]/targxTwissf[ind]-1)*100),fontsize=fs-3)
+        ax.text(1.8,ax.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((e8TargxReal[ind]/targxTwissf[ind]-1)*100),fontsize=fs-3)
         #plt.annotate('   Actual PBW Al\nThickness: 2.25mm', #up
         #xy=(2.25, .00213), xycoords='data',
         #xytext=(-49, -60), textcoords='offset points',
@@ -203,7 +204,7 @@ def thicknessDependence(args,Twiss,sample,paths):
         ax2.set_ylabel(r"Angular $\sigma_y$ at Target [$\mu$rad]",fontsize=fs)
         ax2.set_title(r"Target Anglular $\sigma_y$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
         ax2.vlines(2.25,targyTwissf[ind]-b,targyTwissf[ind]+b,color="m")
-        ax2.text(1.8,ax2.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.3f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
+        ax2.text(1.8,ax2.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
 
         #xlim = plt.xlim()
         #ylim = plt.ylim()

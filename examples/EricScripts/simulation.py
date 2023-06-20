@@ -12,8 +12,8 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     from numpy import cos,sin#,arctan
     from os import uname,getcwd,chdir,path as osPath
     from sys import path as sysPath
-    #from datetime import datetime
-    #print("setup start",datetime.now())
+    from datetime import datetime
+    print("setup start",datetime.now())
 
     #Setup MiniScatter -- modify the path to where you built MiniScatter
     MiniScatter_path="../../MiniScatter/build/."
@@ -122,6 +122,11 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
             #if options['MiniRoot']:
             #    outname+="_miniR"
+        print(mat)
+        if mat != "Al":
+            outname=outname+"_"+mat
+            print("material not Al! ",mat,outname)
+
         if args.PBIP:
             outname = outname + "_PBIP"
             #PBIP Magnet
@@ -143,6 +148,12 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         outname = outname + "_QBZ"
     elif args.physList == "FTFP_BERT_EMZ":
         outname = outname + "_FBZ"
+    elif args.physList == "QGSP_BIC_EMZ":
+        outname = outname + "_QBICZ"
+    elif args.physList == "FTF_BIC_EMZ":
+        outname = outname + "_FBICZ"
+    elif args.physList == "FTFP_BIC_EMZ":
+        outname = outname + "_QBBC"
     else:
         outname = outname + options['physList']
 
@@ -222,7 +233,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     from simulation import setup
     #def                        setup(args,material,beamXAngle,beamYAngle,beamFile,Twiss,options):
     savename,simSetup_simple1 = setup(args,mat,beamFile,Twiss,options,paths)
-    #print(savename,simSetup_simple1)
+    print(savename,simSetup_simple1)
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
     import miniScatterDriver

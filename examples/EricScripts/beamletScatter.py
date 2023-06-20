@@ -13,14 +13,15 @@ def beamletScatter(args,Twiss,i,paths):
     #print(args,Twiss)
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ" or "QGSP_BERT__SS"
-    zoff        = "*-1" #[mm] with preappended * to keep covar defined at z=0
+    zoff        = "*-2" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':args.physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
                     'mat3Plot':False, 'TwissFits':False,'MiniRoot':False }
 
     #Important things
     if args.t == 0:
-        args.material = "Al" #overwrites potential user input. Needs work
+        pass
+    #    args.material = "Al" #overwrites potential user input. Needs work
     elif args.t == 0.1:
         args.material = "Vac"
 

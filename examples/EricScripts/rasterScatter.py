@@ -11,6 +11,7 @@
     #python3 rasterScatter.py --reBin 1 --savePics --threshold 10
 #Fit Gaussians to a beamlet, compare distributions at Target:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --reBin 1
+    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 5e8 --reBin 1 --beamClass pencil --gauss2Fit 5
     #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e7 --compTargs --savePics
 #QP Jitter Study:
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-04Jitter_500x --beamClass jitter
@@ -87,6 +88,7 @@ parser.add_argument("--saveGrads", action="store_true",  default=False,   help="
 parser.add_argument("--saveEdges", action="store_true",  default=False,   help="Plots edges on Raster Image. Default=False")
 parser.add_argument("--gaussFit",  action="store_true",  default=False,   help="Computes sum of Gaussian fits for central axis projection. Default=False")
 parser.add_argument("--saveFits",  action="store_true",  default=False,   help="Saves plots of Gaussian Fitting. Default=False")
+parser.add_argument("--gauss2Fit", type=int,   default=4,   help="Number of Gaussians to fit the beam to. Default=4")
 parser.add_argument("--saveHist",  action="store_true",  default=False,   help="Saves Histogram of proton density at target for R Compare. Default=False")
 parser.add_argument("--saveRaster",action="store_true",  default=False,   help="Saves plot of rastered beam. Default=False")
 parser.add_argument("--savePull",  action="store_true",  default=False,   help="Saves Pull Values of Particle Distribution. Default=False")
@@ -98,7 +100,7 @@ parser.add_argument("--compTargs", action="store_true",  default=False,   help="
 parser.add_argument("--reBin",     type=int, default=4,  help="Number of bins to make into 1 in 2D histogram for smoothing")
 parser.add_argument("--processes", type=int, default=4,  help="Number of processes to use in multiProcessing of raster sampling")
 parser.add_argument("--dpi",       type=int, default=500,help="DPI for pngs")
-parser.add_argument("--physList",  type=str, default="QGSP_BERT_EMZ",help="Physics List, either 'QGSP_BERT_EMZ','FTFP_BERT_EMZ', or 'QGSP_BERT__SS'")
+parser.add_argument("--physList",  type=str, default="QGSP_BERT_EMZ",help="Physics List, combo of QGSP, FTFP, + BERT, BIC + EMZ or EMonly_ + EM type")
 parser.add_argument("--threshold", type=int, default=10,help="threshold of particles/bin to include in Chi2 and pull calculations")
 #parser.add_argument("--refImg",    action="store_true",  default=False,   help="Add Img to the Ref Img of this beam")
 #Maps options:

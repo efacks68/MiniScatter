@@ -513,8 +513,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     #Create the fig with 2 plots side by side
     plt.clf()
-    fig = plt.figure(figsize=(15,6.0))
-    plt.subplots_adjust(wspace=0.25) #increase width space to not overlap
+    fig = plt.figure(figsize=(16,6.0))
+    plt.subplots_adjust(wspace=0.2) #increase width space to not overlap
     s1 = fig.add_subplot(1,2,1)
     s2 = fig.add_subplot(1,2,2)
 
@@ -562,7 +562,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     sigmatexty += "\nHistogram/Müller={:.2f}".format((sigmay/Mfy[0]-1)*100)+"%"
 
     #Set various plot variables, often found through trial and error
-    xlim = 5*sigmax
+    xlim = args.xlim#5*sigmax
     fs=18
     #if don't set ylim, log goes to e-58
     plt.setp(s1,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
@@ -583,7 +583,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     handles1, labels1 = plt.gca().get_legend_handles_labels()
     order1=[0,1,2]
-    s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-4,loc="upper right")
+    s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-6,loc="upper right")
 
     #Set s2
     plt.setp(s2,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
@@ -596,7 +596,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     handles2, labels2 = plt.gca().get_legend_handles_labels()
     order2=[0,1,2]
-    s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=fs-4,loc="upper right")
+    s2.legend([handles2[idx] for idx in order2],[labels2[idx] for idx in order2],fontsize=fs-6,loc="upper right")
     ylim2=s2.get_ylim() #dynamically get the graph limits
     xlim2=s2.get_xlim()
 
@@ -608,13 +608,13 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     s2.text(xlim2[0]*0.97,1.5e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
 
     #Can date stamp the multi plot for easier tracking of changes, if necessary
-    from datetime import datetime
-    dt = datetime.now()
+    #from datetime import datetime
+    #dt = datetime.now()
 
     name = savename+"_compTargs_"+"."+args.picFormat##+dt.strftime("%H-%M-%S")
     #plt.show()
     if args.savePics:
-        plt.tight_layout()
+        #plt.tight_layout()
         plt.savefig(name,bbox_inches='tight',dpi=args.dpi)
     plt.close()
     print(name)
@@ -1004,24 +1004,28 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g):
         c1.SetLogy()
 
         
-        if g==2:
+        if g==1:
+            leg = ROOT.TLegend(0.125,0.65,0.4,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
+            leg.AddEntry(proj,"Particle Density")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}}")
+        elif g==2:
             leg = ROOT.TLegend(0.125,0.675,0.4,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
         elif g==3:
             leg = ROOT.TLegend(0.1,0.675,0.4,0.85)
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
         elif g==4:
             leg = ROOT.TLegend(0.1,0.675,0.425,0.85)
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")elif g==4:
         elif g==5:
             leg = ROOT.TLegend(0.1,0.675,0.45,0.85)
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + A_{4} e^{#frac{-x^{2}}{#sigma_{4}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}} + A_{4} e^{#frac{-x^{2}}{2#sigma_{4}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
         #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{2} + #gamma^{2}}") #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{3}} + C"
         #leg.SetHeader("Fits")
