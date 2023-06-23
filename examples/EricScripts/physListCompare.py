@@ -85,7 +85,9 @@ chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScatteri
 import miniScatterDriver
 print("else GaussFit")
 paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
-Nparts = 1e5
+Nparts = 5e8
+g=5
+from plotFit import gaussianFit
 TRYLOAD = True 
 G4_QBERTZ = {'PHYS': 'QGSP_BERT_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
                     'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
@@ -97,17 +99,8 @@ outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f
                 G4_QBERTZ['COVAR'][3],G4_QBERTZ['COVAR'][1],G4_QBERTZ['COVAR'][4],G4_QBERTZ['COVAR'][2],G4_QBERTZ['COVAR'][5],G4_QBERTZ["N"])+"_QBZ"
 G4_QBERTZ['OUTNAME'] = outname
 (twiss_QBERTZ, numPart_QBERTZ, objects_G4_QBERTZ) = miniScatterDriver.getData_tryLoad(G4_QBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-
-G4_FBERTZ = {'PHYS': 'FTF_BIC_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
-                    'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
-                    'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': Nparts, 
-                    'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
-                                                        'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
-                    'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/'}
-outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(G4_FBERTZ['ENERGY'],G4_FBERTZ['COVAR'][0],
-                G4_FBERTZ['COVAR'][3],G4_FBERTZ['COVAR'][1],G4_FBERTZ['COVAR'][4],G4_FBERTZ['COVAR'][2],G4_FBERTZ['COVAR'][5],G4_FBERTZ["N"])+"_FBZ"
-G4_FBERTZ['OUTNAME'] = outname
-(twiss_G4_FBERTZ, numPart_G4_FBERTZ, objects_G4_FBERTZ) = miniScatterDriver.getData_tryLoad(G4_FBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
+diffNy,diffPy,coeffsQBERTZy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,g,True)
+G4_QBERTZ_TH2Clone = objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"].Clone()
 
 G4_EMZ = {'PHYS': 'EMonly_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
                     'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
@@ -119,34 +112,51 @@ outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f
                 G4_EMZ['COVAR'][3],G4_EMZ['COVAR'][1],G4_EMZ['COVAR'][4],G4_EMZ['COVAR'][2],G4_EMZ['COVAR'][5],G4_EMZ["N"])+G4_EMZ['PHYS']
 G4_EMZ['OUTNAME'] = outname
 (twiss_G4_EMZ, numPart_G4_EMZ, objects_G4_EMZ) = miniScatterDriver.getData_tryLoad(G4_EMZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
+diffNy,diffPy,coeffsEMy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_EMZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_EMZ",2,25,True,True,g,True)
+G4EMZ_TH2CloneAgain = objects_G4_EMZ["tracker_cutoff_xy_PDG2212"].Clone()
+
+
+G4_FBERTZ = {'PHYS': 'FTF_BIC_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
+                    'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
+                    'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': Nparts, 
+                    'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
+                                                        'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
+                    'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/'}
+outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(G4_FBERTZ['ENERGY'],G4_FBERTZ['COVAR'][0],
+                G4_FBERTZ['COVAR'][3],G4_FBERTZ['COVAR'][1],G4_FBERTZ['COVAR'][4],G4_FBERTZ['COVAR'][2],G4_FBERTZ['COVAR'][5],G4_FBERTZ["N"])+"_FBZ"
+G4_FBERTZ['OUTNAME'] = outname
+(twiss_G4_FBERTZ, numPart_G4_FBERTZ, objects_G4_FBERTZ) = miniScatterDriver.getData_tryLoad(G4_FBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
+diffNy,diffPy,coeffsFBERTZy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_FBERTZ",2,25,True,True,g,True)
+G4FBERTZ_TH2CloneThird = objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"].Clone()
+
 
 ###Plot them all together with different colors
-#make projections, normalized.
+##make projections, normalized.
 width=100
 integral = MC_BERT.Integral(MC_BERT.GetXaxis().FindBin(-100),MC_BERT.GetXaxis().FindBin(100),MC_BERT.GetYaxis().FindBin(-100),MC_BERT.GetYaxis().FindBin(100))
 MC_BERT.Scale(1/integral)
 sum = MC_BERT.Integral()
 proj_MC_BERT = MC_BERT.ProjectionY("y",MC_BERT.GetXaxis().FindBin(-width),MC_BERT.GetXaxis().FindBin(width),"e")
 
-hist = objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"]
-integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
-hist.Scale(1/integral)
-sum = hist.Integral()
-proj_G4_QBERTZ = hist.ProjectionY("y",hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width),"e")
+#hist = G4_QBERTZ_TH2Clone#objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"]
+integral = G4_QBERTZ_TH2Clone.Integral(G4_QBERTZ_TH2Clone.GetXaxis().FindBin(-100),G4_QBERTZ_TH2Clone.GetXaxis().FindBin(100),G4_QBERTZ_TH2Clone.GetYaxis().FindBin(-100),G4_QBERTZ_TH2Clone.GetYaxis().FindBin(100))
+G4_QBERTZ_TH2Clone.Scale(1/integral)
+sum = G4_QBERTZ_TH2Clone.Integral()
+proj_G4_QBERTZ = G4_QBERTZ_TH2Clone.ProjectionY("y",G4_QBERTZ_TH2Clone.GetXaxis().FindBin(-width),G4_QBERTZ_TH2Clone.GetXaxis().FindBin(width),"e")
 
-hist = objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"]
-integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
-hist.Scale(1/integral)
-sum = hist.Integral()
-proj_G4_FBERTZ = hist.ProjectionY("y",hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width),"e")
+#hist = G4FBERTZ_TH2CloneThird#objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"]
+integral = G4FBERTZ_TH2CloneThird.Integral(G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(-100),G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(100),G4FBERTZ_TH2CloneThird.GetYaxis().FindBin(-100),G4FBERTZ_TH2CloneThird.GetYaxis().FindBin(100))
+G4FBERTZ_TH2CloneThird.Scale(1/integral)
+sum = G4FBERTZ_TH2CloneThird.Integral()
+proj_G4_FBERTZ = G4FBERTZ_TH2CloneThird.ProjectionY("y",G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(-width),G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(width),"e")
 
-hist = objects_G4_EMZ["tracker_cutoff_xy_PDG2212"]
-integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
-hist.Scale(1/integral)
-sum = hist.Integral()
-proj_G4_EMZ = hist.ProjectionY("y",hist.GetXaxis().FindBin(-width),hist.GetXaxis().FindBin(width),"e")
+#hist = G4EMZ_TH2CloneAgain#objects_G4_EMZ["tracker_cutoff_xy_PDG2212"]
+integral = G4EMZ_TH2CloneAgain.Integral(G4EMZ_TH2CloneAgain.GetXaxis().FindBin(-100),G4EMZ_TH2CloneAgain.GetXaxis().FindBin(100),G4EMZ_TH2CloneAgain.GetYaxis().FindBin(-100),G4EMZ_TH2CloneAgain.GetYaxis().FindBin(100))
+G4EMZ_TH2CloneAgain.Scale(1/integral)
+sum = G4EMZ_TH2CloneAgain.Integral()
+proj_G4_EMZ = G4EMZ_TH2CloneAgain.ProjectionY("y",G4EMZ_TH2CloneAgain.GetXaxis().FindBin(-width),G4EMZ_TH2CloneAgain.GetXaxis().FindBin(width),"e")
 
-#now try to draw them together
+##now try to draw them together
 xlim = 50
 #hs = ROOT.THStack("hs","Unstacked Histograms")
 c2 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,300*8)
@@ -184,5 +194,5 @@ proj_G4_EMZ.GetXaxis().SetRangeUser(-xlim,xlim)
 #hs.GetXaxis().SetRangeUser(-xlim,xlim)
 c2.Print(picpath+filename+"BeamOverlap.png") #only one is being drawn.
 
-###Renormalize them to be 1
+###Add together the different lists. Renormalize them to be 1
 ###Export that to a histogram

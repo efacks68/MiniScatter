@@ -822,6 +822,7 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
     #Define a 2D gaussian function and fit it to the projection
     f1 = ROOT.TF2('f1','bigaus',-maxim,maxim,-maxim,maxim)
+    #TF2 *f2 = new TF2("f2","[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])",0,10,0,10); f2-<SetParameters(1,3,1,4,1); g->Fit(f2);
     f1.SetNpx(500)
     f1_res = hist.Fit(f1, 'RSQ')
     #ca = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
@@ -842,7 +843,7 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
 
 
-def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g):
+def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
     #def plot(proj,ext):
@@ -897,13 +898,25 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g):
     if g == 1:
         f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
     elif g ==2:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4]',-maxim,maxim) #[2] / (x**2 + [3]**2) #[2] / x ** 3 + [3]
+        if Lorentz:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4]',-maxim,maxim) #[2] / (x**2 + [3]**2) #[2] / x ** 3 + [3]
+        else:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
     elif g == 3:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
+        if Lorentz:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
+        else:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
     elif g == 4:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+        if Lorentz:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+        else:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
     elif g == 5:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
+        if Lorentz:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
+        else:
+            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
     #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
 
     #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
