@@ -1,11 +1,11 @@
 ####physListCompare.py
-###Load in MCNPX
 import ROOT
-import numpy as np
-import csv
+##which axis to project?
+axis = "X" #"X","Y" 
 
-#Read in particle density map
-def decode(path,file,lenx,leny,ind):
+###Load in MCNPX
+##Function to read in particle densities as a 2D map:
+def decode2DMap(path,file,lenx,leny,column):
     import csv
     from numpy import zeros
     Img = zeros((leny,lenx))
@@ -22,8 +22,8 @@ def decode(path,file,lenx,leny,ind):
         next(csv_reader)
         for row in csv_reader:
             #print(j,i,ind,row)
-            Img[j,i] = float(row[ind])
-            Error[j,i] = float(row[ind+1])
+            Img[j,i] = float(row[column])
+            Error[j,i] = float(row[column+1])
             #print(j,i,Img[j,i])
             i+=1
             if i == lenx:
@@ -34,165 +34,152 @@ def decode(path,file,lenx,leny,ind):
                 print("ending",j)
                 break
     csv_file.close()
-    print(Img.shape)
+    #print(Img.shape)
     return Img,Error
-
-#path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/examples/EricScripts/"
+#Settings to read in
 path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
 file = "MCNP_ProtonDensity_570MeV"
-filename = "MCNP_ProtonDensityMap_570MeV"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-ind = 2
-lenx=77
-lowx = -76
-highx = 76
-lowy = -200
-highy = 200
-leny = 201
-Img,Error = decode(path,file,lenx,leny,ind)
-print(np.shape(Img))
+column = 2 #column with p>564MeV
+lenx  = 77 #indices
+lowx  = -76  #[mm]
+highx = 76   #[mm]
+lowy  = -200 #[mm]
+highy = 200  #[mm]
+leny  = 201 #indices
+##Call decoder to 2D Map function
+Img,Error = decode2DMap(path,file,lenx,leny,column)
 
-#Convert to ROOT
-MC_BERT = ROOT.TH2D("protonDensity","Scattered Pencil Beam at Target;Horizontal [mm];Vertical [mm]",lenx,lowx,highx,leny,lowy,highy)
-#Fill Image map with 2D histogram values
+###Convert MCNPX 2D map to ROOT
+##Make TH2D histogram to read the 2D Map into, same size as 2D Map
+MCNP_BERT = ROOT.TH2D("MCBERT_TargetProtons","Scattered Pencil Beam at Target;Horizontal [mm];Vertical [mm]",lenx,lowx,highx,leny,lowy,highy)
 #Help from Kyrre's converter function and https://root-forum.cern.ch/t/create-and-fill-a-th2f-using-arrays-for-binning/27161/2
+##Get each bin and set bin content and error
 for xi in range(lenx):
     for yi in range(leny):
         #bx = hIn.GetBin(xi+1,yi+1)
-        #MC_BERT.GetBin(yi,xi) = Img[yi,xi]
-        bin = MC_BERT.GetBin(xi+1,yi+1)
-        MC_BERT.SetBinContent(bin,Img[yi,xi])
-        MC_BERT.SetBinError(bin,Error[yi,xi])
+        #MCNP_BERT.GetBin(yi,xi) = Img[yi,xi]
+        bin = MCNP_BERT.GetBin(xi+1,yi+1)
+        MCNP_BERT.SetBinContent(bin,Img[yi,xi])
+        MCNP_BERT.SetBinError(bin,Error[yi,xi])
         #if xi == 38 and yi == 100:
-            #print(Img[yi,xi],MC_BERT.GetBinContent(MC_BERT.GetBin(xi+1,yi+1)))
-
-#c1 = ROOT.TCanvas()
-#MC_BERT.SetOption("COLZ")
-#c1.SetLogz()
-#MC_BERT.GetXaxis().SetRangeUser(-200,200)
-#MC_BERT.Draw()
-#c1.Print(picpath+filename+"_ROOT2D.png")
+            #print(Img[yi,xi],MCNP_BERT.GetBinContent(MCNP_BERT.GetBin(xi+1,yi+1)))
 
 
-
-
-###Load in all scattered beams of different phys lists
-from sys import path as sysPath
-from os import chdir
-MiniScatter_path="../../MiniScatter/build/."
-sysPath.append(MiniScatter_path)
-chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-import miniScatterDriver
-print("else GaussFit")
-paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
-Nparts = 5e8
-g=5
+###Load in all scattered beams of different GEANT4 phys lists and fit
+g=5 #number of Gaussians to fit to data
 from plotFit import gaussianFit
-TRYLOAD = True 
-G4_QBERTZ = {'PHYS': 'QGSP_BERT_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
-                    'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
-                    'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': Nparts, 
-                    'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
-                                                        'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
-                    'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/'}
-outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(G4_QBERTZ['ENERGY'],G4_QBERTZ['COVAR'][0],
-                G4_QBERTZ['COVAR'][3],G4_QBERTZ['COVAR'][1],G4_QBERTZ['COVAR'][4],G4_QBERTZ['COVAR'][2],G4_QBERTZ['COVAR'][5],G4_QBERTZ["N"])+"_QBZ"
-G4_QBERTZ['OUTNAME'] = outname
-(twiss_QBERTZ, numPart_QBERTZ, objects_G4_QBERTZ) = miniScatterDriver.getData_tryLoad(G4_QBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-diffNy,diffPy,coeffsQBERTZy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,g,True)
-G4_QBERTZ_TH2Clone = objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"].Clone()
 
-G4_EMZ = {'PHYS': 'EMonly_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
-                    'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
-                    'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': Nparts, 
-                    'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
-                                                        'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
-                    'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/'}
-outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(G4_EMZ['ENERGY'],G4_EMZ['COVAR'][0],
-                G4_EMZ['COVAR'][3],G4_EMZ['COVAR'][1],G4_EMZ['COVAR'][4],G4_EMZ['COVAR'][2],G4_EMZ['COVAR'][5],G4_EMZ["N"])+G4_EMZ['PHYS']
-G4_EMZ['OUTNAME'] = outname
-(twiss_G4_EMZ, numPart_G4_EMZ, objects_G4_EMZ) = miniScatterDriver.getData_tryLoad(G4_EMZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-diffNy,diffPy,coeffsEMy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_EMZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_EMZ",2,25,True,True,g,True)
-G4EMZ_TH2CloneAgain = objects_G4_EMZ["tracker_cutoff_xy_PDG2212"].Clone()
+##Open file with ROOT
+QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
+fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
+##Get TH2D and clone in
+G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+#Send to fit function, returns coefficients
+_,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_QBERTZ_TH2,"y",100,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,g,True)
+
+EMZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08EMonly_EMZ.root"
+fEMZ = ROOT.TFile(EMZ_file,"r")
+G4_EMZ_TH2 = fEMZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+_,_,coeffsEMy,_,_,_ = gaussianFit(G4_EMZ_TH2,"y",100,500,picpath+"physListComp_G4_EMZ",2,25,True,True,g,True)
+
+FBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
+fFBERTZ = ROOT.TFile(FBERTZ_file,"r")
+G4_FBERTZ_TH2 = fFBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+_,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_FBERTZ_TH2,"y",100,500,picpath+"physListComp_G4_FBERTZ",2,25,True,True,g,True)
 
 
-G4_FBERTZ = {'PHYS': 'FTF_BIC_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
-                    'ANASCATTER': True, 'EDEP_DZ': 1.0, 'CUTOFF_RADIUS': 1000.0, 'CUTOFF_ENERGYFRACTION': 0.99, 'POSLIM': 1000.0, 
-                    'DIST': [3565], 'BEAM': 'proton', 'ENERGY': 570, 'COVAR': (0.0001, 0.15, 0, 0.0001, 0.15, 0), 'N': Nparts, 
-                    'THICK': 0.0, 'MAGNET': [{'type': 'PBW', 'length': 0, 'gradient': 0.0, 'keyval': {'material': 'G4_Al', 'radius': 88.0, 
-                                                        'al1Thick': 1.0, 'waterThick': 2.0, 'al2Thick': 1.25}, 'pos': 24.125}], 
-                    'OUTFOLDER': '/scratch2/ericdf/PBWScatter/ESS/'}
-outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(G4_FBERTZ['ENERGY'],G4_FBERTZ['COVAR'][0],
-                G4_FBERTZ['COVAR'][3],G4_FBERTZ['COVAR'][1],G4_FBERTZ['COVAR'][4],G4_FBERTZ['COVAR'][2],G4_FBERTZ['COVAR'][5],G4_FBERTZ["N"])+"_FBZ"
-G4_FBERTZ['OUTNAME'] = outname
-(twiss_G4_FBERTZ, numPart_G4_FBERTZ, objects_G4_FBERTZ) = miniScatterDriver.getData_tryLoad(G4_FBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-diffNy,diffPy,coeffsFBERTZy, differenceNLy,differencePLy,coeffsLy = gaussianFit(objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"],"y",100,500,picpath+"physListComp_G4_FBERTZ",2,25,True,True,g,True)
-G4FBERTZ_TH2CloneThird = objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"].Clone()
+##Normalize TH2Ds and make Projections in the selcted axis
+width=500 #width of map to sum over
+##MCNP_BERT
+integral = MCNP_BERT.Integral(MCNP_BERT.GetXaxis().FindBin(-width),MCNP_BERT.GetXaxis().FindBin(width),MCNP_BERT.GetYaxis().FindBin(-width),MCNP_BERT.GetYaxis().FindBin(width))
+MCNP_BERT.Scale(1/integral)
+sum = MCNP_BERT.Integral()
+##Make Projection
+if axis in {"y","Y"}:
+    proj_MCNP_BERT = MCNP_BERT.ProjectionY(axis,MCNP_BERT.GetXaxis().FindBin(-width),MCNP_BERT.GetXaxis().FindBin(width),"e")
+else:
+    proj_MCNP_BERT = MCNP_BERT.ProjectionX(axis,MCNP_BERT.GetYaxis().FindBin(-width),MCNP_BERT.GetYaxis().FindBin(width),"e")
+##IMPORTANT: In order for multiple projections to be printed together, each must have a unique name!
+## The names are NOT inherited from their TH2D, like I had expected.
+proj_MCNP_BERT.SetName("proj_MCBERT")
 
+##G4_QBERTZ (QGSP_BERT_EMZ)
+integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width))
+G4_QBERTZ_TH2.Scale(1/integral)
+sum = G4_QBERTZ_TH2.Integral()
+if axis in {"y","Y"}:
+    proj_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionY(axis,G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
+else:
+    proj_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionX(axis,G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),"e")
+proj_G4_QBERTZ.SetName("proj_G4QBERTZ")
+
+##G4_FBERTZ (FTFP_BERT_EMZ)
+integral = G4_FBERTZ_TH2.Integral(G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width))
+G4_FBERTZ_TH2.Scale(1/integral)
+sum = G4_FBERTZ_TH2.Integral()
+if axis in {"y","Y"}:
+    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionY(axis,G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),"e")
+else:
+    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionX(axis,G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width),"e")
+proj_G4_FBERTZ.SetName("proj_G4FBERTZ")
+
+#G4_EMZ (EMonly_EMZ)
+integral = G4_EMZ_TH2.Integral(G4_EMZ_TH2.GetXaxis().FindBin(-width),G4_EMZ_TH2.GetXaxis().FindBin(width),G4_EMZ_TH2.GetYaxis().FindBin(-width),G4_EMZ_TH2.GetYaxis().FindBin(width))
+G4_EMZ_TH2.Scale(1/integral)
+sum = G4_EMZ_TH2.Integral()
+if axis in {"y","Y"}:
+    proj_G4_EMZ = G4_EMZ_TH2.ProjectionY(axis,G4_EMZ_TH2.GetXaxis().FindBin(-width),G4_EMZ_TH2.GetXaxis().FindBin(width),"e")
+else:
+    proj_G4_EMZ = G4_EMZ_TH2.ProjectionX(axis,G4_EMZ_TH2.GetYaxis().FindBin(-width),G4_EMZ_TH2.GetYaxis().FindBin(width),"e")
+proj_G4_EMZ.SetName("proj_G4EMZ")
 
 ###Plot them all together with different colors
-##make projections, normalized.
-width=100
-integral = MC_BERT.Integral(MC_BERT.GetXaxis().FindBin(-100),MC_BERT.GetXaxis().FindBin(100),MC_BERT.GetYaxis().FindBin(-100),MC_BERT.GetYaxis().FindBin(100))
-MC_BERT.Scale(1/integral)
-sum = MC_BERT.Integral()
-proj_MC_BERT = MC_BERT.ProjectionY("y",MC_BERT.GetXaxis().FindBin(-width),MC_BERT.GetXaxis().FindBin(width),"e")
+##Make Canvas and Lengend
+c2 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,400*8)
+c2.SetLogy()
+leg = ROOT.TLegend(0.65,0.75,0.9,0.9)
+xlim = 125
 
-#hist = G4_QBERTZ_TH2Clone#objects_G4_QBERTZ["tracker_cutoff_xy_PDG2212"]
-integral = G4_QBERTZ_TH2Clone.Integral(G4_QBERTZ_TH2Clone.GetXaxis().FindBin(-100),G4_QBERTZ_TH2Clone.GetXaxis().FindBin(100),G4_QBERTZ_TH2Clone.GetYaxis().FindBin(-100),G4_QBERTZ_TH2Clone.GetYaxis().FindBin(100))
-G4_QBERTZ_TH2Clone.Scale(1/integral)
-sum = G4_QBERTZ_TH2Clone.Integral()
-proj_G4_QBERTZ = G4_QBERTZ_TH2Clone.ProjectionY("y",G4_QBERTZ_TH2Clone.GetXaxis().FindBin(-width),G4_QBERTZ_TH2Clone.GetXaxis().FindBin(width),"e")
+##Draw 1st projection and configure plot settings
+proj_MCNP_BERT.Draw()
+proj_MCNP_BERT.SetLineColor(1)
+proj_MCNP_BERT.SetMarkerStyle(34)
+proj_MCNP_BERT.SetMarkerColor(1)
+proj_MCNP_BERT.SetMarkerSize(3)
+proj_MCNP_BERT.SetStats(False)
+proj_MCNP_BERT.SetTitle("Scattered Pencil Beam Density at Target")
+proj_MCNP_BERT.GetXaxis().SetRangeUser(-xlim,xlim)
+proj_MCNP_BERT.GetYaxis().SetRangeUser(1e-6,1.2e-1)
+##Make Legend Entry!
+leg.AddEntry(proj_MCNP_BERT,"MCNP BERTINI")
 
-#hist = G4FBERTZ_TH2CloneThird#objects_G4_FBERTZ["tracker_cutoff_xy_PDG2212"]
-integral = G4FBERTZ_TH2CloneThird.Integral(G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(-100),G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(100),G4FBERTZ_TH2CloneThird.GetYaxis().FindBin(-100),G4FBERTZ_TH2CloneThird.GetYaxis().FindBin(100))
-G4FBERTZ_TH2CloneThird.Scale(1/integral)
-sum = G4FBERTZ_TH2CloneThird.Integral()
-proj_G4_FBERTZ = G4FBERTZ_TH2CloneThird.ProjectionY("y",G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(-width),G4FBERTZ_TH2CloneThird.GetXaxis().FindBin(width),"e")
-
-#hist = G4EMZ_TH2CloneAgain#objects_G4_EMZ["tracker_cutoff_xy_PDG2212"]
-integral = G4EMZ_TH2CloneAgain.Integral(G4EMZ_TH2CloneAgain.GetXaxis().FindBin(-100),G4EMZ_TH2CloneAgain.GetXaxis().FindBin(100),G4EMZ_TH2CloneAgain.GetYaxis().FindBin(-100),G4EMZ_TH2CloneAgain.GetYaxis().FindBin(100))
-G4EMZ_TH2CloneAgain.Scale(1/integral)
-sum = G4EMZ_TH2CloneAgain.Integral()
-proj_G4_EMZ = G4EMZ_TH2CloneAgain.ProjectionY("y",G4EMZ_TH2CloneAgain.GetXaxis().FindBin(-width),G4EMZ_TH2CloneAgain.GetXaxis().FindBin(width),"e")
-
-##now try to draw them together
-xlim = 50
-#hs = ROOT.THStack("hs","Unstacked Histograms")
-c2 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,300*8)
-
-proj_MC_BERT.Draw()
-#proj_MC_BERT.SetFillColor(ROOT.kBlack)
-#proj_MC_BERT.SetMarkerStyle(21)
-proj_MC_BERT.SetLineColor(ROOT.kBlack)
-proj_MC_BERT.GetXaxis().SetRangeUser(-xlim,xlim)
-#hs.Add(proj_MC_BERT)
-
+##2nd Projection
 proj_G4_QBERTZ.Draw("SAME")
-#proj_G4_QBERTZ.SetFillColor(ROOT.kRed)
-#proj_G4_QBERTZ.SetMarkerStyle(21)
-proj_G4_QBERTZ.SetLineColor(ROOT.kRed)
-proj_G4_QBERTZ.GetXaxis().SetRangeUser(-xlim,xlim)
-#hs.Add(proj_G4_QBERTZ)
+proj_G4_QBERTZ.SetLineColor(2)
+proj_G4_QBERTZ.SetMarkerStyle(21)
+proj_G4_QBERTZ.SetMarkerColor(2)
+proj_G4_QBERTZ.SetMarkerSize(4)
+leg.AddEntry(proj_G4_QBERTZ,"GEANT4 QGSP_BERTINI_EMZ")
 
 proj_G4_FBERTZ.Draw("SAME")
-#proj_G4_FBERTZ.SetFillColor(ROOT.kGreen)
-#proj_G4_FBERTZ.SetMarkerStyle(21)
-proj_G4_FBERTZ.SetLineColor(ROOT.kGreen)
-proj_G4_FBERTZ.GetXaxis().SetRangeUser(-xlim,xlim)
-#hs.Add(proj_G4_FBERTZ)
+proj_G4_FBERTZ.SetLineColor(3)
+proj_G4_FBERTZ.SetMarkerStyle(20)
+proj_G4_FBERTZ.SetMarkerColor(3)
+proj_G4_FBERTZ.SetMarkerSize(3)
+leg.AddEntry(proj_G4_FBERTZ,"GEANT4 FTFP_BERTINI_EMZ")
 
 proj_G4_EMZ.Draw("SAME")
-#proj_G4_EMZ.SetFillColor(ROOT.kBlue)
-#proj_G4_EMZ.SetMarkerStyle(21)
-proj_G4_EMZ.SetLineColor(ROOT.kBlue)
-proj_G4_EMZ.GetXaxis().SetRangeUser(-xlim,xlim)
-#hs.Add(proj_G4_EMZ)
+proj_G4_EMZ.SetLineColor(4)
+proj_G4_EMZ.SetMarkerStyle(47)
+proj_G4_EMZ.SetMarkerColor(4)
+proj_G4_EMZ.SetMarkerSize(3)
+leg.AddEntry(proj_G4_EMZ,"GGEANT4 EMZ")
 
-#c2 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,300*8)
-#hs.Draw("nostack")
-#hs.GetXaxis().SetRangeUser(-xlim,xlim)
-c2.Print(picpath+filename+"BeamOverlap.png") #only one is being drawn.
+##Draw and Print Canvas and Legend
+leg.Draw()
+c2.Draw()
+c2.Print(picpath+"PhysLists_BeamOverlap"+axis+".png") #only one is being drawn.
 
 ###Add together the different lists. Renormalize them to be 1
 ###Export that to a histogram

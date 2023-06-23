@@ -857,8 +857,8 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
 
     ROOT.gStyle.SetOptStat("iouRMe")
     ROOT.gStyle.SetOptFit(101)
-    ROOT.gStyle.SetStatW(0.2)
-    ROOT.gStyle.SetStatH(0.125)
+    ROOT.gStyle.SetStatW(0.1)
+    ROOT.gStyle.SetStatH(0.02)
     #plot(hist,"test")
     #Project center slice 
     integral = hist.Integral(hist.GetXaxis().FindBin(-100),hist.GetXaxis().FindBin(100),hist.GetYaxis().FindBin(-100),hist.GetYaxis().FindBin(100))
@@ -1012,8 +1012,8 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
         f2_res.Draw('same')
         #f1.SetLineColor(ROOT.kRed)
         #f1.Draw('same')
-        if axis == "y" or axis == "Y":  proj.GetXaxis().SetRangeUser(-maxim,maxim)
-        elif axis =="x" or axis == "X": proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        proj.GetXaxis().SetRangeUser(-maxim,maxim)
+        proj.GetYaxis().SetRangeUser(2e-10,2e-1)
         c1.SetLogy()
 
         
