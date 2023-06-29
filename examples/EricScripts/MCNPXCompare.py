@@ -40,7 +40,7 @@ def decode(path,file,lenx,leny,ind):
 #path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/examples/EricScripts/"
 path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
 file = "MCNP_ProtonDensity_570MeV"
-filename = "MCNP_ProtonDensityMap_570MeV"
+filename = "MCNP_ProtonDensityMap2"
 ind = 2
 lenx=77
 lowx = -76
