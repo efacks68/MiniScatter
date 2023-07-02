@@ -3,10 +3,7 @@
 
 ##File defining info
 import ROOT
-column = 4 #columns: 2= p>564MeV; 4=p<564MeV; 10=total
-if column == 10: filename="MCNP_Pencil_570MeV_Total"
-elif column == 2: filename="MCNP_Pencil_570MeV_Primary"
-elif column == 4: filename="MCNP_Pencil_570MeV_Secondary"
+column = 2 #columns: 2= p>564MeV; 4=p<564MeV; 10=total
 
 ###Load in MCNPX
 ##Function to read in particle densities as a 2D map:
@@ -46,14 +43,20 @@ path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScatter
 file = "MCNP_ProtonDensity_570MeV_10June"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 if column == 10:
+    filename="MCNP_Pencil_570MeV_Total"
     energyInfo = " Full Energy" #= column 10
     engFile = "Total"
+    THName = "MCBERT_Target-TotalProtons"
 elif column == 2:
+    filename="MCNP_Pencil_570MeV_Primary"
     energyInfo = " E > 564MeV" # = column 2
     engFile = "Primary"
+    THName = "MCBERT_Target-PrimaryProtons"
 elif column == 4:
+    filename="MCNP_Pencil_570MeV_Secondary"
     energyInfo = " E < 564MeV"
     engFile = "Secondary"
+    THName = "MCBERT_Target-SecondaryProtons"
 lenx  = 77 #indices
 lowx  = -76  #[mm]
 highx = 76   #[mm]
@@ -65,7 +68,7 @@ Img,Error = decode2DMap(path,file,lenx,leny,column)
 
 ###Convert MCNPX 2D map to ROOT
 ##Make TH2D histogram to read the 2D Map into, same size as 2D Map
-MCNP_BERT = ROOT.TH2D("MCBERT_TargetProtons","Scattered Pencil Beam at Target;Horizontal [mm];Vertical [mm]",lenx,lowx,highx,leny,lowy,highy)
+MCNP_BERT = ROOT.TH2D(THName,"Scattered Pencil Beam at Target;Horizontal [mm];Vertical [mm]",lenx,lowx,highx,leny,lowy,highy)
 #Help from Kyrre's converter function and https://root-forum.cern.ch/t/create-and-fill-a-th2f-using-arrays-for-binning/27161/2
 ##Get each bin and set bin content and error
 for xi in range(lenx):
@@ -79,11 +82,11 @@ for xi in range(lenx):
             #print(Img[yi,xi],MCNP_BERT.GetBinContent(MCNP_BERT.GetBin(xi+1,yi+1)))
 
 myFile = ROOT.TFile.Open("/scratch2/ericdf/PBWScatter/"+filename+".root","RECREATE")
-myFile.WriteObject(MCNP_BERT,"MCBERT_TargetProtons")
+myFile.WriteObject(MCNP_BERT,THName)
 
 c1 = ROOT.TCanvas("MCNP Test","MCNP Test",0,0,100*8,100*8)
 newFile = ROOT.TFile("/scratch2/ericdf/PBWScatter/"+filename+".root")
-test = newFile.Get("MCBERT_TargetProtons").Clone("test")
+test = newFile.Get(THName).Clone("test")
 test.Draw()
 c1.Draw()
 c1.Print("/scratch2/ericdf/PBWScatter/"+filename+".png")

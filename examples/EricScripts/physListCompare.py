@@ -2,7 +2,7 @@
 import ROOT
 from plotFit import gaussianFit
 ##which axis to project?
-axis = "X" #"X","Y" 
+axis = "Y" #"X","Y" 
 column = 2 #columns: 2= p>564MeV; 4=p<564MeV; 10=total
 picFormat = ".png" #".png",".pdf", ".jpeg"
 xlim = 500
@@ -21,17 +21,18 @@ else:
 
 ###Load in MCNP data for Total and Primary beams
 fMCNP_BERT_Tot = ROOT.TFile(scratchPath+"MCNP_Pencil_570MeV_Total.root","r")
-MCNP_BERT_Tot = fMCNP_BERT_Tot.Get("MCBERT_TargetProtons").Clone("MCNP_BERT")
+MCNP_BERT_Tot = fMCNP_BERT_Tot.Get("MCBERT_TargetProtons").Clone("MCNP_BERT_Total")
 _,_,coeffsMCNPToty,_,_,_ = gaussianFit(MCNP_BERT_Tot,axis,100,500,picpath+"physListComp_MCNP_BERT_Tot",2,25,True,True,1,True)
 
 ##Primary Beam (E>564MeV)
 fMCNP_BERT_Pri = ROOT.TFile(scratchPath+"MCNP_Pencil_570MeV_Primary.root","r")
-MCNP_BERT_Pri = fMCNP_BERT_Pri.Get("MCBERT_TargetProtons").Clone("MCNP_BERT")
+MCNP_BERT_Pri = fMCNP_BERT_Pri.Get("MCBERT_TargetProtons").Clone("MCNP_BERT_Primary")
 _,_,coeffsMCNPPriy,_,_,_ = gaussianFit(MCNP_BERT_Pri,axis,100,500,picpath+"physListComp_MCNP_BERT_Pri",2,25,True,True,1,True)
 
 
 ###Load in all scattered beams of different GEANT4 phys lists and fit
 ##Open file with ROOT
+##QGSP_BERT_EMZ
 QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
 fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
 ##Get TH2D and clone in
@@ -39,15 +40,24 @@ G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
 #Send to fit function, returns coefficients
 _,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_QBERTZ_TH2,axis,100,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,g,True)
 
+##EMonly_EMZ
 EMZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08EMonly_EMZ.root"
 fEMZ = ROOT.TFile(EMZ_file,"r")
 G4_EMZ_TH2 = fEMZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
 _,_,coeffsEMy,_,_,_ = gaussianFit(G4_EMZ_TH2,axis,100,500,picpath+"physListComp_G4_EMZ",2,25,True,True,g,True)
 
-FBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
-fFBERTZ = ROOT.TFile(FBERTZ_file,"r")
-G4_FBERTZ_TH2 = fFBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
-_,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_FBERTZ_TH2,axis,100,500,picpath+"physListComp_G4_FBERTZ",2,25,True,True,g,True)
+##FTFP_BERT_EMZ
+#FBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
+#fFBERTZ = ROOT.TFile(FBERTZ_file,"r")
+#G4_FBERTZ_TH2 = fFBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+#_,_,coeffsFBERTZy,_,_,_ = gaussianFit(G4_FBERTZ_TH2,axis,100,500,picpath+"physListComp_G4_FBERTZ",2,25,True,True,g,True)
+
+##QGSP_FTFP_BERT__SS
+QFBERTSS_file = "/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N1e+06QGSP_FTFP_BERT__SS.root"
+fQFBERTSS = ROOT.TFile(QFBERTSS_file,"r")
+G4_QFBERTSS_TH2 = fQFBERTSS.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+_,_,coeffsQFBERTSSy,_,_,_ = gaussianFit(G4_QFBERTSS_TH2,axis,100,500,picpath+"physListComp_G4_QFBERTSS",2,25,True,True,g,True)
+
 
 ##Normalize TH2Ds and make Projections in the selcted axis
 width=500 #width of map to sum over
@@ -88,14 +98,14 @@ else:
 proj_G4_QBERTZ.SetName("proj_G4QBERTZ")
 
 ##G4_FBERTZ (FTFP_BERT_EMZ)
-integral = G4_FBERTZ_TH2.Integral(G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width))
-G4_FBERTZ_TH2.Scale(1/integral)
-sum = G4_FBERTZ_TH2.Integral()
-if axis in {"y","Y"}:
-    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionY(axis,G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),"e")
-else:
-    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionX(axis,G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width),"e")
-proj_G4_FBERTZ.SetName("proj_G4FBERTZ")
+#integral = G4_FBERTZ_TH2.Integral(G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width))
+#G4_FBERTZ_TH2.Scale(1/integral)
+#sum = G4_FBERTZ_TH2.Integral()
+#if axis in {"y","Y"}:
+#    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionY(axis,G4_FBERTZ_TH2.GetXaxis().FindBin(-width),G4_FBERTZ_TH2.GetXaxis().FindBin(width),"e")
+#else:
+#    proj_G4_FBERTZ = G4_FBERTZ_TH2.ProjectionX(axis,G4_FBERTZ_TH2.GetYaxis().FindBin(-width),G4_FBERTZ_TH2.GetYaxis().FindBin(width),"e")
+#proj_G4_FBERTZ.SetName("proj_G4FBERTZ")
 
 #G4_EMZ (EMonly_EMZ)
 integral = G4_EMZ_TH2.Integral(G4_EMZ_TH2.GetXaxis().FindBin(-width),G4_EMZ_TH2.GetXaxis().FindBin(width),G4_EMZ_TH2.GetYaxis().FindBin(-width),G4_EMZ_TH2.GetYaxis().FindBin(width))
@@ -106,6 +116,16 @@ if axis in {"y","Y"}:
 else:
     proj_G4_EMZ = G4_EMZ_TH2.ProjectionX(axis,G4_EMZ_TH2.GetYaxis().FindBin(-width),G4_EMZ_TH2.GetYaxis().FindBin(width),"e")
 proj_G4_EMZ.SetName("proj_G4EMZ")
+
+##G4_QFBERTSS (QGSP_FTFP_BERT_SS)
+integral = G4_QFBERTSS_TH2.Integral(G4_QFBERTSS_TH2.GetXaxis().FindBin(-width),G4_QFBERTSS_TH2.GetXaxis().FindBin(width),G4_QFBERTSS_TH2.GetYaxis().FindBin(-width),G4_QFBERTSS_TH2.GetYaxis().FindBin(width))
+G4_QFBERTSS_TH2.Scale(1/integral)
+sum = G4_QFBERTSS_TH2.Integral()
+if axis in {"y","Y"}:
+    proj_G4_QFBERTSS = G4_QFBERTSS_TH2.ProjectionY(axis,G4_QFBERTSS_TH2.GetXaxis().FindBin(-width),G4_QFBERTSS_TH2.GetXaxis().FindBin(width),"e")
+else:
+    proj_G4_QFBERTSS = G4_QFBERTSS_TH2.ProjectionX(axis,G4_QFBERTSS_TH2.GetYaxis().FindBin(-width),G4_QFBERTSS_TH2.GetYaxis().FindBin(width),"e")
+proj_G4_QFBERTSS.SetName("proj_G4QFBERTSS")
 
 ###Plot them all together with different colors
 ##Make Canvas and Lengend
@@ -142,12 +162,12 @@ proj_G4_QBERTZ.SetMarkerColor(2)
 proj_G4_QBERTZ.SetMarkerSize(4)
 leg.AddEntry(proj_G4_QBERTZ,"GEANT4 QGSP_BERTINI_EMZ")
 
-proj_G4_FBERTZ.Draw("SAME")
+proj_G4_QFBERTSS.Draw("SAME")
 #proj_G4_FBERTZ.SetLineColor(3)
-proj_G4_FBERTZ.SetMarkerStyle(20)
-proj_G4_FBERTZ.SetMarkerColor(3)
-proj_G4_FBERTZ.SetMarkerSize(3)
-leg.AddEntry(proj_G4_FBERTZ,"GEANT4 FTFP_BERTINI_EMZ")
+proj_G4_QFBERTSS.SetMarkerStyle(20)
+proj_G4_QFBERTSS.SetMarkerColor(3) #8 is mid green, 3 is light green, 7 is light blue
+proj_G4_QFBERTSS.SetMarkerSize(4)
+leg.AddEntry(proj_G4_QFBERTSS,"GEANT4 QF_BERTINI__SS 1e6")
 
 proj_G4_EMZ.Draw("SAME")
 #proj_G4_EMZ.SetLineColor(4)
