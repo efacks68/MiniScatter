@@ -1,6 +1,6 @@
 #rasterScatter.py
-#Takes config for scattering simulations and runs
-#Includes setup and output preferences
+#Takes config for scattering simulations and runs them
+#Includes setup and output preferences through argument parsing
 
 #possible commands:
 #Vary N particles for nominal convergence study
@@ -34,17 +34,11 @@
 #load from CSV file name:
     #python3 rasterScatter.py --source csv --beamFile sampleIn50Pct_OrigbX1006.80,bY129.72m_beta1006.80,129.72m_N2.9e+06_NpB100 --saveGrads --saveEdges
 
-
-#Not sure it's useful:Various Twiss ranges with samples:
-    #python3 rasterScatter.py --source twiss --twissFile TwissRange0,12mm-mrad_3Bx-3By-2Ax-2Ay --qpNum 0 --samples 10 --betaSpread 10
-
-
 from datetime import datetime
 origin = datetime.now()
 from argparse import ArgumentParser
 from os import uname
 from plotFit import getTwiss
-#look into argument groups!
 
 #Command Line arguments for save control
 parser = ArgumentParser()
@@ -117,7 +111,9 @@ parser.add_argument("--stepThick",type=float, default=0.5,   help="Step of Thick
 parser.add_argument("--thickInd",type=int, default=0, choices=(0,1),   help="Position (0) or Angle (1) dependence on thickness?")
 args = parser.parse_args()
 
-#Where to save CSVs and statistics
+###Where to save CSVs and statistics
+##This will be specific to the machine, where the CSV and ROOT files should be stored.
+## Also, where the OpenXAL directory is and where to save pictures & statistics
 if uname()[1] == "tensor.uio.no":
     scratchPath = "/scratch2/ericdf/PBWScatter/"
 elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
@@ -136,10 +132,16 @@ elif uname()[1] == "mbef-xps-13-9300":
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 else:
-    csvPWD = input("Path from home to direction you like to save root files to: ")
+    csvPWD = input("Path from home to directory you like to save root files to: ")
+    scratchPath = csvPWD
+    homePWD = "~"
     statsPWD = "."
+    oXALPWD = input("Path from home to directory with OpenXAL data (if none, type '.'): ")
+##Make paths into a dictionary for simple passing
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 'oXALPWD':oXALPWD}
 
+###Set up multi-processing in Python with help from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
+##Main commands/functions to loop over for each sample needed
 def loopSamples(args,paths,i):
     #Get Twiss and run; if no samples argment defined, will run through once.
     print("\n\nSample",i)
@@ -152,12 +154,13 @@ def loopSamples(args,paths,i):
 
     return Twiss,origBX,origBY
 
-#attempting multiProcessing with Python from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
+##Required functions for multi-processing
 from multiprocessing import Lock, Process, Queue, current_process, Manager
 import time
 import queue #imported for using queue.Empty exception
 print("Number of processes to use:",args.processes)
 
+##Loops over the samples while there are more tasks_to_accomplish
 def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
     while True:
         try:
@@ -178,6 +181,7 @@ def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
             Twiss,origBX,origBY = loopSamples(args,paths,task)
             #print(task,Twiss)
 
+        ##To pass information from loopSamples->getTwiss up
         with outLock:
             #print("in outLock, task=",task, "process=",current_process().name)
             outTwiss[task] = Twiss #says this is undefined before it runs the first sampling, ???
@@ -187,8 +191,8 @@ def do_job(tasks_to_accomplish, outLock,outTwiss,outOrigBX,outOrigBY):
 
     return True
 
-
-def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY): #from outputTest.txt, this is running double everything. Why?
+##Gathers number_of_tasks and initiates Process
+def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY):
     number_of_task = args.samples
     number_of_processes = args.processes #Number of cpus :  8 on tensor, 32 on heplab04
     tasks_to_accomplish = Queue()
@@ -210,10 +214,12 @@ def multiLoop(args,paths,outLock,outTwiss,outOrigBX,outOrigBY): #from outputTest
     else:
         raise ValueError("number of processes < 1")
 
+##For debugging
 #import pdb; pdb.set_trace()
 
-#Twiss,origBX,origBY = multiLoop(args,paths)
+##Simulation option for multi-processing
 if args.sim =="raster":
+    ##Dictionaries to hold output
     Twiss = {}
     origBX = {}
     origBY = {}
@@ -235,15 +241,16 @@ if args.sim =="raster":
     #import pdb; pdb.set_trace()
 
     i=0
+##Other options that don't use multi-processing
 else:
-    i=0
+    i=0 ##Sample number
     Twiss,origBX,origBY = getTwiss(args,i,paths)
-    #Examine individual beamlet of Twiss
+    ##Examine an individual beamlet of selected Twiss
     if args.sim == "beamlet":
         from beamletScatter import beamletScatter
         beamletScatter(args,Twiss,i,paths)
 
-    #Get graph of % Outside Box and Current Density on Target for the thickness range specified
+    ##Get graph of % Outside Box vs Current Density on Target for the thickness range specified
     if args.sim == "thick": #for sending only 1 Twiss.
         from thicknessDependence import thicknessDependence
         from os import uname
@@ -251,7 +258,7 @@ else:
         print("it works!")
         thicknessDependence(args,Twiss,i,paths)
 
-    #Get map of % Outside Box and Current Density on Target for the RMA range specified
+    ##Get map of % Outside Box vs Current Density on Target for the RMA range specified
     if args.sim == "map": #for sending only 1 Twiss.
         from mapRADependence import mapRADependence
         from os import uname
@@ -259,8 +266,10 @@ else:
         print("it works!")
         mapRADependence(args,Twiss,i,paths,origBX,origBY)
 
+##How long did simulations take?
 print("All Simulations took ",datetime.now()-origin,"s long\n",sep="")
 
+##For running many samples, save the distribution information(?)
 if args.saveSpread:
     from plotFit import spreadHist
     print(Twiss.keys)

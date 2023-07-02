@@ -1288,11 +1288,12 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
     ##            "Beam Center at (X,Y): ({:.0f},{:.0f})".format(centX,centY))
 
     if args.gaussFit:
+        Lorentz=True
                                            #(hist,     axis, width,maxim,options,name,   y1,y2,saveFits)
         diffNy,diffPy,coeffsy, differenceNLy,differencePLy,coeffsLy = gaussianFit(histogram2D,"y",yBinSize,500,savename,
-                                                                                  2,30,args.saveFits,False,args.gauss2Fit)
+                                                                                  2,30,args.saveFits,False,args.gauss2Fit,Lorentz)
         diffNx,diffPx,coeffsx, differenceNLx,differencePLx,coeffsLx = gaussianFit(histogram2D,"x",xBinSize,500,savename,
-                                                                                  3,20,args.saveFits,False,args.gauss2Fit)
+                                                                                  3,20,args.saveFits,False,args.gauss2Fit,Lorentz)
         #add minimize function for these?
 
     if args.savePics:
