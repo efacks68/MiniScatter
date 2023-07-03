@@ -36,7 +36,7 @@ _,_,coeffsMCNPPriy,_,_,_ = gaussianFit(MCNP_BERT_Pri,axis,100,500,picpath+"physL
 QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
 fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
 ##Get TH2D and clone in
-G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
 #Send to fit function, returns coefficients
 _,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_QBERTZ_TH2,axis,100,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,g,True)
 
@@ -55,7 +55,7 @@ _,_,coeffsEMy,_,_,_ = gaussianFit(G4_EMZ_TH2,axis,100,500,picpath+"physListComp_
 ##QGSP_FTFP_BERT__SS
 QFBERTSS_file = "/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N1e+06QGSP_FTFP_BERT__SS.root"
 fQFBERTSS = ROOT.TFile(QFBERTSS_file,"r")
-G4_QFBERTSS_TH2 = fQFBERTSS.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+G4_QFBERTSS_TH2 = fQFBERTSS.Get("tracker_cutoff_xy_PDG2212").Clone("QFBSS")
 _,_,coeffsQFBERTSSy,_,_,_ = gaussianFit(G4_QFBERTSS_TH2,axis,100,500,picpath+"physListComp_G4_QFBERTSS",2,25,True,True,g,True)
 
 
