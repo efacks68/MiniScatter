@@ -6,13 +6,13 @@ def fit_projection(proj,nGauss,p0,p2):
     r=0.1
     ##Set function
     if nGauss == 2:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-width,width)
+        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-xlim,xlim)
     elif nGauss == 3:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-width,width)
+        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-xlim,xlim)
     elif nGauss == 4:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-width,width)
+        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-xlim,xlim)
     elif nGauss == 5:
-        func = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-width,width)
+        func = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-xlim,xlim)
 
     ##Set parameters. Setting more than needed for a function does nothing
     func.SetParameter(0,p0)               #weight1
@@ -44,10 +44,10 @@ def fit_projection(proj,nGauss,p0,p2):
 
 ###Imports and settings
 import ROOT
-width = 700
-xlim = 700
-ylim = [1e-7,1.2e-1]
-leg = [0.13,0.75,0.475,0.9]
+width = 10
+xlim = 600
+ylim = [5e-9,2.5e-1]
+leg = [0.13,0.65,0.45,0.9]
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
 ###Get TH2s
@@ -59,7 +59,7 @@ G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
 
 ##Normalize TH2Ds and make Projections
 ##G4_QBERTZ (QGSP_BERT_EMZ)
-integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width))
+integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetXaxis().FindBin(xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(xlim))
 G4_QBERTZ_TH2.Scale(1/integral)
 sum = G4_QBERTZ_TH2.Integral()
 
@@ -69,10 +69,10 @@ canvas.SetTopMargin(0.3)
 #ROOT.gStyle.SetOptStat("iRMe")
 #ROOT.gStyle.SetOptFit(000)
 ROOT.gStyle.SetStatY(0.9)
-ROOT.gStyle.SetStatX(0.9)
-#ROOT.gStyle.SetStatW(0.15)
+ROOT.gStyle.SetStatX(0.97)
+ROOT.gStyle.SetStatW(0.3)
 #ROOT.gStyle.SetStatH(0.1)
-ROOT.gStyle.SetLegendTextSize(0.017)
+ROOT.gStyle.SetLegendTextSize(0.03)
 
 ##Use TPaveText because it can center the text in the box you define, other options needed manual centering
 ##Add an overall title for whole figure
@@ -102,6 +102,8 @@ ptY.Draw()
 
 ##Left Plot
 canvas.cd(1)
+ROOT.gPad.SetRightMargin(0.03)
+ROOT.gPad.SetLeftMargin(0.07)
 legend1 = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
 ROOT.gPad.SetLogy()
 projX_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionX("X",G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),"e")
@@ -118,7 +120,7 @@ legend1.AddEntry(projX_G4_QBERTZ,"X Projection")
 
 ##Fit N Gaussians
 ## First with gaus and extract parameters for nGauss use
-a1x = ROOT.TF1('a1','gaus',-width,width)
+a1x = ROOT.TF1('a1','gaus',-xlim,xlim)
 a1x.SetNpx(10000)
 a1x_res = projX_G4_QBERTZ.Fit(a1x, 'RSQ')
 p0 = a1x.GetParameter(0) #weight
@@ -126,13 +128,13 @@ p2 = a1x.GetParameter(2) #sigma
 a1x.Draw("SAME")
 a1x.SetLineColor(1)
 ##Output sigma of Gaussian in Legend entry
-legend1.AddEntry(a1x,"1 Gaussian Fit #sigma = {:.0f}".format(a1x.GetParameter(2)))
+legend1.AddEntry(a1x,"1 Gaussian Fit") #sigma = {:.1f}".format(a1x.GetParameter(2)))
 
 ##Get N Gaussians
 a2x, a2x_res = fit_projection(projX_G4_QBERTZ,2,p0,p2)
 a2x.Draw("SAME")
 a2x.SetLineColor(2)
-legend1.AddEntry(a2x,"2 Gaussian Fit #sigma = {:.0f}, {:.0f}".format(a2x.GetParameter(1),a2x.GetParameter(3)))
+legend1.AddEntry(a2x,"2 Gaussian Fit") #sigma = {:.1f}, {:.1f}".format(a2x.GetParameter(1),a2x.GetParameter(3)))
 
 a3x, a3x_res = fit_projection(projX_G4_QBERTZ,3,p0,p2)
 a3x.Draw("SAME")
@@ -140,24 +142,27 @@ a3x.SetLineColor(6)
 
 a4x, a4x_res = fit_projection(projX_G4_QBERTZ,4,p0,p2)
 a4x.Draw("SAME")
-a4x.SetLineColor(4)
+a4x.SetLineColor(3)
 
 a5x, a5x_res = fit_projection(projX_G4_QBERTZ,5,p0,p2)
 a5x.Draw("SAME")
-a5x.SetLineColor(3)
-legend1.AddEntry(a3x,"3 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}".format(a3x.GetParameter(1),a3x.GetParameter(5),
-                                                                             a3x.GetParameter(3)))
-legend1.AddEntry(a4x,"4 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}, {:.0f}".format(a4x.GetParameter(1),a4x.GetParameter(5),
-                                                                                     a4x.GetParameter(7),a4x.GetParameter(3)))
-legend1.AddEntry(a5x,"5 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f}".format(a5x.GetParameter(1),a5x.GetParameter(5),
-                                                                                             a5x.GetParameter(3),a5x.GetParameter(7),
-                                                                                             a5x.GetParameter(9)))
+a5x.SetLineColor(4)
+legend1.AddEntry(a3x,"3 Gaussian Fit")# #sigma = {:.1f}, {:.1f}, {:.1f}".format(a3x.GetParameter(1),a3x.GetParameter(5),
+                              #                                               a3x.GetParameter(3)))
+legend1.AddEntry(a4x,"4 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}".format(a4x.GetParameter(1),a4x.GetParameter(5),
+                               #                                                      a4x.GetParameter(7),a4x.GetParameter(3)))
+legend1.AddEntry(a5x,"5 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}, {:.1f}".format(a5x.GetParameter(1),a5x.GetParameter(5),
+                                #                                                             a5x.GetParameter(3),a5x.GetParameter(7),
+                                #                                                             a5x.GetParameter(9)))
+
 legend1.Draw("SAME")
 canvas.Update()
 
 
 ##Right Plot
 canvas.cd(2)
+ROOT.gPad.SetLeftMargin(0.07)
+ROOT.gPad.SetRightMargin(0.03)
 legend2 = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
 ROOT.gPad.SetLogy()
 projY_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionY("Y",G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
@@ -173,19 +178,19 @@ projY_G4_QBERTZ.SetMarkerSize(2)
 legend2.AddEntry(projY_G4_QBERTZ,"Y Projection")
 
 ##Fit N Gaussians
-a1y = ROOT.TF1('a1','gaus',-width,width)
+a1y = ROOT.TF1('a1','gaus',-xlim,xlim)
 a1y.SetNpx(5000)
 a1y_res = projY_G4_QBERTZ.Fit(a1y, 'RSQ')
 p0 = a1y.GetParameter(0) #weight
 p2 = a1y.GetParameter(2) #sigma
 a1y.Draw("SAME")
 a1y.SetLineColor(1)
-legend2.AddEntry(a1y,"1 Gaussian Fit #sigma = {:.0f}".format(a1y.GetParameter(2)))
+legend2.AddEntry(a1y,"1 Gaussian Fit") #sigma = {:.1f}".format(a1y.GetParameter(2)))
 
 a2y, a2y_res = fit_projection(projY_G4_QBERTZ,2,p0,p2)
 a2y.Draw("SAME")
 a2y.SetLineColor(2)
-legend2.AddEntry(a2y,"2 Gaussian Fit #sigma = {:.0f}, {:.0f}".format(a2y.GetParameter(1),a2y.GetParameter(3)))
+legend2.AddEntry(a2y,"2 Gaussian Fit") #sigma = {:.1f}, {:.1f}".format(a2y.GetParameter(1),a2y.GetParameter(3)))
 
 a3y, a3y_res = fit_projection(projY_G4_QBERTZ,3,p0,p2)
 a3y.Draw("SAME")
@@ -193,18 +198,18 @@ a3y.SetLineColor(6)
 
 a4y, a4y_res = fit_projection(projY_G4_QBERTZ,4,p0,p2)
 a4y.Draw("SAME")
-a4y.SetLineColor(4)
+a4y.SetLineColor(3)
 
 a5y, a5y_res = fit_projection(projY_G4_QBERTZ,5,p0,p2)
 a5y.Draw("SAME")
-a5y.SetLineColor(3)
-legend2.AddEntry(a3y,"3 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}".format(a3y.GetParameter(1),a3y.GetParameter(5),
-                                                                             a3y.GetParameter(3)))
-legend2.AddEntry(a4y,"4 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}, {:.0f}".format(a4y.GetParameter(1),a4y.GetParameter(5),
-                                                                                     a4y.GetParameter(3),a4y.GetParameter(7)))
-legend2.AddEntry(a5y,"5 Gaussian Fit #sigma = {:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f}".format(a5y.GetParameter(1),a5y.GetParameter(5),
-                                                                                             a5y.GetParameter(3),a5y.GetParameter(7),
-                                                                                             a5y.GetParameter(9)))
+a5y.SetLineColor(4)
+legend2.AddEntry(a3y,"3 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}".format(a3y.GetParameter(1),a3y.GetParameter(5),
+                                      #                                       a3y.GetParameter(3)))
+legend2.AddEntry(a4y,"4 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}".format(a4y.GetParameter(1),a4y.GetParameter(5),
+                                      #                                               a4y.GetParameter(3),a4y.GetParameter(7)))
+legend2.AddEntry(a5y,"5 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}, {:.1f}".format(a5y.GetParameter(1),a5y.GetParameter(5),
+                                      #                                                       a5y.GetParameter(3),a5y.GetParameter(7),
+                                       #                                                      a5y.GetParameter(9)))
 
 legend2.Draw("SAME")
 canvas.Update()
