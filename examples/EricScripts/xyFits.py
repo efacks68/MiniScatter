@@ -33,8 +33,8 @@ def fit_projection(proj,nGauss,p0,p2):
     func.SetParLimits(7,p2, p2*70)#sigma2
     func.SetParameter(8,p0*r**5)   #weight2
     func.SetParLimits(8,0, p0)     #weight2
-    func.SetParameter(9,p2*(1+5*r))#sigma2
-    func.SetParLimits(9,p2, p2*1e2)#sigma2
+    func.SetParameter(9,p2*(7))#sigma2
+    func.SetParLimits(9,p2*5, p2*3e2)#sigma2
 
     ##Number of fit points and Fit. Return function and fit results
     func.SetNpx(10000)
@@ -45,9 +45,9 @@ def fit_projection(proj,nGauss,p0,p2):
 ###Imports and settings
 import ROOT
 width = 10
-xlim = 600
-ylim = [5e-9,2.5e-1]
-leg = [0.13,0.65,0.45,0.9]
+xlim = 550
+ylim = [1e-8,1.5e-1]
+leg = [0.13,0.6,0.4,0.9]
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
 ###Get TH2s
@@ -63,17 +63,18 @@ integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-xlim),G4_QBE
 G4_QBERTZ_TH2.Scale(1/integral)
 sum = G4_QBERTZ_TH2.Integral()
 
-canvas = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,400*8)
-canvas.Divide(2,1) #Divide the canvas into 2 in Horizontal direction
-canvas.SetTopMargin(0.3)
+canvas = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,400*8,250*8)
+#canvas.Divide(2,1) #Divide the canvas into 2 in Horizontal direction
+#canvas.SetTopMargin(0.3)
 #ROOT.gStyle.SetOptStat("iRMe")
 #ROOT.gStyle.SetOptFit(000)
-ROOT.gStyle.SetStatY(0.9)
-ROOT.gStyle.SetStatX(0.97)
-ROOT.gStyle.SetStatW(0.3)
+#ROOT.gStyle.SetStatY(0.9)
+#ROOT.gStyle.SetStatX(0.97)
+#ROOT.gStyle.SetStatW(0.3)
 #ROOT.gStyle.SetStatH(0.1)
-ROOT.gStyle.SetLegendTextSize(0.03)
+ROOT.gStyle.SetLegendTextSize(0.04)
 
+"""
 ##Use TPaveText because it can center the text in the box you define, other options needed manual centering
 ##Add an overall title for whole figure
 ptTitle = ROOT.TPaveText(0,0.92,1,1,"NB")
@@ -98,14 +99,16 @@ ptY.SetTextSize(0.04)
 ptY.AddText("Y Projection")
 ptY.SetFillColor(ROOT.kWhite)
 ptY.Draw()
-
+"""
 
 ##Left Plot
-canvas.cd(1)
-ROOT.gPad.SetRightMargin(0.03)
-ROOT.gPad.SetLeftMargin(0.07)
-legend1 = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
+#canvas.cd(1)
+#ROOT.gPad.SetRightMargin(0.03)
+#ROOT.gPad.SetLeftMargin(0.07)
+#legend1 = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
 ROOT.gPad.SetLogy()
+
+"""
 projX_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionX("X",G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),"e")
 ##IMPORTANT: In order for multiple projections to be printed together, each must have a unique name!
 projX_G4_QBERTZ.SetName("QBERTZ X Projection")
@@ -155,14 +158,29 @@ legend1.AddEntry(a5x,"5 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}, 
                                 #                                                             a5x.GetParameter(3),a5x.GetParameter(7),
                                 #                                                             a5x.GetParameter(9)))
 
+
+print("1 Gaussian Fit X sigma = {:.3f}, chi2: {:.3e}".format(a1x.GetParameter(2),a1x_res.Chi2()),a1x_res.Ndf())
+print("2 Gaussian Fit X sigma = {:.3f}, {:.3f}, chi2: {:.3e}".format(a2x.GetParameter(1),a2x.GetParameter(3),
+                                                                     a2x_res.Chi2()),a2x_res.Ndf())
+print("3 Gaussian Fit X sigma = {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a3x.GetParameter(1),a3x.GetParameter(5), 
+                                                                             a3x.GetParameter(3),a3x_res.Chi2()),
+                                                                             a3x_res.Ndf())
+print("4 Gaussian Fit X sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a4x.GetParameter(1),a4x.GetParameter(7),
+                                                                                     a4x.GetParameter(5),a4x.GetParameter(3),
+                                                                                     a4x_res.Chi2()),a4x_res.Ndf())
+print("5 Gaussian Fit X sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a5x.GetParameter(1),a5x.GetParameter(7),
+                                                                                             a5x.GetParameter(5),a5x.GetParameter(3),
+                                                                                             a5x.GetParameter(9),a5x_res.Chi2()),
+                                                                                             a5x_res.Ndf())
+                                
 legend1.Draw("SAME")
 canvas.Update()
-
+"""
 
 ##Right Plot
-canvas.cd(2)
-ROOT.gPad.SetLeftMargin(0.07)
-ROOT.gPad.SetRightMargin(0.03)
+#canvas.cd(2)
+#ROOT.gPad.SetLeftMargin(0.07)
+#ROOT.gPad.SetRightMargin(0.03)
 legend2 = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
 ROOT.gPad.SetLogy()
 projY_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionY("Y",G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
@@ -175,6 +193,8 @@ projY_G4_QBERTZ.GetYaxis().SetRangeUser(ylim[0],ylim[1])
 projY_G4_QBERTZ.SetMarkerStyle(34)
 projY_G4_QBERTZ.SetMarkerColor(1)
 projY_G4_QBERTZ.SetMarkerSize(2)
+projY_G4_QBERTZ.SetStats(False)
+projY_G4_QBERTZ.SetTitle("Scattered Pencil Beam at Target")
 legend2.AddEntry(projY_G4_QBERTZ,"Y Projection")
 
 ##Fit N Gaussians
@@ -194,15 +214,16 @@ legend2.AddEntry(a2y,"2 Gaussian Fit") #sigma = {:.1f}, {:.1f}".format(a2y.GetPa
 
 a3y, a3y_res = fit_projection(projY_G4_QBERTZ,3,p0,p2)
 a3y.Draw("SAME")
-a3y.SetLineColor(6)
+a3y.SetLineColor(4)
 
 a4y, a4y_res = fit_projection(projY_G4_QBERTZ,4,p0,p2)
 a4y.Draw("SAME")
-a4y.SetLineColor(3)
+a4y.SetLineColor(6)
 
 a5y, a5y_res = fit_projection(projY_G4_QBERTZ,5,p0,p2)
 a5y.Draw("SAME")
-a5y.SetLineColor(4)
+a5y.SetLineColor(3)
+a5y.SetLineWidth(3)
 legend2.AddEntry(a3y,"3 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}".format(a3y.GetParameter(1),a3y.GetParameter(5),
                                       #                                       a3y.GetParameter(3)))
 legend2.AddEntry(a4y,"4 Gaussian Fit") #sigma = {:.1f}, {:.1f}, {:.1f}, {:.1f}".format(a4y.GetParameter(1),a4y.GetParameter(5),
@@ -217,3 +238,32 @@ canvas.Update()
 canvas.Draw()
 canvas.Print(picpath+"Figure4.png")
 
+import csv
+with open(picpath+"YFit.csv",mode="w") as csv_file:
+    csv_writer = csv.writer(csv_file, delimiter = ",")
+    csv_writer.writerow(["{:.3e},{:.3f},{:.3e}".format(a1y.GetParameter(0),a1y.GetParameter(2),a1y_res.Chi2())])
+    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a2y.GetParameter(0),a2y.GetParameter(1),
+                            a2y.GetParameter(2),a2y.GetParameter(3),a2y_res.Chi2())])
+    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a3y.GetParameter(0),a3y.GetParameter(1),
+                            a3y.GetParameter(2),a3y.GetParameter(3),a3y.GetParameter(4),a3y.GetParameter(5),a3y_res.Chi2())])
+    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a4y.GetParameter(0),
+                            a4y.GetParameter(1),a4y.GetParameter(2),a4y.GetParameter(3),a4y.GetParameter(4),a4y.GetParameter(5),
+                            a4y.GetParameter(6),a4y.GetParameter(7),a4y_res.Chi2())])
+    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a5y.GetParameter(0),
+                            a5y.GetParameter(1),a5y.GetParameter(2),a5y.GetParameter(3),a5y.GetParameter(4),a5y.GetParameter(5),
+                            a5y.GetParameter(6),a5y.GetParameter(7),a5y.GetParameter(8),a5y.GetParameter(9),a5y_res.Chi2())])
+print(picpath+"YFit.csv")
+#print("1 Gaussian Fit Y sigma = {:.3f}, chi2: {:.3e}".format(a1y.GetParameter(2),a1y_res.Chi2()),a1y_res.Ndf())
+#print("2 Gaussian Fit Y sigma = {:.3f}, {:.3f}, chi2: {:.3e}".format(a2y.GetParameter(1),a2y.GetParameter(3),a2y_res.Chi2()),
+#                                                                     a2y_res.Ndf())
+#print("3 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a3y.GetParameter(1),a3y.GetParameter(5), 
+#                                                                             a3y.GetParameter(3),a3y_res.Chi2()),
+#                                                                             a3y_res.Ndf())
+#print("4 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a4y.GetParameter(1),a4y.GetParameter(5),
+#                                                                                     a4y.GetParameter(7),a4y.GetParameter(3),
+#                                                                                     a4y_res.Chi2()),a4y_res.Ndf())
+#print("5 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a5y.GetParameter(1),a5y.GetParameter(5),
+#                                                                                             a5y.GetParameter(3),a5y.GetParameter(7),
+#                                                                                             a5y.GetParameter(9),a5y_res.Chi2()),
+#                                                                                             a5y_res.Ndf())
+print("5y {:.3f}, chi2: {:.3f}".format(a5y.GetParameter(9),a5y_res.Chi2()))
