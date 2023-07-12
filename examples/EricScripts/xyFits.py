@@ -241,17 +241,18 @@ canvas.Print(picpath+"Figure4.png")
 import csv
 with open(picpath+"YFit.csv",mode="w") as csv_file:
     csv_writer = csv.writer(csv_file, delimiter = ",")
-    csv_writer.writerow(["{:.3e},{:.3f},{:.3e}".format(a1y.GetParameter(0),a1y.GetParameter(2),a1y_res.Chi2())])
-    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a2y.GetParameter(0),a2y.GetParameter(1),
-                            a2y.GetParameter(2),a2y.GetParameter(3),a2y_res.Chi2())])
-    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a3y.GetParameter(0),a3y.GetParameter(1),
-                            a3y.GetParameter(2),a3y.GetParameter(3),a3y.GetParameter(4),a3y.GetParameter(5),a3y_res.Chi2())])
-    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a4y.GetParameter(0),
-                            a4y.GetParameter(1),a4y.GetParameter(2),a4y.GetParameter(3),a4y.GetParameter(4),a4y.GetParameter(5),
-                            a4y.GetParameter(6),a4y.GetParameter(7),a4y_res.Chi2())])
-    csv_writer.writerow(["{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e},{:.3f},{:.3e}".format(a5y.GetParameter(0),
-                            a5y.GetParameter(1),a5y.GetParameter(2),a5y.GetParameter(3),a5y.GetParameter(4),a5y.GetParameter(5),
-                            a5y.GetParameter(6),a5y.GetParameter(7),a5y.GetParameter(8),a5y.GetParameter(9),a5y_res.Chi2())])
+    csv_writer.writerow(["N,$\sigma_1$,A$_1$,$\sigma_2$,A$_2$,$\sigma_3$,A$_3$,$\sigma_4$,A$_4$,$\sigma_5$,A$_5$"])
+    csv_writer.writerow(["1,{:.1f},{:.1e},{:.1e}".format(a1y.GetParameter(2),a1y.GetParameter(0),a1y_res.Chi2())])
+    csv_writer.writerow(["2,{:.1f},{:.1e},{:.1f},{:.1e},{:.1e}".format(a2y.GetParameter(1),a2y.GetParameter(0),
+                            a2y.GetParameter(3),a2y.GetParameter(2),a2y_res.Chi2())])
+    csv_writer.writerow(["3,{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1e}".format(a3y.GetParameter(1),a3y.GetParameter(0),
+                            a3y.GetParameter(3),a3y.GetParameter(2),a3y.GetParameter(5),a3y.GetParameter(4),a3y_res.Chi2())])
+    csv_writer.writerow(["4,{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1e}".format(a4y.GetParameter(1),
+                            a4y.GetParameter(0),a4y.GetParameter(3),a4y.GetParameter(2),a4y.GetParameter(5),a4y.GetParameter(4),
+                            a4y.GetParameter(7),a4y.GetParameter(6),a4y_res.Chi2())])
+    csv_writer.writerow(["5,{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1f},{:.1e},{:.1e}".format(a5y.GetParameter(1),
+                            a5y.GetParameter(0),a5y.GetParameter(3),a5y.GetParameter(2),a5y.GetParameter(5),a5y.GetParameter(4),
+                            a5y.GetParameter(7),a5y.GetParameter(6),a5y.GetParameter(9),a5y.GetParameter(8),a5y_res.Chi2())])
 print(picpath+"YFit.csv")
 #print("1 Gaussian Fit Y sigma = {:.3f}, chi2: {:.3e}".format(a1y.GetParameter(2),a1y_res.Chi2()),a1y_res.Ndf())
 #print("2 Gaussian Fit Y sigma = {:.3f}, {:.3f}, chi2: {:.3e}".format(a2y.GetParameter(1),a2y.GetParameter(3),a2y_res.Chi2()),

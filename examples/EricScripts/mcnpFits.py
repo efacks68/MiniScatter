@@ -3,7 +3,9 @@
 
 ###Import ROOT and configure
 import ROOT
-axis = "X"
+axis = "Y"
+xlim = 60
+ylim = [1e-7,1.2e-1]
 scratchPath = "/scratch2/ericdf/PBWScatter/"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
@@ -31,15 +33,15 @@ Pri_TH2.Scale(1/integralPri)
 sumPri = Pri_TH2.Integral()
 
 ###Open Canvas and configure, select stats output
-c1 = ROOT.TCanvas("MCNP Beam Fits","MCNP Beam Fits",0,0,500*8,400*8)
+c1 = ROOT.TCanvas("MCNP Beam Fits","MCNP Beam Fits",0,0,400*8,250*8)
 ROOT.gStyle.SetOptStat(000)
 ROOT.gStyle.SetOptFit(000)
 #ROOT.gStyle.SetStatW(0.15)
 #ROOT.gStyle.SetStatH(0.1)
 c1.SetLogy()
-leg = ROOT.TLegend(0.65,0.6,0.98,0.9)#0.13,0.65,0.43,0.9)
-xlim = 200
-ylim = [1e-7,1.2e-1]
+leg = ROOT.TLegend(0.68,0.7,0.98,0.9)#0.13,0.65,0.43,0.9)
+ROOT.gStyle.SetLegendTextSize(0.017)
+
 
 ###Project onto the desired axis
 if axis in {"y","Y"}:
@@ -93,10 +95,10 @@ filename = "HighlandScatteredDistribution"
 rootFile="/scratch2/ericdf/PBWScatter/"+filename+"_{:.0e}".format(nParticles)+".root"
 myFile = ROOT.TFile.Open(rootFile,"r")
 hTarget = myFile.Get("Highland Scattered Proton Distribution").Clone("Highland Scattered Proton Distribution")
+hTarget.Scale(integralPri-5.5)
 hTarget.Draw("SAME")
 leg.AddEntry(hTarget,"Highland Scattered Proton Distribution")
 ##Fit distribution
-maxim = 50
 f3 = ROOT.TF1('Highland','gaus',-maxim,maxim)
 f3.SetNpx(5000)
 f3_res = hTarget.Fit(f3, 'RSQ')
@@ -105,4 +107,4 @@ leg.AddEntry(f3,"Highland Scattered Fit; #sigma = {:.3f}".format(f3.GetParameter
 ###Draw and Print
 c1.Draw()
 leg.Draw()
-c1.Print(picpath+"MCNPFits"+axis+".png")
+c1.Print(picpath+"MCNPFits"+axis+"tight.png")
