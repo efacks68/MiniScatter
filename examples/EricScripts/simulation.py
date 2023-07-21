@@ -11,7 +11,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     print("setup start",datetime.now())
 
     ##Setup MiniScatter -- modify the path to where you built MiniScatter
-    MiniScatter_path="../../MiniScatter/build/."
+    MiniScatter_path="../../build/."
     sysPath.append(MiniScatter_path)
     #print(getcwd())
     if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
@@ -20,7 +20,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
     elif uname()[1] == "mbef-xps-13-9300":
         if getcwd() != "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/":
             chdir("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
-    else: chdir(input("What directory would you like to save files to? "))
+    else: chdir(paths['MiniScatterPath'])
     #print(getcwd())
 
     ##Make Dictionary for holding options for MiniScatter command, joined together in miniScatterDriver
@@ -188,7 +188,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath']+"2Dmaps/")
         else:
             baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath'])
-    else: print("Help! Unknown build directory!, simulation.py l 243")
+    else: baseSimSetup["OUTFOLDER"] = osPath.join(paths['scratchPath'])
 
     ##Copy the configuration in case it is if running multiple scans in a Jupyter notebook
     simSetup_simple1 = baseSimSetup.copy()
@@ -205,6 +205,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     import numpy as np
     import ROOT
     from os import path as osPath
+    from os import getcwd
     from sys import path as sysPath
     from plotFit import calcTwiss
     from datetime import datetime
@@ -238,6 +239,8 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
     #print(savename,simSetup_simple1)
     MiniScatter_path="../../MiniScatter/build/."
     sysPath.append(MiniScatter_path)
+    sysPath.append(paths['MiniScatterPath'])
+    print(getcwd())
     import miniScatterDriver
     #import miniScatterScanner
     #import miniScatterPlots

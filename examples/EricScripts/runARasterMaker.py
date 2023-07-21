@@ -253,7 +253,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
             picPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
         elif uname()[1] == "mbef-xps-13-9300":
             picPWD = csvPWD
-        else: picPWD = input("What directory would you like to save files to? ")
+        else: picPWD = csvPWD
         plt.savefig(picPWD+name+"."+args.picFormat)
         print(picPWD+name+"."+args.picFormat)
         plt.close()

@@ -24,7 +24,7 @@ def thicknessDependence(args,Twiss,sample,paths):
         args.materials = ["G4_Galactic"]
     args.beamFile = ""
     options['MiniRoot'] = True
-    #args.compTargs = True
+    args.compTargs = True
     if args.compTargs:
         options['targetTree'] = True
     #    options['exitTree'] = True
@@ -54,7 +54,7 @@ def thicknessDependence(args,Twiss,sample,paths):
         name = "tDependenceAng8_beta{:.2f},{:.2f}m_R{:.1f},{:.1f}x{:.2f}mm_N{:.0e}".format(Twiss[1],Twiss[4],args.minThick,args.maxThick,args.stepThick,args.Nbeamlet)#+datetime.now().strftime("%H-%M-%S")
         a=1e3
     if os.path.isfile(thickCsvPWD+name+".csv"):
-        print("Found data! Reading in!",thickCsvPWD,name)
+        print("Found data! Reading in!",thickCsvPWD+name+".csv")
         #from plotFit import numLines
         #nLines = numLines(paths['csvPWD']+name)
         #print(nLines)
@@ -141,17 +141,19 @@ def thicknessDependence(args,Twiss,sample,paths):
 
     #Plot for parameter search analysis
     fs=18
-    fig= plt.figure(figsize=(17, 6))
-    plt.subplots_adjust(wspace=0.25)
-    ax = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2)
-    ax.scatter(PBWT,e8TargxReal,edgecolor='orange',label=r"Müller $\sigma_x$",facecolors="None",s=100,zorder=30)
-    ax2.scatter(PBWT,e8TargyReal,color='orange',label=r"Müller $\sigma_y$",s=100,zorder=10)
+    fig= plt.figure(figsize=(8, 5))
+    #plt.subplots_adjust(wspace=0.25)
+    #ax = fig.add_subplot(1,2,1)
+    #ax2 = fig.add_subplot(1,2,2)
+    ax2 = fig.add_subplot(1,1,1)
 
-    ax.scatter(PBWT,targxTwissf,edgecolor='b',label=r"GEANT4 $\sigma_x$",marker="s",facecolors="None",zorder=30)
+    #ax.scatter(PBWT,e8TargxReal,edgecolor='orange',label=r"Highland $\sigma_x$",facecolors="None",s=100,zorder=30)
+    ax2.scatter(PBWT,e8TargyReal,color='orange',label=r"Highland $\sigma_y$",s=100,zorder=10)
+
+    #ax.scatter(PBWT,targxTwissf,edgecolor='b',label=r"GEANT4 $\sigma_x$",marker="s",facecolors="None",zorder=30)
     ax2.scatter(PBWT,targyTwissf,color='b',label=r"GEANT4 $\sigma_y$",marker="s",zorder=10)
     a = 0.35
-    b = 0.7
+    b = 0.2
     ind=0
     if args.thickInd == 0:
         #ax.set_xlim((args.minThick-0.2,args.maxThick+0.2))
@@ -163,10 +165,6 @@ def thicknessDependence(args,Twiss,sample,paths):
             if round(val*1e2) / 1e2 == 2.25:
                 ind = idx
                 #print("ind=",idx)
-        ax.vlines(2.25,targxTwissf[ind]-a-0.15,targxTwissf[ind]+a,color="m",zorder=-30)
-        ax.text(1.8,13.5,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.2f}%".format((targxTwissf[ind]/e8TargxReal[ind]-1)*100),fontsize=fs-3)
-        ax2.vlines(2.25,targyTwissf[ind]-b,targyTwissf[ind]+b,color="m",zorder=0)
-        ax2.text(1.8,7,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Müller={:.2f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
         """plt.annotate('Actual PBW Al', #up
         xy=(2.25, 11.6), xycoords='data',
         xytext=(-35, -25), textcoords='offset points',
@@ -175,63 +173,64 @@ def thicknessDependence(args,Twiss,sample,paths):
         xy=(2.25, 9), xycoords='data', #down
         xytext=(-49, 20), textcoords='offset points',
         arrowprops=dict(arrowstyle="->"))"""
-        
-        ax.set_ylabel(r"$\sigma_x$ at Target [mm]",fontsize=fs,labelpad=25)
-        ax.set_title(r"Target Position $\sigma_x$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
-        ax2.set_ylabel(r"$\sigma_y$ at Target [mm]",fontsize=fs)
-        ax2.set_title(r"Target Position $\sigma_y$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
 
-        #xlim = plt.xlim()
-        #ylim = plt.ylim()
-        ax.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax.transAxes)
+        #ax.vlines(2.25,targxTwissf[ind]-a-0.15,targxTwissf[ind]+a,color="m",zorder=-30)
+        #ax.text(1.8,13.5,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Highland={:.2f}%".format((targxTwissf[ind]/e8TargxReal[ind]-1)*100),fontsize=fs-3)
+        #ax.set_ylabel(r"$\sigma_x$ at Target [mm]",fontsize=fs,labelpad=25)
+        #ax.set_title(r"Target Position $\sigma_x$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
+        #ax.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax.transAxes)
+
+        ax2.vlines(2.25,np.min(targyTwissf)-b,np.max(targyTwissf)+b,color="m",linestyle="--",label="Actual PBW Al Thickness")
+        ax2.text(2.27,7.5,"     Actual PBW Al\nThickness: 2.25mm\nGEANT4/Highland={:.2f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-8)
+        ax2.set_ylabel(r"$\sigma_y$ at Target [mm]",fontsize=fs)
+        ax2.set_title(r"Target $\sigma_y$ Growth"+"\nwith PBW Al Thickness",fontsize=fs+2)
         ax2.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax2.transAxes)
-    
+
     else:
-        ax.set_ylabel(r"Angular $\sigma_x$ at Target [$\mu$rad]",fontsize=fs)
-        ax.set_title(r"Target Anglular $\sigma_x$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
-        ax.vlines(2.25,targxTwissf[ind]-a-0.2,targxTwissf[ind]+a,color="m")
-        ax.text(1.8,ax.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((e8TargxReal[ind]/targxTwissf[ind]-1)*100),fontsize=fs-3)
         #plt.annotate('   Actual PBW Al\nThickness: 2.25mm', #up
         #xy=(2.25, .00213), xycoords='data',
         #xytext=(-49, -60), textcoords='offset points',
         #arrowprops=dict(arrowstyle="->"))
-        ax2.set_ylabel(r"Angular $\sigma_y$ at Target [$\mu$rad]",fontsize=fs)
-        ax2.set_title(r"Target Anglular $\sigma_y$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
-        ax2.vlines(2.25,targyTwissf[ind]-b,targyTwissf[ind]+b,color="m")
-        ax2.text(1.8,ax2.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
 
         #xlim = plt.xlim()
         #ylim = plt.ylim()
-        ax.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax.transAxes)
-        ax.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax.transAxes)
+        #ax.set_ylabel(r"Angular $\sigma_x$ at Target [$\mu$rad]",fontsize=fs)
+        #ax.set_title(r"Target Anglular $\sigma_x$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
+        #ax.vlines(2.25,targxTwissf[ind]-a-0.2,targxTwissf[ind]+a,color="m")
+        #ax.text(1.8,ax.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((e8TargxReal[ind]/targxTwissf[ind]-1)*100),fontsize=fs-3)
+        #ax.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax.transAxes)
+        #ax.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax.transAxes)
+        
+        ax2.set_ylabel(r"Angular $\sigma_y$ at Target [$\mu$rad]",fontsize=fs)
+        ax2.set_title(r"Target Anglular $\sigma_y$ Growth"+"\nwith PBW Thickness",fontsize=fs+2)
+        ax2.vlines(2.25,-0.5,10,color="m",linestyle="--",label="Actual PBW Al Thickness")
+        ax2.text(2.27,ax2.get_ylim()[1]*0.65,"     Actual PBW Al\nThickness: 2.25mm\nMüller/GEANT4={:.1f}%".format((targyTwissf[ind]/e8TargyReal[ind]-1)*100),fontsize=fs-3)
         ax2.text(0.01,0.95,"Beam Twiss at PBW:",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.90,r"$\epsilon_{Nx,Ny}$="+"{:.3f}, {:.3f}".format(Twiss[0],Twiss[3])+r"$_{[\mu m]}$",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.84,r"$\beta_{x,y}$="+"{:.0f}, {:.0f}".format(Twiss[1], Twiss[4])+r"$_{[m]}$",fontsize=fs-5, transform=ax2.transAxes)
         ax2.text(0.01,0.78,r"$\alpha_{x,y}$="+"{:.1f}, {:.1f}".format(Twiss[2],Twiss[5]),fontsize=fs-5, transform=ax2.transAxes)
     
 
-    ax.set_xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
-    ax2.set_xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
+    #ax.set_xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
+    #lines, labels = ax.get_legend_handles_labels()
+    #ax.legend(lines, labels, ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
 
-    lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    #([handles1[idx] for idx in order1],[labels1[idx] for idx in order1]
-    #ax.legend(ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
-    
-    ax.legend(lines, labels, ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
-    ax2.legend(lines2, labels2, ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
+    ax2.set_xlabel("PBW Aluminium Thickness [mm]",fontsize=fs)
+    #ax2.legend(lines2, labels2, ncol=2,loc='lower right',columnspacing=0.02,handletextpad=0.1,fontsize=fs-7)
+    ax2.legend(lines2, labels2,loc='lower center',handletextpad=0.1,fontsize=fs-7)
 
     plt.tight_layout()
     dt = datetime.now()
-    plt.savefig(thickCsvPWD+name+".png",dpi=1000)#+dt.strftime("%H-%M-%S")
+    plt.savefig(thickCsvPWD+name+".png",dpi=200)#+dt.strftime("%H-%M-%S")
     print("saved",thickCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
 
     print(datetime.now()-origin)

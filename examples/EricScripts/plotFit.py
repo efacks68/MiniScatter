@@ -927,10 +927,10 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
         if g in {2,3,4,5}:   f2.SetParNames("A_{1}","#sigma_{1}","#lambda","#gamma","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}")#2
         else:      f2.SetParNames("A_{1}","#sigma_{1}","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}","A_{5}","#sigma_{5}")
         #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParameter(0,p0)#weight1
-        f2.SetParLimits(0,p0*(1-r),p0*(1+r))      #weight1
-        f2.SetParameter(1,p2)#sigma1
-        f2.SetParLimits(1,p2*(1-r),p2*(1+r))       #sigma1
+        f2.SetParameter(0,p0)               #weight1
+        f2.SetParLimits(0,p0*(1-r),p0*(1+r))#weight1
+        f2.SetParameter(1,p2)               #sigma1
+        f2.SetParLimits(1,p2*(1-r),p2*(1+r))#sigma1
 
         f2.SetParameter(2,0.1)#lambda 0.1
         f2.SetParLimits(2,1e-9,10) #lambda 2,1e-9,10

@@ -123,12 +123,14 @@ elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
 if uname()[1] in {"tensor.uio.no", "heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
     csvPWD = scratchPath+"CSVs/"
     homePWD = "/uio/hume/student-u52/ericdf/"
+    miniScatterPath = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/"
     statsPWD = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 elif uname()[1] == "mbef-xps-13-9300":
     scratchPath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     csvPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/"
     homePWD = "/home/efackelman/"
+    miniScatterPath = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/"
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 else:
@@ -136,9 +138,11 @@ else:
     scratchPath = csvPWD
     homePWD = "~"
     statsPWD = "."
-    oXALPWD = input("Path from home to directory with OpenXAL data (if none, type '.'): ")
+    miniScatterPath = "/RasterScatter/MiniScatter/build/"
+    oXALPWD = "."#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
 ##Make paths into a dictionary for simple passing
-paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 'oXALPWD':oXALPWD}
+paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 
+         'oXALPWD':oXALPWD, 'MiniScatterPath':miniScatterPath}
 
 ###Set up multi-processing in Python with help from https://www.digitalocean.com/community/tutorials/python-multiprocessing-example
 ##Main commands/functions to loop over for each sample needed
