@@ -24,13 +24,26 @@ Pri_TH2 = priFile.Get("MCBERT_Target-PrimaryProtons").Clone("MCNP_BERT_Primary")
 ###Normalize the TH2s if not already.
 width = 200
 maxim = 200
-integralTot = Tot_TH2.Integral(Tot_TH2.GetXaxis().FindBin(-width),Tot_TH2.GetXaxis().FindBin(width),Tot_TH2.GetYaxis().FindBin(-width),Tot_TH2.GetYaxis().FindBin(width))
+integralTot = Tot_TH2.Integral(Tot_TH2.GetXaxis().FindBin(-width),Tot_TH2.GetXaxis().FindBin(width),Tot_TH2.GetYaxis().FindBin(-width),Tot_TH2.GetYaxis().FindBin(width),option="width")
 Tot_TH2.Scale(1/integralTot)
 sumTot = Tot_TH2.Integral()
 
-integralPri = Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width))
+integralPri = Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),option="width")
 Pri_TH2.Scale(1/integralPri)
 sumPri = Pri_TH2.Integral()
+#print("Pri",Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),option="width"))
+
+#GEANT4 too
+QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
+fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
+##Get TH2D and clone in
+G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
+
+##Normalize TH2Ds and make Projections
+##G4_QBERTZ (QGSP_BERT_EMZ)
+integralQBZ = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),option="width")
+G4_QBERTZ_TH2.Scale(1/integralQBZ)
+#print("QBZ",G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),option="width"))
 
 ###Open Canvas and configure, select stats output
 c1 = ROOT.TCanvas("MCNP Beam Fits","MCNP Beam Fits",0,0,400*8,250*8)
@@ -52,7 +65,13 @@ else:
 ## The names are NOT inherited from their TH2D, like I had expected.
 proj_Tot.SetName("proj_Tot")
 proj_Tot.Draw()
-leg.AddEntry(proj_Tot,"MCNP_BERTINI Total Energy Beam")
+###Configure plots
+proj_Tot.SetMarkerStyle(34)
+proj_Tot.SetMarkerColor(1)
+proj_Tot.SetMarkerSize(4)
+proj_Tot.SetTitle(axis+" Scattered Pencil Beam Density at Target")
+proj_Tot.GetXaxis().SetRangeUser(-xlim,xlim)
+proj_Tot.GetYaxis().SetRangeUser(ylim[0],ylim[1])
 
 ##Apparently they need to be separated to not conflict, even though all variables are separate and THs get unique names...
 if axis in {"Y","y"}:
@@ -61,33 +80,35 @@ else:
     proj_Pri = Pri_TH2.ProjectionX(axis,Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),"e")
 proj_Pri.SetName("proj_PrimaryVeryDifferent")
 proj_Pri.Draw("SAME")
-leg.AddEntry(proj_Pri,"MCNP_BERTINI Beam E > 564MeV")
+proj_Pri.SetMarkerStyle(41)
+proj_Pri.SetMarkerColor(2)
+proj_Pri.SetMarkerSize(4)
+
+if axis in {"Y","y"}:
+    proj_QBZ = G4_QBERTZ_TH2.ProjectionY(axis,G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
+else:
+    proj_QBZ = G4_QBERTZ_TH2.ProjectionX(axis,G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),"e")
+proj_QBZ.SetName("proj_QBERTZ")
+proj_QBZ.Draw("SAME")
+proj_QBZ.SetMarkerStyle(39)
+proj_QBZ.SetMarkerColor(3)
+proj_QBZ.SetMarkerSize(4)
 
 ###Fit projections to Gaussians
 f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
 f1.SetNpx(5000)
-f1.SetLineColor(ROOT.kBlue)
+f1.SetLineColor(1)
 f1Tot_res = proj_Tot.Fit(f1, 'RSQ')
-##Can add parameter value to the legend entry!
-leg.AddEntry(f1,"Total Energy Beam Fit; #sigma = {:.3f}".format(f1.GetParameter(2)))
 
 f2 = ROOT.TF1('f2','gaus',-maxim,maxim)
-f2.SetLineColor(ROOT.kGreen)
+f2.SetLineColor(2)
 f2.SetNpx(5000)
 f2Pri_res = proj_Pri.Fit(f2, 'RSQ')
-leg.AddEntry(f2,"Beam E > 564MeV Fit; #sigma = {:.3f}".format(f2.GetParameter(2)))
 
-###Configure plots
-proj_Tot.SetMarkerStyle(34)
-proj_Tot.SetMarkerColor(1)
-proj_Tot.SetMarkerSize(3)
-proj_Tot.SetTitle(axis+" Scattered Pencil Beam Density at Target")
-proj_Tot.GetXaxis().SetRangeUser(-xlim,xlim)
-proj_Tot.GetYaxis().SetRangeUser(ylim[0],ylim[1])
-
-proj_Pri.SetMarkerStyle(41)
-proj_Pri.SetMarkerColor(2)
-proj_Pri.SetMarkerSize(3)
+f3 = ROOT.TF1('f3','gaus',-maxim,maxim)
+f3.SetLineColor(3)
+f3.SetNpx(5000)
+f3Pri_res = proj_QBZ.Fit(f3, 'RSQ')
 
 ###Import data from Highland Scattering script
 nParticles=1e7
@@ -95,14 +116,25 @@ filename = "HighlandScatteredDistribution"
 rootFile="/scratch2/ericdf/PBWScatter/"+filename+"_{:.0e}".format(nParticles)+".root"
 myFile = ROOT.TFile.Open(rootFile,"r")
 hTarget = myFile.Get("Highland Scattered Proton Distribution").Clone("Highland Scattered Proton Distribution")
-hTarget.Scale(integralPri-5.5)
+integralTar = hTarget.Integral(hTarget.GetXaxis().FindBin(-width),hTarget.GetXaxis().FindBin(width),option="width")
+hTarget.Scale(1/integralTar)
+#print("Targ",hTarget.Integral(hTarget.GetXaxis().FindBin(-width),hTarget.GetXaxis().FindBin(width),option="width"))
 hTarget.Draw("SAME")
-leg.AddEntry(hTarget,"Highland Scattered Proton Distribution")
+hTarget.SetMarkerStyle(5)
+hTarget.SetMarkerColor(4)
+hTarget.SetMarkerSize(3)
+
 ##Fit distribution
-f3 = ROOT.TF1('Highland','gaus',-maxim,maxim)
-f3.SetNpx(5000)
-f3_res = hTarget.Fit(f3, 'RSQ')
-leg.AddEntry(f3,"Highland Scattered Fit; #sigma = {:.3f}".format(f3.GetParameter(2)))
+f4 = ROOT.TF1('Highland','gaus',-maxim,maxim)
+f4.SetLineColor(4)
+f4.SetNpx(5000)
+f4_res = hTarget.Fit(f4, 'RSQ')
+
+#Set legend entries
+leg.AddEntry(proj_Tot,"MCNP_BERTINI Total Energy Beam; #sigma = {:.3f}".format(f1.GetParameter(2)))
+leg.AddEntry(proj_Pri,"MCNP_BERTINI Beam E > 564MeV; #sigma = {:.3f}".format(f2.GetParameter(2)))
+leg.AddEntry(proj_QBZ,"QGSP_BERT_EMZ Beam E > 564MeV; #sigma = {:.3f}".format(f3.GetParameter(2)))
+leg.AddEntry(hTarget,"Highland Scattered Proton Distribution; #sigma = {:.3f}".format(f4.GetParameter(2)))
 
 ###Draw and Print
 c1.Draw()

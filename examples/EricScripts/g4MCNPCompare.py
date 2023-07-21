@@ -11,7 +11,7 @@ path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScatter
 file = "MCNP_ProtonDensity_570MeV_10June"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 scratchPath = "/scratch2/ericdf/PBWScatter/"
-ylim = [1e-7,2.5e-1]
+ylim = [1e-7,7e-2]
 markerSize = 4
 
 ###Load in MCNP data
@@ -32,7 +32,7 @@ G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
 width=5 #width of map to sum over
 
 ##MCNP_BERT_Pri
-integral = MCNP_BERT_Pri.Integral(MCNP_BERT_Pri.GetXaxis().FindBin(-width),MCNP_BERT_Pri.GetXaxis().FindBin(width),MCNP_BERT_Pri.GetYaxis().FindBin(-width),MCNP_BERT_Pri.GetYaxis().FindBin(width))
+integral = MCNP_BERT_Pri.Integral(MCNP_BERT_Pri.GetXaxis().FindBin(-width),MCNP_BERT_Pri.GetXaxis().FindBin(width),MCNP_BERT_Pri.GetYaxis().FindBin(-width),MCNP_BERT_Pri.GetYaxis().FindBin(width),option="width")
 MCNP_BERT_Pri.Scale(1/integral)
 sum = MCNP_BERT_Pri.Integral()
 ##Make Projection
@@ -44,7 +44,7 @@ projY_MCNP_BERT_Pri.SetName("projY_MCBERT_Pri")
 projX_MCNP_BERT_Pri.SetName("projX_MCBERT_Pri")
 
 ##G4_QBERTZ (QGSP_BERT_EMZ)
-integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width))
+integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),option="width")
 G4_QBERTZ_TH2.Scale(1/integral)
 sum = G4_QBERTZ_TH2.Integral()
 projY_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionY("Y",G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
@@ -57,8 +57,8 @@ projX_G4_QBERTZ.SetName("projX_G4QBERTZ")
 ##Make Canvas and Lengend
 c2 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,500*8,400*8)
 c2.SetLogy()
-leg = ROOT.TLegend(0.55,0.75,0.98,0.9)
-ROOT.gStyle.SetLegendTextSize(0.026)
+leg = ROOT.TLegend(0.58,0.75,0.98,0.9)
+ROOT.gStyle.SetLegendTextSize(0.024)
 
 ##Draw 1st projection and configure plot settings
 projY_MCNP_BERT_Pri.Draw()
@@ -75,28 +75,28 @@ projY_MCNP_BERT_Pri.GetXaxis().SetTitle("Position [mm]")
 leg.AddEntry(projY_MCNP_BERT_Pri,"MCNP BERTINI E > 564MeV Beam Y")
 
 ##2nd Projection
-projX_MCNP_BERT_Pri.Draw("SAME")
-#proj_G4_QBERTZ.SetLineColor(2)
-projX_MCNP_BERT_Pri.SetMarkerStyle(41)
-projX_MCNP_BERT_Pri.SetMarkerColor(2)
-projX_MCNP_BERT_Pri.SetMarkerSize(markerSize)
-leg.AddEntry(projX_MCNP_BERT_Pri,"MCNP BERTINI E > 564MeV Beam X")
+#projX_MCNP_BERT_Pri.Draw("SAME")
+##proj_G4_QBERTZ.SetLineColor(2)
+#projX_MCNP_BERT_Pri.SetMarkerStyle(41)
+#projX_MCNP_BERT_Pri.SetMarkerColor(2)
+#projX_MCNP_BERT_Pri.SetMarkerSize(markerSize)
+#leg.AddEntry(projX_MCNP_BERT_Pri,"MCNP BERTINI E > 564MeV Beam X")
 
 ##3rd Projection
 projY_G4_QBERTZ.Draw("SAME")
 #proj_G4_QBERTZ.SetLineColor(2)
 projY_G4_QBERTZ.SetMarkerStyle(234)
-projY_G4_QBERTZ.SetMarkerColor(3)
+projY_G4_QBERTZ.SetMarkerColor(8)
 projY_G4_QBERTZ.SetMarkerSize(markerSize)
 leg.AddEntry(projY_G4_QBERTZ,"GEANT4 QGSP_BERTINI_EMZ Y")
 
 ##4th Projection
-projX_G4_QBERTZ.Draw("SAME")
-#proj_G4_QBERTZ.SetLineColor(2)
-projX_G4_QBERTZ.SetMarkerStyle(41)
-projX_G4_QBERTZ.SetMarkerColor(4)
-projX_G4_QBERTZ.SetMarkerSize(markerSize)
-leg.AddEntry(projX_G4_QBERTZ,"GEANT4 QGSP_BERTINI_EMZ X")
+#projX_G4_QBERTZ.Draw("SAME")
+##proj_G4_QBERTZ.SetLineColor(2)
+#projX_G4_QBERTZ.SetMarkerStyle(41)
+#projX_G4_QBERTZ.SetMarkerColor(4)
+#projX_G4_QBERTZ.SetMarkerSize(markerSize)
+#leg.AddEntry(projX_G4_QBERTZ,"GEANT4 QGSP_BERTINI_EMZ X")
 
 ##Draw and Print Canvas and Legend
 leg.Draw()

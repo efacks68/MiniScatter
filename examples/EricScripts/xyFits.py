@@ -3,38 +3,42 @@
 
 ##Function for fitting projections to n Gaussians
 def fit_projection(proj,nGauss,p0,p2):
-    r=0.1
+    r=0.3
     ##Set function
     if nGauss == 2:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-xlim,xlim)
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3]))',-xlim,xlim)
     elif nGauss == 3:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5]))',-xlim,xlim)
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5]))',-xlim,xlim)
     elif nGauss == 4:
-        func = ROOT.TF1('func','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-xlim,xlim)
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7]))',-xlim,xlim)
     elif nGauss == 5:
-        func = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-xlim,xlim)
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7])) + ([8] / sqrt(2*pi*[9]) ) * exp(-x*x/(2*[9]*[9]))',-xlim,xlim)
 
     ##Set parameters. Setting more than needed for a function does nothing
-    func.SetParameter(0,p0)               #weight1
-    func.SetParLimits(0,p0*(1-r),p0*(1+r))#weight1
-    func.SetParameter(1,p2)               #sigma1
-    func.SetParLimits(1,p2*(1-r),p2*(1+r))#sigma1
-    func.SetParameter(2,p0*r**2)   #weight2
-    func.SetParLimits(2,0, p0)     #weight2
-    func.SetParameter(3,p2*(1+2*r))#sigma2
-    func.SetParLimits(3,p2, p2*20)#sigma2
-    func.SetParameter(4,p0*r**2)   #weight2
-    func.SetParLimits(4,0, p0)     #weight2
-    func.SetParameter(5,p2*(1+3*r))#sigma2
-    func.SetParLimits(5,p2, p2*50)#sigma2
-    func.SetParameter(6,p0*r**4)   #weight2
-    func.SetParLimits(6,0, p0)     #weight2
-    func.SetParameter(7,p2*(1+4*r))#sigma2
-    func.SetParLimits(7,p2, p2*70)#sigma2
-    func.SetParameter(8,p0*r**5)   #weight2
-    func.SetParLimits(8,0, p0)     #weight2
-    func.SetParameter(9,p2*(7))#sigma2
-    func.SetParLimits(9,p2*5, p2*3e2)#sigma2
+    func.SetParameter(0,p0)                 #A1
+    func.SetParLimits(0,p0*(1-r),p0*(1+r))  #A1
+    func.SetParameter(1,p2)                 #sigma1
+    func.SetParLimits(1,p2*(1-r*2),p2*(1+r))#sigma1
+
+    func.SetParameter(2,p0*(r**2))          #A2
+    func.SetParLimits(2,0, p0*30)           #A2
+    func.SetParameter(3,p2*(1+r))           #sigma2
+    func.SetParLimits(3,p2*(1-r), p2*2)     #sigma2
+
+    func.SetParameter(4,p0*r**2)            #A3
+    func.SetParLimits(4,0, p0*10)           #A3
+    func.SetParameter(5,p2*3)               #sigma3
+    func.SetParLimits(5,p2*(2-r), p2*5)     #sigma3
+
+    func.SetParameter(6,p0*r**4)            #4
+    func.SetParLimits(6,0, p0*1e2)          #A4
+    func.SetParameter(7,p2*6)               #sigma4
+    func.SetParLimits(7,p2*4, p2*10)        #sigma4
+
+    func.SetParameter(8,p0*r**5)            #A5
+    func.SetParLimits(8,0, p0*4e2)          #A5
+    func.SetParameter(9,p2*25)              #sigma5
+    func.SetParLimits(9,p2*20, p2*50)       #sigma5
 
     ##Number of fit points and Fit. Return function and fit results
     func.SetNpx(10000)
@@ -46,7 +50,7 @@ def fit_projection(proj,nGauss,p0,p2):
 import ROOT
 width = 10
 xlim = 550
-ylim = [1e-8,1.5e-1]
+ylim = [1e-9,1.2e-1]
 leg = [0.13,0.6,0.4,0.9]
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
@@ -59,7 +63,7 @@ G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
 
 ##Normalize TH2Ds and make Projections
 ##G4_QBERTZ (QGSP_BERT_EMZ)
-integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetXaxis().FindBin(xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(xlim))
+integral = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetXaxis().FindBin(xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(-xlim),G4_QBERTZ_TH2.GetYaxis().FindBin(xlim),option="width")
 G4_QBERTZ_TH2.Scale(1/integral)
 sum = G4_QBERTZ_TH2.Integral()
 
@@ -126,7 +130,7 @@ legend1.AddEntry(projX_G4_QBERTZ,"X Projection")
 a1x = ROOT.TF1('a1','gaus',-xlim,xlim)
 a1x.SetNpx(10000)
 a1x_res = projX_G4_QBERTZ.Fit(a1x, 'RSQ')
-p0 = a1x.GetParameter(0) #weight
+p0 = a1x.GetParameter(0) #A
 p2 = a1x.GetParameter(2) #sigma
 a1x.Draw("SAME")
 a1x.SetLineColor(1)
@@ -201,7 +205,7 @@ legend2.AddEntry(projY_G4_QBERTZ,"Y Projection")
 a1y = ROOT.TF1('a1','gaus',-xlim,xlim)
 a1y.SetNpx(5000)
 a1y_res = projY_G4_QBERTZ.Fit(a1y, 'RSQ')
-p0 = a1y.GetParameter(0) #weight
+p0 = a1y.GetParameter(0) #A
 p2 = a1y.GetParameter(2) #sigma
 a1y.Draw("SAME")
 a1y.SetLineColor(1)
@@ -254,17 +258,17 @@ with open(picpath+"YFit.csv",mode="w") as csv_file:
                             a5y.GetParameter(0),a5y.GetParameter(3),a5y.GetParameter(2),a5y.GetParameter(5),a5y.GetParameter(4),
                             a5y.GetParameter(7),a5y.GetParameter(6),a5y.GetParameter(9),a5y.GetParameter(8),a5y_res.Chi2())])
 print(picpath+"YFit.csv")
-#print("1 Gaussian Fit Y sigma = {:.3f}, chi2: {:.3e}".format(a1y.GetParameter(2),a1y_res.Chi2()),a1y_res.Ndf())
-#print("2 Gaussian Fit Y sigma = {:.3f}, {:.3f}, chi2: {:.3e}".format(a2y.GetParameter(1),a2y.GetParameter(3),a2y_res.Chi2()),
-#                                                                     a2y_res.Ndf())
-#print("3 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a3y.GetParameter(1),a3y.GetParameter(5), 
-#                                                                             a3y.GetParameter(3),a3y_res.Chi2()),
-#                                                                             a3y_res.Ndf())
-#print("4 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a4y.GetParameter(1),a4y.GetParameter(5),
-#                                                                                     a4y.GetParameter(7),a4y.GetParameter(3),
-#                                                                                     a4y_res.Chi2()),a4y_res.Ndf())
-#print("5 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a5y.GetParameter(1),a5y.GetParameter(5),
-#                                                                                             a5y.GetParameter(3),a5y.GetParameter(7),
-#                                                                                             a5y.GetParameter(9),a5y_res.Chi2()),
-#                                                                                             a5y_res.Ndf())
-print("5y {:.3f}, chi2: {:.3f}".format(a5y.GetParameter(9),a5y_res.Chi2()))
+print("1 Gaussian Fit Y sigma = {:.3f}, chi2: {:.3e}".format(a1y.GetParameter(2),a1y_res.Chi2()),a1y_res.Ndf())
+print("2 Gaussian Fit Y sigma = {:.3f}, {:.3f}, chi2: {:.3e}".format(a2y.GetParameter(1)/p2,a2y.GetParameter(3)/p2,a2y_res.Chi2()),
+                                                                     a2y_res.Ndf())
+print("3 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a3y.GetParameter(1)/p2,a3y.GetParameter(3)/p2, 
+                                                                             a3y.GetParameter(5)/p2,a3y_res.Chi2()),
+                                                                             a3y_res.Ndf())
+print("4 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a4y.GetParameter(1)/p2,a4y.GetParameter(3)/p2,
+                                                                                     a4y.GetParameter(5)/p2,a4y.GetParameter(7)/p2,
+                                                                                     a4y_res.Chi2()),a4y_res.Ndf())
+print("5 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:.3e}".format(a5y.GetParameter(1)/p2,a5y.GetParameter(3)/p2,
+                                                                                             a5y.GetParameter(5)/p2,a5y.GetParameter(7)/p2,
+                                                                                             a5y.GetParameter(9)/p2,a5y_res.Chi2()),
+                                                                                             a5y_res.Ndf())
+#print("5y {:.3f}, chi2: {:.3f}".format(a5y.GetParameter(9),a5y_res.Chi2()))
