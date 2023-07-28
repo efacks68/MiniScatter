@@ -109,8 +109,6 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         if args.sim == "map":
             name = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_beta{:.2f},{:.2f}m_alpha{:.0f},{:.0f}_RMamp{:.1f},{:.1f}mm_N{:.1e}_NpB{:.0f}".format(args.energy,
                         nemtX,nemtY,betaX,betaY,alphX,alphY,args.aX,args.aY,nParts,args.Nb)
-        if args.betaSpread != 0:
-            name = "sampleIn{:.0f}Pct_OrigbX{:.2f},bY{:.2f}m_beta{:.2f},{:.2f}m_N{:.1e}_NpB{:.0f}".format(args.betaSpread,origBx,origBY,Twiss[1],Twiss[4],nParts,args.Nb)
     if args.rX != 0:
         name = name + "_rX{:.1f}mm{:.2f}mrad".format(args.rX,envXAngle*1e3)
     if args.rY != 0:
@@ -142,7 +140,7 @@ def runARasterMaker(args,Twiss,csvPWD,options,sample,origBx,origBY):
         name = name + "_rCut{:.0f}mm".format(args.rCut)
 
     #Append Sample Ending for all but jitter case 
-    if args.betaSpread == 0 and args.beamClass != "jitter":
+    if args.beamClass != "jitter":
         name = name + sampEnding
     if args.source != "twiss":
         args.beamFile = name

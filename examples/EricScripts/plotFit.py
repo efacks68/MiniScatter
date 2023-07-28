@@ -150,12 +150,12 @@ def findFit(data,guess,lims,nBins):
     #from plotFit import gaussian
 
     #print(data)
-    print("here",np.shape(data))
+    #print("here",np.shape(data))
     #bin_heights, bin_borders, _ = plt.hist(data,bins=nBins,label="histogram")
     bin_heights, bin_borders = np.histogram(data,bins=nBins)
     pwd="/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     #plt.savefig(pwd+"hist.png"); print(pwd+"hist.png")
-    print(len(bin_borders))
+    #print(len(bin_borders))
     bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
     #should weight with 1/sqrt(N) check errors should be rel or abs. curve fit will take either cov matrix of input (sigma^2) could take diagonal if no correlation (1/sigma^2(weight)).
     #  need to make array of sigmas 
@@ -470,7 +470,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     from scipy.stats import norm 
     import matplotlib.pyplot as plt
     mm = 1e-3
-    fs = 14
+    fs=18
 
     ##Find fit to histogram                                     #ampl,mu,sigma
     print("compareTargs")
@@ -504,23 +504,65 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     print("PDF at Target \t\t sigma Y: {:.2f}mm".format(Mhy[0]))
     print(fitlabel,"\t\t sigma Y: {:.2f}mm".format(Mfy[0]))
 
-    ##Create the fig with 2 plots side by side
     plt.clf()
-    fig = plt.figure(figsize=(16,6.0))
-    plt.subplots_adjust(wspace=0.2) #increase width space to not overlap
-    s1 = fig.add_subplot(1,2,1)
-    s2 = fig.add_subplot(1,2,2)
+    xPlot = True
+    if xPlot:
+        ##Create the fig with 2 plots side by side
+        fig = plt.figure(figsize=(16,6.0))
+        plt.subplots_adjust(wspace=0.2) #increase width space to not overlap
+        s1 = fig.add_subplot(1,2,1)
+        s2 = fig.add_subplot(1,2,2)
+    else:
+        fig = plt.figure(figsize = (8,5))
+        s2 = fig.add_subplot(1,1,1)
 
-    ##Make the histogram of the full energy distrubtion for X with findFit intervals
-    nx, binsx, patchesx = s1.hist(targx, xinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target X Histogram")
+    if xPlot:
+        ##Make the histogram of the full energy distrubtion for X with findFit intervals
+        nx, binsx, patchesx = s1.hist(targx, xinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target X Histogram")
 
-    ##Add the "best fit" line using the findFit mu and sigma for x and display sigma
-    y1a = norm.pdf(binsx, mux, sigmax)
-    l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Least Square")
-    #y1b = norm.pdf(binsx, mux, Mhx[0])
-    #l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS") #sample RMS
-    y1c = norm.pdf(binsx, mux, Mfx[0])
-    l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
+        ##Add the "best fit" line using the findFit mu and sigma for x and display sigma
+        y1a = norm.pdf(binsx, mux, sigmax)
+        l1a = s1.plot(binsx, y1a, "k--", linewidth=1,label="Histogram Least Square")
+        #y1b = norm.pdf(binsx, mux, Mhx[0])
+        #l1b = s1.plot(binsx, y1b, "r--", linewidth=2,label="Target Twiss RMS") #sample RMS
+        y1c = norm.pdf(binsx, mux, Mfx[0])
+        l1c = s1.plot(binsx, y1c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
+
+        ##Set various plot variables, often found through trial and error
+        ##if don't set ylim, log goes to e-58
+        plt.setp(s1,xlim=([-args.xlim,args.xlim]),ylim=([1e-6,3]))
+        s1.set_title("X Distribution At Target",fontsize=fs+2) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
+        s1.set_xlabel("X Position [mm]",fontsize=fs)
+        s1.set_ylabel("Probability Density",fontsize=fs)
+        #s1.set_xlim([-xlim,xlim])
+        ##s1.set_ylim([1e-6,0.1])
+        #s1.set_ylim([1e-6,1])  #if don't set, then log goes to e-58
+
+        ##Write texts to display sigmas
+        import re
+        if re.search(",",fitlabel): #Not sure what this is for...
+            label = re.sub(".+(?<=(,))","",fitlabel)
+            label = label.replace(" ","")
+        else:
+            label = "Müller Eqn 8"
+        sigmatextx = r"$\sigma_{X}$:"
+        sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
+        #sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
+        sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
+        #sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
+        sigmatextx += "\nHistogram/Müller={:.2f}".format((sigmax/Mfx[0]-1)*100)+"%"
+
+        xlim1 = s1.get_xlim()
+        ylim1 = s1.get_ylim()
+        s1.text(xlim1[0]*0.97,5e-2,sigmatextx,fontsize=fs-5)
+        s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-5)
+        s1.text(xlim1[0]*0.97,6.0e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-5)
+        s1.text(xlim1[0]*0.97,2.5e-3,r"$\beta_{x}$ = "+"{:.1f}".format(PBWTwx[0])+r"$_{[m]}$",fontsize=fs-5)
+        s1.text(xlim1[0]*0.97,1.0e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-5)
+
+        handles1, labels1 = plt.gca().get_legend_handles_labels()
+        order1=[0,1,2]
+        s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-6,loc="upper right")
 
     ##Make the histogram of the full energy distrubtion for Y with findFit intervals
     ny, binsy, patchesy = s2.hist(targy, yinterval, density=True, log=True, facecolor="green", alpha=0.75,label="MiniScatter Target Y Histogram")
@@ -534,18 +576,12 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     l2c = s2.plot(binsy, y2c, "b--", linewidth=2,label=fitlabel+" Twiss RMS")
 
     ##Write texts to display sigmas
-    sigmatextx = r"$\sigma_{X}$:"
-    sigmatextx +="\nHistogram = "+"{:.2f}".format(sigmax)+"mm"
-    #sigmatextx +="\nTwiss RMS = "+"{:.2f}".format(Mhx[0])+"mm"
     import re
     if re.search(",",fitlabel): #Not sure what this is for...
         label = re.sub(".+(?<=(,))","",fitlabel)
         label = label.replace(" ","")
     else:
         label = "Müller Eqn 8"
-    sigmatextx +="\n"+label+" RMS = "+"{:.2f}".format(Mfx[0])+"mm"
-    #sigmatextx +="\n\n{:.3f}% outside".format(pOut3sigx)+r" 3$\sigma$"
-    sigmatextx += "\nHistogram/Müller={:.2f}".format((sigmax/Mfx[0]-1)*100)+"%"
 
     sigmatexty = r"$\sigma_{Y}$:"
     sigmatexty +="\nHistogram = "+"{:.2f}".format(sigmay)+"mm"
@@ -555,31 +591,8 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     sigmatexty += "\nHistogram/Müller={:.2f}".format((sigmay/Mfy[0]-1)*100)+"%"
 
     ##Set various plot variables, often found through trial and error
-    xlim = args.xlim#5*sigmax
-    fs=18
-    #if don't set ylim, log goes to e-58
-    plt.setp(s1,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
-    s1.set_title("X Distribution At Target",fontsize=fs+2) #+"\n"+rf"$\sigma_D=${{:.1f}}mm".format(sigmax)
-    s1.set_xlabel("X Position [mm]",fontsize=fs)
-    s1.set_ylabel("Probability Density",fontsize=fs)
-    #s1.set_xlim([-xlim,xlim])
-    ##s1.set_ylim([1e-6,0.1])
-    #s1.set_ylim([1e-6,1])  #if don't set, then log goes to e-58
-    
-    xlim1 = s1.get_xlim()
-    ylim1 = s1.get_ylim()
-    s1.text(xlim1[0]*0.97,5e-2,sigmatextx,fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,6.8e-3,r"$\epsilon_{Nx}$ = "+"{:.3f}".format(PBWTwx[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,3.1e-3,r"$\beta_{x}$ = "+"{:.1f}".format(PBWTwx[0])+r"$_{[m]}$",fontsize=fs-4)
-    s1.text(xlim1[0]*0.97,1.5e-3,r"$\alpha_{x}$ = "+"{:.2f}".format(PBWTwx[1]),fontsize=fs-4)
-
-    handles1, labels1 = plt.gca().get_legend_handles_labels()
-    order1=[0,1,2]
-    s1.legend([handles1[idx] for idx in order1],[labels1[idx] for idx in order1],fontsize=fs-6,loc="upper right")
-
     ##Set s2
-    plt.setp(s2,xlim=([-xlim,xlim]),ylim=([1e-6,3]))
+    plt.setp(s2,xlim=([-args.xlim,args.xlim]),ylim=([1e-6,3]))
     s2.set_title("Y Distribution At Target",fontsize=fs+2)
     #if don't set ylim, log goes to e-58
     #s2.set_xlim([-xlim,xlim])
@@ -595,10 +608,10 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
 
     s2.text(xlim2[0]*0.97,5e-2,sigmatexty,fontsize=fs-4)
     #PBWTwx = [Ibetax,Ialphx,Inemtx]
-    s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,6.8e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,3.1e-3,r"$\beta_{y}$ = "+"{:.1f}".format(PBWTwy[0])+r"$_{[m]}$",fontsize=fs-4)
-    s2.text(xlim2[0]*0.97,1.5e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-4)
+    s2.text(xlim2[0]*0.97,1.2e-2,"Beam Twiss at PBW:",fontsize=fs-5)
+    s2.text(xlim2[0]*0.97,6.0e-3,r"$\epsilon_{Ny}$ = "+"{:.3f}".format(PBWTwy[2])+r"$_{[mm \cdot mrad]}$",fontsize=fs-5)
+    s2.text(xlim2[0]*0.97,2.5e-3,r"$\beta_{y}$ = "+"{:.1f}".format(PBWTwy[0])+r"$_{[m]}$",fontsize=fs-5)
+    s2.text(xlim2[0]*0.97,1.0e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-5)
 
     ##Can date stamp the multi plot for easier tracking of changes, if necessary
     #from datetime import datetime
@@ -1839,11 +1852,6 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
         propsR = dict(horizontalalignment="right",verticalalignment="top", backgroundcolor = 'w',bbox=bgdbox,fontsize=fs-4, transform=ax.transAxes)
         ax.text(0.98, 0.95,r"$\mu$="+"{:.3f}".format(mu)+"\n"+r"$\sigma$="+"{:.3f}".format(sigma), propsR)
 
-        ##c = ax.pcolormesh(X,Y,pull,shading='auto',norm=LogNorm(vmin=pull.min()+minim, vmax=pull.max()+minim), cmap='viridis',rasterized=True)
-        ##cbar = fig.colorbar(c, ax=ax,pad=0.01)
-        ##cbar.set_label("Pull Values",fontsize=fs-1)
-        #ax.set_ylabel("Vertical [mm]",fontsize=fs)
-        #ax.set_xlabel("Horizontal [mm]",fontsize=fs)
         if max(pull) < 5: xlim = 5
         elif max(pull) <10: xlim = 10
         elif max(pull) <15: xlim = 15
@@ -1855,19 +1863,14 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
         ax.set_xlabel("Pull Values",fontsize=fs)
         plt.savefig(name+"_pull"+str(args.threshold)+".png")
         print("pull",name+"_pull"+str(args.threshold)+".png")
-    #print("R = ",rValue,chi2)
-    #print("Converted in",datetime.now() - start)
 
     ##Normalize to full current
     I_pulse = 62.5*1e3 #[uA]
-    #ImgJ = np.zeros_like(Img) #for redefinition
     C = I_pulse / parts / (xBinSize * yBinSize * 1e-2) * 0.04 #[uA/cm^2]: /mm^2->/cm^2 = /1e-2, A->uA = 1e6, 4% duty cycle
     for i in range(len(Img)):
         for j in range(len(Img[i])):
             Img[i][j] = Img[i][j] * C #[uA/cm^2] #redefinition was messing with proton sum, but not necessary for final algorithm
     jMax = max(Img)
-    #sumCharge = np.sum(Img)+1
-    #("PMAS Sum",sumTot,jMax)
 
     ##Find Edges
     #from plotFit import findEdges
@@ -1965,34 +1968,18 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
     i=0
     lenbreak=False
 
-    #How to select which entries? Make keys to search for
+    ##How to select which entries? Make keys to search for
     pbwKey = "PBW_{:.0f}MeV".format(args.energy)
     nBkey = "{:.0f}_NpB{:.0f}".format(floor(log10(2.88e4*args.Nb)),args.Nb)
     betaKey = "beta{:.2f},{:.2f}m".format(Twiss[1],Twiss[4])
     origKey = "OrigbX{:.2f},bY{:.2f}".format(origBX,origBY)
     failKey = "failure{:.0f}-{:.0f}f".format(args.failure,args.magFails)
     qpKey = "QP"+args.qpNum
-    ##print(args.beamFile)
-    ##print(nBkey,origKey,betaKey)
-    ##print(re.search(nBkey,beamFile) , re.search(origKey,beamFile), re.search(betaKey,beamFile) ,"\n\n")
+    ##Depending on the options specified, read the lines that match options. This can get tricky...
     with open(statsPWD+args.statsFile+".csv",mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)
-        #requires differentiating between type of run we're looking at. Can't have both in one line
-        if args.betaSpread != 0: #sampleIn files
-            for row in csv_reader:
-                #if i == 6: #for finding indices out of 7sigma
-                #    print("index",i,"failed file:",row[0])
-                #print(re.search(nBkey,row[0]) , re.search(pctKey,row[0]) , (re.search(origKey,row[0])))
-                if re.search(nBkey,row[0]) and re.search(pctKey,row[0]) and re.search(origKey,row[0]):
-                    read[i] = float(row[ind])
-                    if i == args.samples-1:
-                        lenbreak = True
-                        break
-                    i+=1
-                if lenbreak:
-                    break
-        elif args.failure != 0: #RM fails, though only PBW... files at this time
+        if args.beamClass == "ESS" and args.failure != 0: #RM fails, though only "PBW..." files at this time
             for row in csv_reader:
                 #print(args.beamFile,row[0])
                 if re.search(nBkey,row[0]) and re.search(failKey,row[0]) and re.search(pbwKey,row[0]) and re.search(betaKey,row[0]) :
@@ -2123,6 +2110,7 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             ax.set_title("{:.0f} Samples of QP{:.0f} at {:.0f}% Field\n with {:.0f}% ".format(len(read),int(args.qpNum),fieldFrac,pct)+r"$\beta$"+" Variation Around Nominal \nwith {:.2e} Macro-Particles".format(nPs),fontsize=fs)
     else:#nominal
         ax.set_title("{:.0f} Nominal Samples \nwith {:.2e} Macro-Particles".format(len(read),nPs),fontsize=fs)
+        pct=0
 
     ##Set more plot settings
     if args.failure == 0 and args.qpNum == "" and args.Nb > 99:
@@ -2167,9 +2155,9 @@ def plotSpread(args,Twiss,statsPWD,paramName,ind,unit,paramLabel,pFitLims,paramB
             ax.text(0.01, 0.50, args.physList, propsR)    
 
     if args.twissFile == "":
-        name=statsPWD+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
+        name=statsPWD+"Nb{:.0f}_{:.0f}x".format(args.Nb,len(read))+paramName+"Hist"
     else:
-        name=statsPWD+args.twissFile+"QP"+args.qpNum+"Nb{:.0f}_{:.0f}x{:.0f}".format(args.Nb,len(read),args.betaSpread)+paramName+"Hist"
+        name=statsPWD+args.twissFile+"Nb{:.0f}_{:.0f}x".format(args.Nb,len(read))+paramName+"Hist"
 
     if args.failure != 0:
             name +="_failure"+str(int(args.failure))
@@ -2199,7 +2187,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     #from os import uname
     #from plotFit import plotSpread,plotSpreadBroad
     from numpy import zeros
-    print("statsFile:",args.statsFile)
+    print("statsFile:",paths['statsPWD']+args.statsFile)
 
     paramName=["jMax","beamPOut","coreJMean","chiSq"]#"rValue","coreArea","coreJMean","centX","centY","chi2"] #len=6 
     paramLabel=[r"Peak Current Density [$\mu$A/cm$^2$]","Beam % Outside Target Area",r"Core Average Current Density [$\mu$A/cm$^2$]",r"$\chi^2$"]
@@ -2216,7 +2204,7 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
                     #([-1e3,-100,-500],[1e3,100,500]),([-1e3,-100,-500],[1e3,100,500]),#,(0,[1e3,10,1])]
     #pHistLimsold = [[35,45],[8.2,8.55],[25,40],[.072,.073]]#,[4.55,4.6]]#nominal#[5000,7000],,[-10,10],[-10,10]
                     #jMax       Pout  coreJMean    chi2    coreArea    centX   centY         rVal 
-    pHistLims = [[51.5,57],[3.47,3.9],[40,46.4],[3800,5000]]#for sameRefImg, 3800,6300. For individual RefImgs, 3800,5000 #,[5000,8000],[-10,10],[-10,10] ,[.025,.075]
+    pHistLims = [[51.5,52.9],[3.62,3.72],[40,46.4],[1000,11000]]#for sameRefImg, 3800,6300. For individual RefImgs, 3800,5000 #,[5000,8000],[-10,10],[-10,10] ,[.025,.075]
     paramBins = [20,20,20,20]#,20,20,20,20,20]
 
     mus = zeros(len(paramName))
@@ -2226,7 +2214,6 @@ def spreadHist(args,Twiss,paths,origBX,origBY,beamFile):
     for i in range(len(paramName)):
         print(paramName[i],paramFitLims[i],paramBins)
         mus[i], sigmas[i],ampl[i],lens[i] = plotSpread(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],paramFitLims[i],paramBins[i],pHistLims[i],origBX,origBY,beamFile)
-        #mus[i], sigmas[i],ampl[i],lens[i] = plotSpreadBroad(args,Twiss,paths['statsPWD'],paramName[i],ind[i],unit[i],paramLabel[i],pFitLims[i],paramBins[i])
 
     import csv
     found=False
@@ -2374,131 +2361,3 @@ def getTwiss(args,sample,paths):
 
 
     return Twiss,origBX,origBY
-
-
-##addRefImg was replaced by createReferenceImage.py
-
-##WIP: Attempt to fit pencil beam with multiple gaussians with python
-def fitGaussians(Img,Error,path,lim,axis,gauss):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    print(np.shape(Img))
-    if axis in {"y","Y"}:
-        lenX = np.shape(Img)[1]
-        proj = Img[:,round(lenX/2)-1:round(lenX/2)+1]
-        if Error.all() != 1:
-            projErr = Error[:,round(lenX/2)-1:round(lenX/2)+1]
-        else:
-            projErr = None
-        label = "Y"
-        #print(lenX)
-        #print(np.shape(proj))
-        proj = (proj[:,0] + proj[:,1]) / 2
-        if Error.all() != 1:
-            projErr = (projErr[:,0] + projErr[:,1]) / 2
-    elif axis in {"x","X"}:
-        lenX = np.shape(Img)[0]
-        proj = Img[round(lenX/2)-1:round(lenX/2)+1,:]
-        if Error.all() != 1:
-            projErr = Error[round(lenX/2)-1:round(lenX/2)+1,:]
-        else:
-            projErr = None
-        label = "X"
-        #print(lenX)
-        #print(np.shape(proj))
-        proj = (proj[0,:] + proj[1,:]) / 2
-        if Error.all() != 1:
-            projErr = (projErr[0,:] + projErr[1,:]) / 2
-    #print(np.shape(proj))
-    x = np.linspace(-lim,lim,len(proj))
-
-    if Error.all() != 1:
-        plt.errorbar(x,proj,yerr=projErr,ecolor="y",elinewidth=1,fmt='.',markersize=2)
-    else:
-        plt.scatter(x,proj,s=2)
-    plt.yscale("log")
-    plt.ylim(1e-10,3e-2)
-    xlim=20
-    plt.xlim(-xlim,xlim)
-    plt.savefig(path+"proj"+label+".png",dpi=300)
-
-    def func1(x,a1,s1):
-        from numpy import exp as npExp
-        return a1 * npExp(-x**2 / (2*s1**2))
-    def func2(x,a1,s1,a2,s2):
-        from numpy import exp as npExp
-        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2))
-    def func3(x,a1,s1,a2,s2,a3,s3):
-        from numpy import exp as npExp
-        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2))
-    def func4(x,a1,s1,a2,s2,a3,s3,a4,s4):
-        from numpy import exp as npExp
-        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2))
-    def func5(x,a1,s1,a2,s2,a3,s3,a4,s4,a5,s5):
-        from numpy import exp as npExp
-        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2)) + a5 * npExp(-x**2 / (2*s5**2))
-
-    from scipy.optimize import curve_fit #https://www.datatechnotes.com/2020/09/curve-fitting-with-curve-fit-function-in-python.html
-    from numpy import exp as npExp
-
-    params1, covs1 = curve_fit(func1, x, proj,sigma=projErr)
-    print("params1: ", params1)
-    coeffs = params1
-    print("covariance: ", covs1)
-    yfit1 = params1[0] * npExp(-x**2 / (2*params1[1]**2))
-    plt.plot(x, yfit1, label="1Gaussian")
-
-    if gauss in {2,3,4,5}:
-        params2, _ = curve_fit(func2, x, proj,p0=[params1[0],params1[1],1,10],sigma=projErr)#,bounds=((params1[0]-1e-3,params1[0]+1e-3),(params1[1]-1e-3,params1[1]+1e-3),(0,1e5),(0,1e5)))
-        print("params2: ", params2)
-        coeffs = params2
-        #print("covariance: ", covs2)
-        yfit2 = params2[0] * npExp(-x**2 / (2*params2[1]**2)) + params2[2] * npExp(-x**2 / (2*params2[3]**2))
-        plt.plot(x, yfit2, label="2Gaussian")
-
-    if gauss in {3,4,5}:
-        params3, _ = curve_fit(func3, x, proj,p0=(params1[0],params1[1],1,10,1,30),sigma=projErr)
-        print("params3: ", params3)
-        coeffs = params3
-        #print("covariance: ", covs3)
-        yfit3 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2))
-        plt.plot(x, yfit3, label="3Gaussian")
-
-    if gauss in {4,5}:
-        #a=18
-        #x1=[]
-        #y1=[]
-        #for i in range(a):
-        #    x1.append(x[i])
-        #    x1.append(x[-i])
-        #    y1.append(proj[i])
-        #    y1.append(proj[-i])
-        #x1.remove(-76.0)
-        #y1.remove(1.254665e-05)
-        #print(x1,y1)
-        #plt.scatter(x1,y1)
-        #params4, _ = curve_fit(func2, x1, y1,p0=(params3[4],params3[5],0.1,100))
-        params4, _ = curve_fit(func4, x, proj,p0=(params1[0],params1[1],params3[2],params3[3],1,30,1,50),sigma=projErr,bounds=([0,0,0,0,0,0,0,1],[1,1,1,10,1,60,1,60]))
-        print("params4: ", params4)
-        coeffs = params4
-        #print("covariance: ", covs4)
-        #yfit4 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2)) + params4[2]*npExp(-x**2 / (2*params4[3]**2)) #p
-        yfit4 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) #p
-        plt.plot(x, yfit4, label="4Gaussian")
-
-    if gauss == 5:
-        params5, _ = curve_fit(func5, x, proj,sigma=projErr)
-        print("params5: ", params5)
-        coeffs = params5
-        #print("covariance: ", covs5)
-        yfit5 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) + params5[8] * npExp(-x**2 / (2*params5[9]**2))
-        plt.plot(x, yfit5, label="5Gaussian")
-
-    plt.legend()
-    plt.grid()
-    plt.savefig(path+"proj"+label+".png",dpi=600)
-    print(path+"proj"+label+".png")
-    plt.close()
-
-    
-    return coeffs

@@ -12,11 +12,12 @@
 #Fit Gaussians to a beamlet, compare distributions at Target:
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --reBin 1
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 5e8 --reBin 1 --beamClass pencil --gauss2Fit 5
-    #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e7 --compTargs --savePics
+    #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e5 --compTargs --savePics
 #QP Jitter Study:
-    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-04Jitter_500x --beamClass jitter
+    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_100pctField_1.0e-04Jitter_500x --beamClass jitter --saveSpread --samples 200 --processes 8
 #individual QP Fail:
     #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_QP116_80pctField_1.0e-04Jitter_200x --beamClass qpFail --qpNum 116
+    #python3 rasterScatter.py --source twiss --twissFile HEBT-A2T_QP116_80pctField_1.0e-04Jitter_200x --beamClass qpFail --qpNum 116 --saveSpread --samples 200 --processes 8
 #Map RA Dependence:
     #python3 rasterScatter.py --sim map --ampl map --Nstep 6 or 11
     #python3 rasterScatter.py --sim map --ampl map --startX 43 --startY 14.5 --Nstep 8
@@ -28,8 +29,6 @@
     #python3 rasterScatter.py --Nb 100 --samples 202 --processes 8 --rX 1
 #source from CSV:
     #python3 rasterScatter.py --source csv --beamFile PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_127 --reBin 1 --savePics --saveEdges
-#Old Jitter study:
-    #python3 rasterScatter.py --samples 202 --saveSpread --betaSpread 10
 
 #load from CSV file name:
     #python3 rasterScatter.py --source csv --beamFile sampleIn50Pct_OrigbX1006.80,bY129.72m_beta1006.80,129.72m_N2.9e+06_NpB100 --saveGrads --saveEdges
@@ -51,9 +50,8 @@ parser.add_argument("--particle",  type=str,   default="proton",choices=("proton
 parser.add_argument("--beamFile",  type=str,   help="Load Particles or not", default="PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100")
 parser.add_argument("--twiss",     type=float, nargs=6,       help="Twiss parameters in form: NemtX[mm*mrad],BetaX[m],AlphX,NemtY[mm*mrad],BetaY[m],AlphY")
 parser.add_argument("--qpNum",     type=str,   default="",    help="Either a number between 099 and 148, qps, or all, see getTwiss function")
-parser.add_argument("--betaSpread",type=float, default=0,     help="What % around provided Beta should we sample from")
 parser.add_argument("--samples",   type=int,   default=1,     help="How many times to sample this setting")
-parser.add_argument("--statsFile", type=str,   default="EvalStats27Apr", help="Load Beam of already made csv")
+parser.add_argument("--statsFile", type=str,   default="EvalStats28July", help="Load Beam of already made csv")
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
@@ -96,7 +94,6 @@ parser.add_argument("--processes", type=int, default=4,  help="Number of process
 parser.add_argument("--dpi",       type=int, default=500,help="DPI for pngs")
 parser.add_argument("--physList",  type=str, default="QGSP_BERT_EMZ",help="Physics List, combo of QGSP, FTFP, + BERT, BIC + EMZ or EMonly_ + EM type")
 parser.add_argument("--threshold", type=int, default=10,help="threshold of particles/bin to include in Chi2 and pull calculations")
-#parser.add_argument("--refImg",    action="store_true",  default=False,   help="Add Img to the Ref Img of this beam")
 #Maps options:
 parser.add_argument("--ampl",   type=str,     default='map', help="Range of amplitudes: map(x by y), short(nominal-10%) or large(nominal-70%)")
 parser.add_argument("--startX", type=float,     default=40,    help="Start ampl for X")

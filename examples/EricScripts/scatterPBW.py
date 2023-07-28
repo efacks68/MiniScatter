@@ -29,7 +29,10 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
 
     ##Use MiniScatter to load ROOT file
     from os import getcwd
-    print(getcwd())
+    from sys import path as sysPath
+    MiniScatter_path="."
+    sysPath.append(MiniScatter_path)
+    #print(getcwd(),sysPath)
     import miniScatterDriver
     TRYLOAD = True  #Try to load already existing data instead of recomputing, only if using getData_TryLoad function.
     (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212","init_xy"])
