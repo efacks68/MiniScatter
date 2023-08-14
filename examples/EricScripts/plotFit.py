@@ -505,7 +505,7 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     print(fitlabel,"\t\t sigma Y: {:.2f}mm".format(Mfy[0]))
 
     plt.clf()
-    xPlot = True
+    xPlot = False
     if xPlot:
         ##Create the fig with 2 plots side by side
         fig = plt.figure(figsize=(16,6.0))
@@ -614,8 +614,9 @@ def compareTargets(targx,targy,targTwx,targTwy,fitTwx,fitTwy,fitlabel,savename,m
     s2.text(xlim2[0]*0.97,1.0e-3,r"$\alpha_{y}$ = "+"{:.2f}".format(PBWTwy[1]),fontsize=fs-5)
 
     ##Can date stamp the multi plot for easier tracking of changes, if necessary
-    #from datetime import datetime
-    #dt = datetime.now()
+    from datetime import datetime
+    dt = datetime.now()
+    print(dt.strftime("%H-%M-%S"))
 
     name = savename+"_compTargs_"+"."+args.picFormat##+dt.strftime("%H-%M-%S")
     #plt.show()

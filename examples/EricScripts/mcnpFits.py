@@ -4,7 +4,10 @@
 ###Import ROOT and configure
 import ROOT
 axis = "Y"
-xlim = 60
+xlim = 80
+nofits=True
+legS= [0.66,0.57,0.985,0.9]
+legTextSize=0.043
 ylim = [1e-7,1.2e-1]
 scratchPath = "/scratch2/ericdf/PBWScatter/"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
@@ -24,13 +27,13 @@ Pri_TH2 = priFile.Get("MCBERT_Target-PrimaryProtons").Clone("MCNP_BERT_Primary")
 ###Normalize the TH2s if not already.
 width = 200
 maxim = 200
-integralTot = Tot_TH2.Integral(Tot_TH2.GetXaxis().FindBin(-width),Tot_TH2.GetXaxis().FindBin(width),Tot_TH2.GetYaxis().FindBin(-width),Tot_TH2.GetYaxis().FindBin(width),option="width")
-Tot_TH2.Scale(1/integralTot)
-sumTot = Tot_TH2.Integral()
+#integralTot = Tot_TH2.Integral(Tot_TH2.GetXaxis().FindBin(-width),Tot_TH2.GetXaxis().FindBin(width),Tot_TH2.GetYaxis().FindBin(-width),Tot_TH2.GetYaxis().FindBin(width),option="width")
+#Tot_TH2.Scale(1/integralTot)
+#sumTot = Tot_TH2.Integral()
 
-integralPri = Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),option="width")
-Pri_TH2.Scale(1/integralPri)
-sumPri = Pri_TH2.Integral()
+#integralPri = Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),option="width")
+#Pri_TH2.Scale(1/integralPri)
+#sumPri = Pri_TH2.Integral()
 #print("Pri",Pri_TH2.Integral(Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),option="width"))
 
 #GEANT4 too
@@ -39,12 +42,6 @@ fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
 ##Get TH2D and clone in
 G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBERTZ")
 
-##Normalize TH2Ds and make Projections
-##G4_QBERTZ (QGSP_BERT_EMZ)
-integralQBZ = G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),option="width")
-G4_QBERTZ_TH2.Scale(1/integralQBZ)
-#print("QBZ",G4_QBERTZ_TH2.Integral(G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),option="width"))
-
 ###Open Canvas and configure, select stats output
 c1 = ROOT.TCanvas("MCNP Beam Fits","MCNP Beam Fits",0,0,400*8,250*8)
 ROOT.gStyle.SetOptStat(000)
@@ -52,61 +49,83 @@ ROOT.gStyle.SetOptFit(000)
 #ROOT.gStyle.SetStatW(0.15)
 #ROOT.gStyle.SetStatH(0.1)
 c1.SetLogy()
-leg = ROOT.TLegend(0.68,0.7,0.98,0.9)#0.13,0.65,0.43,0.9)
-ROOT.gStyle.SetLegendTextSize(0.017)
+leg = ROOT.TLegend(legS[0],legS[1],legS[2],legS[3])#0.13,0.65,0.43,0.9)
+ROOT.gStyle.SetLegendTextSize(legTextSize)
+leg.SetMargin(0.12)
 
 
-###Project onto the desired axis
+###Project onto the desired axis and Normalize
+if axis in {"Y","y"}:
+    proj_Pri = Pri_TH2.ProjectionY(axis,Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),"e")
+    integralPri = proj_Pri.Integral(proj_Pri.GetXaxis().FindBin(-width),proj_Pri.GetXaxis().FindBin(width),option="width")
+    proj_Pri.Scale(1/integralPri)
+else:
+    proj_Pri = Pri_TH2.ProjectionX(axis,Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),"e")
+    integralPri = proj_Pri.Integral(proj_Pri.GetXaxis().FindBin(-width),proj_Pri.GetXaxis().FindBin(width),option="width")
+    proj_Pri.Scale(1/integralPri)
+proj_Pri.SetName("proj_PrimaryVeryDifferent")
+proj_Pri.Draw()
+proj_Pri.SetMarkerStyle(41)
+proj_Pri.SetMarkerColor(2)
+proj_Pri.SetMarkerSize(4)
+proj_Pri.SetTitle(axis+" Scattered Pencil Beam Density at Target")
+proj_Pri.GetXaxis().SetRangeUser(-xlim,xlim)
+proj_Pri.GetYaxis().SetRangeUser(ylim[0],ylim[1])
+
+#MCNP_Tot
+##Apparently they need to be separated to not conflict, even though all variables are separate and THs get unique names...
 if axis in {"y","Y"}:
     proj_Tot = Tot_TH2.ProjectionY(axis,Tot_TH2.GetXaxis().FindBin(-width),Tot_TH2.GetXaxis().FindBin(width),"e")
+    integralTot = proj_Tot.Integral(proj_Tot.GetXaxis().FindBin(-width),proj_Tot.GetXaxis().FindBin(width),option="width")
+    proj_Tot.Scale(1/integralTot)
 else:
     proj_Tot = Tot_TH2.ProjectionX(axis,Tot_TH2.GetYaxis().FindBin(-width),Tot_TH2.GetYaxis().FindBin(width),"e")
+    integralTot = proj_Tot.Integral(proj_Tot.GetXaxis().FindBin(-width),proj_Tot.GetXaxis().FindBin(width),option="width")
+    proj_Tot.Scale(1/integralTot)
 ##IMPORTANT: In order for multiple projections to be printed together, each must have a unique name!
 ## The names are NOT inherited from their TH2D, like I had expected.
 proj_Tot.SetName("proj_Tot")
-proj_Tot.Draw()
+#proj_Tot.Draw("SAME")
 ###Configure plots
 proj_Tot.SetMarkerStyle(34)
 proj_Tot.SetMarkerColor(1)
 proj_Tot.SetMarkerSize(4)
-proj_Tot.SetTitle(axis+" Scattered Pencil Beam Density at Target")
-proj_Tot.GetXaxis().SetRangeUser(-xlim,xlim)
-proj_Tot.GetYaxis().SetRangeUser(ylim[0],ylim[1])
-
-##Apparently they need to be separated to not conflict, even though all variables are separate and THs get unique names...
-if axis in {"Y","y"}:
-    proj_Pri = Pri_TH2.ProjectionY(axis,Pri_TH2.GetXaxis().FindBin(-width),Pri_TH2.GetXaxis().FindBin(width),"e")
-else:
-    proj_Pri = Pri_TH2.ProjectionX(axis,Pri_TH2.GetYaxis().FindBin(-width),Pri_TH2.GetYaxis().FindBin(width),"e")
-proj_Pri.SetName("proj_PrimaryVeryDifferent")
-proj_Pri.Draw("SAME")
-proj_Pri.SetMarkerStyle(41)
-proj_Pri.SetMarkerColor(2)
-proj_Pri.SetMarkerSize(4)
 
 if axis in {"Y","y"}:
     proj_QBZ = G4_QBERTZ_TH2.ProjectionY(axis,G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
+    integralQBZ = proj_QBZ.Integral(proj_QBZ.GetXaxis().FindBin(-width),proj_QBZ.GetXaxis().FindBin(width),option="width")
+    proj_QBZ.Scale(1/integralQBZ)
 else:
     proj_QBZ = G4_QBERTZ_TH2.ProjectionX(axis,G4_QBERTZ_TH2.GetYaxis().FindBin(-width),G4_QBERTZ_TH2.GetYaxis().FindBin(width),"e")
+    integralQBZ = proj_QBZ.Integral(proj_QBZ.GetXaxis().FindBin(-width),proj_QBZ.GetXaxis().FindBin(width),option="width")
+    proj_QBZ.Scale(1/integralQBZ)
 proj_QBZ.SetName("proj_QBERTZ")
 proj_QBZ.Draw("SAME")
 proj_QBZ.SetMarkerStyle(39)
-proj_QBZ.SetMarkerColor(3)
+proj_QBZ.SetMarkerColor(1)
 proj_QBZ.SetMarkerSize(4)
 
 ###Fit projections to Gaussians
+if nofits:
+    fitOption='RSQ0'
+    ext="tight_nofits"
+else:
+    fitOptions='RSQ'
+    ext="tight_simplified"
 f1 = ROOT.TF1('f1','gaus',-maxim,maxim)
 f1.SetNpx(5000)
 f1.SetLineColor(1)
-f1Tot_res = proj_Tot.Fit(f1, 'RSQ')
+#f1Tot_res = proj_Tot.Fit(f1, 'RSQ')
 
 f2 = ROOT.TF1('f2','gaus',-maxim,maxim)
 f2.SetLineColor(2)
+f2.SetLineWidth(3)
 f2.SetNpx(5000)
 f2Pri_res = proj_Pri.Fit(f2, 'RSQ')
 
 f3 = ROOT.TF1('f3','gaus',-maxim,maxim)
-f3.SetLineColor(3)
+f3.SetLineColor(1)
+f3.SetLineWidth(3)
 f3.SetNpx(5000)
 f3Pri_res = proj_QBZ.Fit(f3, 'RSQ')
 
@@ -122,21 +141,25 @@ hTarget.Scale(1/integralTar)
 hTarget.Draw("SAME")
 hTarget.SetMarkerStyle(5)
 hTarget.SetMarkerColor(4)
-hTarget.SetMarkerSize(3)
+hTarget.SetMarkerSize(4)
 
 ##Fit distribution
 f4 = ROOT.TF1('Highland','gaus',-maxim,maxim)
 f4.SetLineColor(4)
+f4.SetLineWidth(3)
 f4.SetNpx(5000)
 f4_res = hTarget.Fit(f4, 'RSQ')
 
 #Set legend entries
-leg.AddEntry(proj_Tot,"MCNP_BERTINI Total Energy Beam; #sigma = {:.3f}".format(f1.GetParameter(2)))
-leg.AddEntry(proj_Pri,"MCNP_BERTINI Beam E > 564MeV; #sigma = {:.3f}".format(f2.GetParameter(2)))
-leg.AddEntry(proj_QBZ,"QGSP_BERT_EMZ Beam E > 564MeV; #sigma = {:.3f}".format(f3.GetParameter(2)))
-leg.AddEntry(hTarget,"Highland Scattered Proton Distribution; #sigma = {:.3f}".format(f4.GetParameter(2)))
+#leg.AddEntry(proj_Tot,"MCNP_BERTINI Total Energy Beam")#; #sigma = {:.3f}".format(f1.GetParameter(2)))
+leg.AddEntry(proj_QBZ,"GEANT4 QGSP_BERTINI")#; #sigma = {:.3f}".format(f3.GetParameter(2)))
+leg.AddEntry(ROOT.nullptr,"  E>564MeV, #sigma={:.1f}mm".format(f3.GetParameter(2)),"")
+leg.AddEntry(proj_Pri,"MCNP_BERTINI") #; #sigma = {:.3f}".format(f2.GetParameter(2)))
+leg.AddEntry(ROOT.nullptr,"  E>564MeV, #sigma={:.1f}mm".format(f2.GetParameter(2)),"")
+leg.AddEntry(hTarget,"Highland Scattered")#; #sigma = {:.3f}".format(f4.GetParameter(2)))
+leg.AddEntry(ROOT.nullptr,"  E=570MeV, #sigma={:.1f}mm".format(f4.GetParameter(2)),"")
 
 ###Draw and Print
 c1.Draw()
 leg.Draw()
-c1.Print(picpath+"MCNPFits"+axis+"tight.png")
+c1.Print(picpath+"MCNPFits"+axis+ext+".png") #nofits
