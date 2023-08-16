@@ -16,30 +16,27 @@ def fit_projection(proj,nGauss,p0,p2):
 
     ##Set parameters. Setting more than needed for a function does nothing
     func.SetParameter(0,p0)                 #A1
-    func.SetParLimits(0,1e-4,p0*100)  #A1
+    func.SetParLimits(0,1e-4,p0*100)        #A1
     func.SetParameter(1,p2)                 #sigma1
-    func.SetParLimits(1,p2,p2*(1+r))#sigma1
+    func.SetParLimits(1,p2,p2*(1+r))        #sigma1
 
     func.SetParameter(2,p0*(r**2))          #A2
-    func.SetParLimits(2,0, p0*5)           #A2
-    func.SetParameter(3,p2*2)           #sigma2
-    func.SetParLimits(3,p2*(1+2*r), p2*2.6)     #sigma2
-    #if nGauss == 5: func.SetParLimits(3,p2*2,p2*5)
+    func.SetParLimits(2,0, p0*5)            #A2
+    func.SetParameter(3,p2*2)               #sigma2
+    func.SetParLimits(3,p2*(1+2*r), p2*2.6) #sigma2
 
     func.SetParameter(4,p0*r**2)            #A3
-    func.SetParLimits(4,0, p0*5)           #A3
+    func.SetParLimits(4,0, p0*5)            #A3
     func.SetParameter(5,p2*7)               #sigma3
-    func.SetParLimits(5,p2*2.5, p2*12)     #sigma3
-    #if nGauss == 3: func.SetParLimits(5,p2*2.5,p2*15)
-    #if nGauss == 5: func.SetParLimits(5,p2*3,p2*5)
+    func.SetParLimits(5,p2*2.5, p2*12)      #sigma3
 
     func.SetParameter(6,p0*r**4)            #4
-    func.SetParLimits(6,0, p0)          #A4
-    func.SetParameter(7,p2*10)               #sigma4
+    func.SetParLimits(6,0, p0)              #A4
+    func.SetParameter(7,p2*10)              #sigma4
     func.SetParLimits(7,p2*8, p2*23)        #sigma4
 
     func.SetParameter(8,p0*r**5)            #A5
-    func.SetParLimits(8,0, p0)          #A5
+    func.SetParLimits(8,0, p0)              #A5
     func.SetParameter(9,p2*25)              #sigma5
     func.SetParLimits(9,p2*15, p2*30)       #sigma5
 

@@ -1,6 +1,203 @@
 ###convolve.py
+##improvement 16 Aug
+###########
+##Plan:
+## 1. Load in Pencil, beamlet and Rastered beams
+## 2. Fit Pencil with 1,3,5 Gaussians
+## 3. Plot all together
+## 4. Convolve Pencil fit with Raster function
 ###convolve the pencil fit with the erf function of the raster
 ##load in pencil fit function
+
+##Function for fitting projections to n Gaussians
+def fit_projection(proj,nGauss,p0,p2):
+    r=0.01
+    ##Set function
+    if nGauss == 2:
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3]))',-xlim,xlim)
+    elif nGauss == 3:
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5]))',-xlim,xlim)
+    elif nGauss == 4:
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7]))',-xlim,xlim)
+    elif nGauss == 5:
+        func = ROOT.TF1('func','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7])) + ([8] / sqrt(2*pi*[9]) ) * exp(-x*x/(2*[9]*[9]))',-xlim,xlim)
+
+    ##Set parameters. Setting more than needed for a function does nothing
+    func.SetParameter(0,p0)                 #A1
+    func.SetParLimits(0,1e-4,p0*100)        #A1
+    func.SetParameter(1,p2)                 #sigma1
+    func.SetParLimits(1,p2,p2*(1+r))        #sigma1
+
+    func.SetParameter(2,p0*(r**2))          #A2
+    func.SetParLimits(2,0, p0*5)            #A2
+    func.SetParameter(3,p2*2)               #sigma2
+    func.SetParLimits(3,p2*(1+2*r), p2*2.6) #sigma2
+
+    func.SetParameter(4,p0*r**2)            #A3
+    func.SetParLimits(4,0, p0*5)            #A3
+    func.SetParameter(5,p2*7)               #sigma3
+    func.SetParLimits(5,p2*2.5, p2*12)      #sigma3
+
+    func.SetParameter(6,p0*r**4)            #4
+    func.SetParLimits(6,0, p0)              #A4
+    func.SetParameter(7,p2*10)              #sigma4
+    func.SetParLimits(7,p2*8, p2*23)        #sigma4
+
+    func.SetParameter(8,p0*r**5)            #A5
+    func.SetParLimits(8,0, p0)              #A5
+    func.SetParameter(9,p2*25)              #sigma5
+    func.SetParLimits(9,p2*15, p2*30)       #sigma5
+
+    ##Number of fit points and Fit. Return function and fit results
+    func.SetNpx(10000)
+    func_res = proj.Fit(func,'RSQ')
+    return func, func_res
+
+paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
+picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+import ROOT
+import numpy as np
+nGauss=5
+xlim = 60
+width=10
+ylim = [1e-15,1.5e6]
+leg = [0.13,0.6,0.4,0.9]
+filename="convolutions"
+Pencil=True
+Raster=False
+ReferenceRaster=True
+Beamlet=False
+Convolution=True
+
+canvas = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,400*8,250*8)
+leg = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
+ROOT.gPad.SetLogy()
+ROOT.gStyle.SetLegendTextSize(0.04)
+leg.SetMargin(0.12)
+
+
+##Add Pencil Slice
+if Pencil:
+    ##Open file with ROOT
+    QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
+    fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
+    ##Get TH2D and clone in
+    G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("QBZ")
+    ##Send to fit function, returns coefficients
+    #_,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_QBERTZ_TH2,"y",5,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,nGauss,True)
+    sliceY_G4_QBERTZ = G4_QBERTZ_TH2.ProjectionY("Y",G4_QBERTZ_TH2.GetXaxis().FindBin(-width),G4_QBERTZ_TH2.GetXaxis().FindBin(width),"e")
+    sliceY_G4_QBERTZ.SetName("QBERTZ Y Slice")
+    integral = sliceY_G4_QBERTZ.Integral(sliceY_G4_QBERTZ.GetXaxis().FindBin(-xlim),sliceY_G4_QBERTZ.GetXaxis().FindBin(xlim))
+    sliceY_G4_QBERTZ.Scale(1/integral)
+    sum = sliceY_G4_QBERTZ.Integral()
+    #print("Sum:",sum)
+
+    ##Draw slice
+    sliceY_G4_QBERTZ.Draw()
+    sliceY_G4_QBERTZ.GetXaxis().SetRangeUser(-xlim,xlim)
+    sliceY_G4_QBERTZ.GetYaxis().SetRangeUser(ylim[0],ylim[1])
+    sliceY_G4_QBERTZ.SetMarkerStyle(34)
+    sliceY_G4_QBERTZ.SetMarkerColor(1)
+    sliceY_G4_QBERTZ.SetMarkerSize(2)
+    sliceY_G4_QBERTZ.SetStats(False)
+    sliceY_G4_QBERTZ.SetTitle("Scattered Pencil Beam at Target")
+    leg.AddEntry(sliceY_G4_QBERTZ,"Y Slice")
+
+    ##Fit N Gaussians
+    a1y = ROOT.TF1('a1','gaus',-xlim,xlim)
+    a1y.SetNpx(10000)
+    a1y_res = sliceY_G4_QBERTZ.Fit(a1y, 'RSQ')
+    p0 = a1y.GetParameter(0) #A
+    p2 = a1y.GetParameter(2) #sigma
+    a1y.Draw("SAME")
+    leg.AddEntry(a1y,"1 Gaussian Fit")
+    a3y, a3y_res = fit_projection(sliceY_G4_QBERTZ,3,p0,p2)
+    a3y.Draw("SAME")
+    a3y.SetLineColor(4)
+    a3y.SetLineWidth(2)
+    leg.AddEntry(a3y,"3 Gaussian Fit")
+    a5y, a5y_res = fit_projection(sliceY_G4_QBERTZ,5,p0,p2)
+    a5y.Draw("SAME")
+    a5y.SetLineColor(3)
+    a5y.SetLineWidth(4)
+    leg.AddEntry(a5y,"5 Gaussian Fit")
+
+##Add Beamlet Twiss
+if Beamlet:
+    Twiss = [0.118980737408497,1085.63306926394,-65.1638312921654,0.123632934174567,136.062409365455,-8.12599512314246]
+    twissFile = "/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.12,eY0.12um_bX1085.63,bY136.06m_aX-65.16,aY-8.13_N1e+08_miniR_QBZ.root"
+    fTwiss = ROOT.TFile(twissFile,"r")
+    G4_Twiss = fTwiss.Get("tracker_cutoff_xy_PDG2212").Clone("Twiss")
+    slice_Twiss = G4_Twiss.ProjectionY("Y",G4_Twiss.GetXaxis().FindBin(-width),G4_Twiss.GetXaxis().FindBin(width),"e")
+    slice_Twiss.SetName("QBERTZ Y Slice")
+    integral = slice_Twiss.Integral(slice_Twiss.GetXaxis().FindBin(-xlim),slice_Twiss.GetXaxis().FindBin(xlim))
+    slice_Twiss.Scale(1/integral)
+    sum = slice_Twiss.Integral()
+    #print("Twiss Sum:",sum)
+    slice_Twiss.Draw("SAME")
+    slice_Twiss.SetMarkerColor(4)
+    slice_Twiss.SetMarkerStyle(41)
+    slice_Twiss.SetMarkerSize(1)
+    leg.AddEntry(slice_Twiss,"Twiss Scattered")
+
+##Add Convolution of Beamlet and Pencil?
+
+##Add Reference Raster Slice
+if ReferenceRaster:
+    #ax = 48.7867;   ay = 16.3991
+    #sigmax = 11.365272681993753;   sigmay = 4.101438150297074
+    refRaster = ROOT.TF1("RefRaster", "0.5 * (TMath::Erf((x+16.3991)/4.101/sqrt(2)) - TMath::Erf((x-16.3991)/4.101/sqrt(2)))", -xlim, xlim)
+    refRaster.Draw("SAME")
+    refRaster.SetLineColor(6)
+    leg.AddEntry(refRaster,"Reference Raster")
+
+##Add Raster Slice
+if Raster:
+    rasterFile = "/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_beta1085.63,136.06m_RMamp49,16mm_N2.9e+06_NpB100_runW_QBZ.root"
+    fRaster = ROOT.TFile(rasterFile,"r")
+    G4_Raster = fRaster.Get("tracker_cutoff_xy_PDG2212").Clone("Raster")
+    slice_Raster = G4_Raster.ProjectionY("Y",G4_Raster.GetXaxis().FindBin(-width),G4_Raster.GetXaxis().FindBin(width),"e")
+    slice_Raster.SetName("QBERTZ Y Slice")
+    integral = slice_Raster.Integral(slice_Raster.GetXaxis().FindBin(-xlim),slice_Raster.GetXaxis().FindBin(xlim))
+    slice_Raster.Scale(1/integral*10)
+    sum = slice_Raster.Integral()
+    #print("Raster Sum:",sum)
+    slice_Raster.Draw("SAME HIST P")
+    slice_Raster.SetMarkerColor(6)
+    slice_Raster.SetMarkerStyle(41)
+    slice_Raster.SetMarkerSize(2)
+    leg.AddEntry(slice_Raster,"Raster Scattered")
+
+##Add Convolution of Pencil and Ref Raster
+convG1Raster = ROOT.TF1Convolution(a1y,refRaster,-20,20,True)
+convG1Raster.SetNofPointsFFT(100000)
+convG1Raster.SetRange(-xlim,xlim)
+convG1Raster.Draw("SAME")
+#convG1Raster.SetMarkerColor(7)
+leg.AddEntry(convG1Raster,"1 Gaussian Raster Convolution")
+
+#ROOT.gPad.RedrawAxis("g") #supposed to make a grid, but it doesn't seem to...
+leg.Draw("SAME")
+canvas.Update()
+
+canvas.Draw()
+canvas.Print(picpath+filename+".png")
+#canvas.Print(picpath+filename".pdf")
+
+
+
+
+#EMZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08EMonly_EMZ.root"
+#fEMZ = ROOT.TFile(EMZ_file,"r")
+#G4_EMZ_TH2 = fEMZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
+#_,_,coeffsEMy,_,_,_ = gaussianFit(G4_EMZ_TH2,"y",100,500,picpath+"convolve_G4_EMZ",2,25,True,True,nGauss,Lorentz)
+#print(coeffsEMy)
+"""
+import scipy.special
+import numpy as np
+import matplotlib.pyplot as plt
+from plotFit import gaussianFit,converter,fitGaussians
+Lorentz=False
 
 ##Gaussian function for 
 def gaussian(x,amplitude,mu,sigma):
@@ -18,8 +215,7 @@ def lorentz(x,alpha,gamma):
 #chdir("/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MiniScatter/build/")
 #import miniScatterDriver
 #print("else GaussFit")
-paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
-picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+
 #Nparts = 1e5
 #TRYLOAD = True 
 #G4_FBERTZ = {'PHYS': 'FTF_BIC_EMZ', 'ZOFFSET': '*-2', 'WORLDSIZE': 1000.0, 'QUICKMODE': False, 'MINIROOT': True, 
@@ -32,26 +228,6 @@ picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScatt
 #                G4_FBERTZ['COVAR'][3],G4_FBERTZ['COVAR'][1],G4_FBERTZ['COVAR'][4],G4_FBERTZ['COVAR'][2],G4_FBERTZ['COVAR'][5],G4_FBERTZ["N"])+"_FBZ"
 #G4_FBERTZ['OUTNAME'] = outname
 #(twiss_G4_FBERTZ, numPart_G4_FBERTZ, objects_G4_FBERTZ) = miniScatterDriver.getData_tryLoad(G4_FBERTZ, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
-import ROOT
-import scipy.special
-import numpy as np
-import matplotlib.pyplot as plt
-from plotFit import gaussianFit,converter,fitGaussians
-EMZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08EMonly_EMZ.root"
-fEMZ = ROOT.TFile(EMZ_file,"r")
-G4_EMZ_TH2 = fEMZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
-nGaus=4
-Lorentz=True
-_,_,coeffsEMy,_,_,_ = gaussianFit(G4_EMZ_TH2,"y",100,500,picpath+"convolve_G4_EMZ",2,25,True,True,nGaus,Lorentz)
-print(coeffsEMy)
-
-##Open file with ROOT
-QBERTZ_file="/scratch2/ericdf/PBWScatter/ESS/PBW_570MeV_eX0.00,eY0.00um_bX0.15,bY0.15m_aX0.00,aY0.00_N5e+08_QBZ.root"
-fQBERTZ = ROOT.TFile(QBERTZ_file,"r")
-##Get TH2D and clone in
-G4_QBERTZ_TH2 = fQBERTZ.Get("tracker_cutoff_xy_PDG2212").Clone("EMZ")
-#Send to fit function, returns coefficients
-_,_,coeffsQBERTZy,_,_,_ = gaussianFit(G4_QBERTZ_TH2,"y",5,500,picpath+"physListComp_G4_QBERTZ",2,25,True,True,nGaus,True)
 
 
 ##Make Numpy map out of TH2D
@@ -66,7 +242,7 @@ args = parser.parse_args()
 (ImgGeant4, xax, yax) = converter(G4_EMZ_TH2,False,picpath+"concolveTry",paths,args,False) #convert from TH2D to numpy map
 (ImgGeant4_QBERTZ, xax, yax) = converter(G4_QBERTZ_TH2,False,picpath+"concolveTry",paths,args,False) #convert from TH2D to numpy map
 Error=np.ones(np.shape(ImgGeant4))
-coeffsNP = fitGaussians(ImgGeant4,Error,picpath,100,"y",4)
+coeffsNP = fitGaussians(ImgGeant4,Error,picpath,100,"y",nGauss)
 
 ##Make projection of numpy map
 xlim=300
@@ -115,47 +291,5 @@ plt.xlabel("Horizontal [mm]")
 plt.ylabel(r"Density [mm$^{-2}$]")
 plt.savefig(picpath+"npConvolve_G4_EMZ.png")
 print(picpath+"npConvolve_G4_EMZ.png")
-
-
-
-"""
-##plot the fit
-maxim=200
-if nGaus == 1:
-    f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
-elif nGaus ==2:
-    if Lorentz:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4]',-maxim,maxim) #[2] / (x**2 + [3]**2) #[2] / x ** 3 + [3]
-    else:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
-elif nGaus == 3:
-    if Lorentz:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
-    else:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
-elif nGaus == 4:
-    if Lorentz:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-        f2.SetParameter(0,coeffsEMy[2]); f2.SetParameter(1,coeffsEMy[3]); f2.SetParameter(2,coeffsEMy[0]); f2.SetParameter(3,coeffsEMy[1]); f2.SetParameter(4,coeffsEMy[4])
-        f2.SetParameter(5,coeffsEMy[5]); f2.SetParameter(6,coeffsEMy[6]); f2.SetParameter(7,coeffsEMy[7])
-    else:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-elif nGaus == 5:
-    if Lorentz:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
-    else:
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
-
-f2.SetNpx(10000)
-
-fRaster = ROOT.TF1("fRaster"," 0.5 * (erf( ( x+[0]-0) /[1]/sqrt(2)) - erf( ( x-[0]-0) /[1]/sqrt(2))) * 0.5 * (erf( ( y+[2]-0) /[3]/sqrt(2)) - erf( ( Y-[2]-0) /[3]/sqrt(2)))")
-fRaster.SetParameter(0,48.7867); fRaster.SetParameter(1,14); fRaster.SetParameter(2,16.3991); fRaster.SetParameter(3,5.3)
-fRaster.SetNpx(10000)
-
-c1 = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,300*8,200*8)
-c1.SetLogy()
-#f2.Draw()
-fRaster.Draw()
-c1.Print(picpath+"convolveFunc_G4_EMZ.png")
 """
 

@@ -32,11 +32,11 @@ L=3565 #thickAl1+thickH2O+thickAl2
 hSigAl1 = 13.6 * partZ / betap * np.sqrt(thickAl1/radLenAl) * (1 + 0.038 * np.log(thickAl1/radLenAl))
 hSigH2O = 13.6 * partZ / betap * np.sqrt(thickH2O/radLenAl) * (1 + 0.038 * np.log(thickH2O/radLenAl))
 hSigAl2 = 13.6 * partZ / betap * np.sqrt(thickAl2/radLenAl) * (1 + 0.038 * np.log(thickAl2/radLenAl))
-
-print("Highland Angles: Al1: {:.3e}, H2O: {:.3e}, Al2: {:.3e}, Total: {:.3e}".format(hSigAl1,hSigH2O,hSigAl2,(hSigAl1+hSigH2O+hSigAl2)))
+theta = np.sqrt(hSigAl1**2+hSigAl2**2+hSigH2O**2)
+print("Highland Angles: Al1: {:.3e}, H2O: {:.3e}, Al2: {:.3e}, theta: {:.3e}".format(hSigAl1,hSigH2O,hSigAl2,theta))
 
 ###If file present, load it and print 
-filename = "HighlandScatteredDistribution"
+filename = "HighlandScatteredDistributionCorrect"
 rootFile="/scratch2/ericdf/PBWScatter/"+filename+"_{:.0e}".format(nParticles)+".root"
 if isfile(rootFile):
     print("Loading data from rootFile!")
@@ -47,17 +47,15 @@ else:
 ###If file not present, make it
 ##Make ROOT histogram to hold
     print("Making New Data")
-    width=200
+    width=50
     hTarget = ROOT.TH1D("haTarget","Proton Distribution at Target",4000,-width,width)
 
     ##Make pencil beam of particles
     ##Send through sheets
     random = default_rng()
     for i in range(int(nParticles)):
-        xp1 = random.normal(scale=hSigAl1)
-        xp2 = random.normal(scale=hSigH2O)
-        xp3 = random.normal(scale=hSigAl2)
-        xTarget = L*(xp1+xp2+xp3)
+        angle = random.normal(scale=theta)
+        xTarget = L*angle
         ##Fill in ROOT histogram
         hTarget.Fill(xTarget)
                     
@@ -71,7 +69,7 @@ else:
     myFile.WriteObject(hTarget,"Highland Scattered Proton Distribution")
 
 ##Fit distribution
-maxim = 50
+maxim = 500
 f1 = ROOT.TF1('Highland','gaus',-maxim,maxim)
 f1.SetNpx(5000)
 f1_res = hTarget.Fit(f1, 'RSQ')
@@ -84,5 +82,5 @@ c1.SetLogy()
 f1.Draw()
 hTarget.Draw()
 hTarget.GetXaxis().SetRangeUser(-maxim,maxim)
-c1.Print(picpath+"HighlandScattering.png")
+c1.Print(picpath+"HighlandScatteringCorrect.png")
 
