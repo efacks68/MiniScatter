@@ -12,7 +12,7 @@ g=3 #number of Gaussians to fit to data
 path = "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/MCNPX/"
 file = "MCNP_ProtonDensity_570MeV_10June"
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
-scratchPath = "/scratch2/ericdf/PBWScatter/"
+scratchPath = "/scratch2/ericdf/PBWScatter/ScatterPaper/"
 if axis in {"x","X"}:
     ylim = [1e-9,2e-1]
     mcnpMarkerSize = 5
@@ -240,4 +240,29 @@ leg.AddEntry(proj_G4_QFBLIV,"GEANT4 QF_BERT_LIV")
 ##Draw and Print Canvas and Legend
 leg.Draw()
 c2.Draw()
-c2.Print(picpath+"PhysLists_BeamOverlap"+axis+"_Many"+picFormat) #only one is being drawn.
+#c2.Print(picpath+"PhysLists_BeamOverlap"+axis+"_Many"+picFormat) #only one is being drawn.
+
+def export_projection(proj,projName):
+    import csv
+    with open(picpath+projName+".csv","w") as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter = ',')
+        csv_writer.writerow(["Bin Center","Bin Content","Bin Error"])
+        #print(proj.GetXaxis().GetNbins())
+        for i in range(proj.GetXaxis().GetNbins()):
+            bx = proj.GetBin(i)
+            x = proj.GetBinCenter(bx)
+            w = proj.GetBinContent(bx)
+            e = proj.GetBinError(bx)
+            csv_writer.writerow([x,w,e])
+        csv_file.close()
+        print(picpath+projName+".csv".format(width))
+
+exportProj=True
+if exportProj:
+    export_projection(proj_G4_EMZ,"EMZ_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_G4_QFBERTSS,"QFBERTSS_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_G4_QFBLIV,"QFBLIV_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_G4_QFBPEN,"QFBPEN_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_MCNP_BERT_Pri,"MCNPX_Pri_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_MCNP_BERT_Tot,"MCNPX_Tot_proj"+axis+"_w{:.0f}".format(width))
+    export_projection(proj_G4_QBERTZ,"QBZpLCom_proj"+axis+"_w{:.0f}".format(width))

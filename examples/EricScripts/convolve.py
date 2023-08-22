@@ -6,8 +6,7 @@
 ## 2. Fit Pencil with 1,3,5 Gaussians
 ## 3. Plot all together
 ## 4. Convolve Pencil fit with Raster function
-###convolve the pencil fit with the erf function of the raster
-##load in pencil fit function
+###########
 
 ##Function for fitting projections to n Gaussians
 def fit_projection(proj,nGauss,p0,p2):
@@ -53,28 +52,30 @@ def fit_projection(proj,nGauss,p0,p2):
     func_res = proj.Fit(func,'RSQ')
     return func, func_res
 
-paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
-picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 import ROOT
 import numpy as np
+#useful variables
+paths = {"scratchPath":"/scratch2/ericdf/PBWScatter/"}
+picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
+filename="convolutions"
+##plot settings
 nGauss=5
 xlim = 60
 width=10
-ylim = [1e-15,1.5e6]
+ylim = [1e-9,1.5e2]
 leg = [0.13,0.6,0.4,0.9]
-filename="convolutions"
 Pencil=True
-Raster=False
+Raster=True
 ReferenceRaster=True
-Beamlet=False
+Beamlet=True
 Convolution=True
 
+##Create Canvas and Legend
 canvas = ROOT.TCanvas("Scattered Beams","Scattered Beams",0,0,400*8,250*8)
 leg = ROOT.TLegend(leg[0],leg[1],leg[2],leg[3])
 ROOT.gPad.SetLogy()
 ROOT.gStyle.SetLegendTextSize(0.04)
 leg.SetMargin(0.12)
-
 
 ##Add Pencil Slice
 if Pencil:
@@ -140,7 +141,7 @@ if Beamlet:
     slice_Twiss.SetMarkerSize(1)
     leg.AddEntry(slice_Twiss,"Twiss Scattered")
 
-##Add Convolution of Beamlet and Pencil?
+##Add Convolution of Beamlet and Pencil? No, should be pencil and convolution with covariance? Or something like that...
 
 ##Add Reference Raster Slice
 if ReferenceRaster:
@@ -159,17 +160,17 @@ if Raster:
     slice_Raster = G4_Raster.ProjectionY("Y",G4_Raster.GetXaxis().FindBin(-width),G4_Raster.GetXaxis().FindBin(width),"e")
     slice_Raster.SetName("QBERTZ Y Slice")
     integral = slice_Raster.Integral(slice_Raster.GetXaxis().FindBin(-xlim),slice_Raster.GetXaxis().FindBin(xlim))
-    slice_Raster.Scale(1/integral*10)
+    slice_Raster.Scale(1/integral)
     sum = slice_Raster.Integral()
     #print("Raster Sum:",sum)
-    slice_Raster.Draw("SAME HIST P")
+    slice_Raster.Draw("SAME HIST P") #removes error bars, as low bar was obscuring everything below it
     slice_Raster.SetMarkerColor(6)
     slice_Raster.SetMarkerStyle(41)
     slice_Raster.SetMarkerSize(2)
     leg.AddEntry(slice_Raster,"Raster Scattered")
 
 ##Add Convolution of Pencil and Ref Raster
-convG1Raster = ROOT.TF1Convolution(a1y,refRaster,-20,20,True)
+convG1Raster = ROOT.TF1Convolution(a1y,refRaster,-100,100,True) #not showing up...
 convG1Raster.SetNofPointsFFT(100000)
 convG1Raster.SetRange(-xlim,xlim)
 convG1Raster.Draw("SAME")

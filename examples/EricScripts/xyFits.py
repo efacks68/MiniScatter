@@ -45,6 +45,21 @@ def fit_projection(proj,nGauss,p0,p2):
     func_res = proj.Fit(func,'RSQ')
     return func, func_res
 
+def export_projection(proj,projName):
+    import csv
+    with open(picpath+projName+".csv","w") as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter = ',')
+        csv_writer.writerow(["Bin Center","Bin Content","Bin Error"])
+        #print(proj.GetXaxis().GetNbins())
+        for i in range(proj.GetXaxis().GetNbins()):
+            bx = proj.GetBin(i)
+            x = proj.GetBinCenter(bx)
+            w = proj.GetBinContent(bx)
+            e = proj.GetBinError(bx)
+            csv_writer.writerow([x,w,e])
+        csv_file.close()
+        print(picpath+projName+".csv".format(width))
+
 
 ###Imports and settings
 import ROOT
@@ -52,6 +67,7 @@ width = 10
 xlim = 700
 ylim = [1e-9,2e-1]
 leg = [0.13,0.6,0.4,0.9]
+printProj = True
 picpath= "/uio/hume/student-u52/ericdf/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
 
 ###Get TH2s
@@ -282,3 +298,9 @@ print("5 Gaussian Fit Y sigma = {:.3f}, {:.3f}, {:.3f}, {:.3f}, {:.3f}, chi2: {:
                                                                                              a5y.GetParameter(9)/p2,a5y_res.Chi2()),
                                                                                              a5y_res.Ndf())
 #print("5y {:.3f}, chi2: {:.3f}".format(a5y.GetParameter(9),a5y_res.Chi2()))
+
+if printProj:
+    export_projection(projY_G4_QBERTZ,"QBZ_projY_w{:.0f}".format(width))
+    if xPlot:
+        export_projection(projX_G4_QBERTZ,"QBZ_projX_w{:.0f}".format(width))
+

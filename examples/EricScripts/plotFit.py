@@ -829,7 +829,7 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
     #Define a 2D gaussian function and fit it to the projection
     f1 = ROOT.TF2('f1','bigaus',-maxim,maxim,-maxim,maxim)
-    #TF2 *f2 = new TF2("f2","[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])",0,10,0,10); f2-<SetParameters(1,3,1,4,1); g->Fit(f2);
+    #TF2 *f2 = new TF2("f2","[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])",0,10,0,10); f2-<SetParameters(1,3,1,4,1); nGauss->Fit(f2);
     f1.SetNpx(500)
     f1_res = hist.Fit(f1, 'RSQ')
     #ca = ROOT.TCanvas("Scattered Beam Fit","Scattered Beam Fit",0,0,300*8,300*8)
@@ -849,8 +849,8 @@ def gaussian2DFit(hist,axis,width,maxim,name,y1,y2,saveFits,density):
 
 
 
-##ROOT fitting of scattered beamlet. Fits to multiple Gaussians, g, or with one Lorentz
-def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
+##ROOT fitting of scattered beamlet. Fits to multiple Gaussians, nGauss, or with one Lorentz
+def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,nGauss,Lorentz):
     #from Kyrre's doubleGaussian.ipynb example
     import ROOT
     #def plot(proj,ext):
@@ -900,98 +900,66 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
     p2 = f1.GetParameter(2) #sigma
     #print("initial Gaussian fit parameters:",p0,p1,p2)
 
-    #Define function of a sum of multiple Gaussians to fit to projection
-    r=0.1
-    if g == 1:
-        ROOT.gStyle.SetStatW(0.1)#.1
-        ROOT.gStyle.SetStatH(0.1)#.02
-        f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
-    elif g ==2:
-        ROOT.gStyle.SetStatW(0.12)#.1
-        ROOT.gStyle.SetStatH(0.1)#.02
-        if Lorentz:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4]',-maxim,maxim) #[2] / (x**2 + [3]**2) #[2] / x ** 3 + [3]
-        else:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
-    elif g == 3:
-        ROOT.gStyle.SetStatW(0.15)#.1
-        ROOT.gStyle.SetStatH(0.1)#.02
-        if Lorentz:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
-        else:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) ',-maxim,maxim)
-    elif g == 4:
-        ROOT.gStyle.SetStatW(0.17)#.1
-        ROOT.gStyle.SetStatH(0.1)#.02
-        if Lorentz:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-        else:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
-    elif g == 5:
-        ROOT.gStyle.SetStatW(0.2)#.1
-        ROOT.gStyle.SetStatH(0.1)#.02
-        if Lorentz:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] / (x**2 + [3]**2) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
-        else:
-            f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1])) + [2] * exp(-x*x/(2*[3]*[3])) + [4] * exp(-x*x/(2*[5]*[5])) + [6] * exp(-x*x/(2*[7]*[7])) + [8] * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
-    #f2 = ROOT.TF1('f2','[0] * exp(-x*x/(2*[1]*[1]))',-maxim,maxim)
+    r=0.01
+    ##Set function
+    if nGauss == 2:
+        f2 = ROOT.TF1('f2','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3]))',-maxim,maxim)
+    elif nGauss == 3:
+        f2 = ROOT.TF1('f2','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5]))',-maxim,maxim)
+    elif nGauss == 4:
+        f2 = ROOT.TF1('f2','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7]))',-maxim,maxim)
+    elif nGauss == 5:
+        f2 = ROOT.TF1('f2','([0] / sqrt(2*pi*[1]) ) * exp(-x*x/(2*[1]*[1])) + ([2] / sqrt(2*pi*[3]) ) * exp(-x*x/(2*[3]*[3])) + ([4] / sqrt(2*pi*[5]) ) * exp(-x*x/(2*[5]*[5])) + ([6] / sqrt(2*pi*[7]) ) * exp(-x*x/(2*[7]*[7])) + ([8] / sqrt(2*pi*[9]) ) * exp(-x*x/(2*[9]*[9]))',-maxim,maxim)
 
-    #constrain parameters, trial and error for Nb=500, RM Amplitudes=0
-    if axis in {"y","Y","x","X"}: #y1 =2, y2 = 20
-        if g in {2,3,4,5}:   f2.SetParNames("A_{1}","#sigma_{1}","#lambda","#gamma","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}")#2
-        else:      f2.SetParNames("A_{1}","#sigma_{1}","A_{2}","#sigma_{2}","A_{3}","#sigma_{3}","A_{4}","#sigma_{4}","A_{5}","#sigma_{5}")
-        #print(f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),f2.GetParameter(6),f2.GetParameter(7))
-        f2.SetParameter(0,p0)               #weight1
-        f2.SetParLimits(0,p0*(1-r),p0*(1+r))#weight1
-        f2.SetParameter(1,p2)               #sigma1
-        f2.SetParLimits(1,p2*(1-r),p2*(1+r))#sigma1
+    ##Set parameters. Setting more than needed for a function does nothing
+    f2.SetParameter(0,p0)                 #A1
+    f2.SetParLimits(0,1e-4,p0*100)        #A1
+    f2.SetParameter(1,p2)                 #sigma1
+    f2.SetParLimits(1,p2,p2*(1+r))        #sigma1
 
-        f2.SetParameter(2,0.1)#lambda 0.1
-        f2.SetParLimits(2,1e-9,10) #lambda 2,1e-9,10
-        f2.SetParameter(3,1e-5)#gamma 3,1e-5
-        f2.SetParLimits(3,0,5e2) #gamma 3,0,1e2
+    f2.SetParameter(2,p0*(r**2))          #A2
+    f2.SetParLimits(2,0, p0*5)            #A2
+    f2.SetParameter(3,p2*2)               #sigma2
+    f2.SetParLimits(3,p2*(1+2*r), p2*2.6) #sigma2
 
-        f2.SetParameter(4,p0*r**2)#weight2
-        f2.SetParLimits(4,0, p0)     #weight2
-        f2.SetParameter(5,p2*(1+2*r))#sigma2
-        f2.SetParLimits(5,p2, p2*5e1) #sigma2
+    f2.SetParameter(4,p0*r**2)            #A3
+    f2.SetParLimits(4,0, p0*5)            #A3
+    f2.SetParameter(5,p2*7)               #sigma3
+    f2.SetParLimits(5,p2*2.5, p2*12)      #sigma3
 
-        f2.SetParameter(6,p0*r**4)#weight3
-        f2.SetParLimits(6,0, p0)  #weight3
-        f2.SetParameter(7,p2*(1+3*r))#sigma3
-        f2.SetParLimits(7,p2, p2*1e2) #sigma3
+    f2.SetParameter(6,p0*r**4)            #4
+    f2.SetParLimits(6,0, p0)              #A4
+    f2.SetParameter(7,p2*10)              #sigma4
+    f2.SetParLimits(7,p2*8, p2*23)        #sigma4
 
-        f2.SetParameter(8,p0*r**5)#weight4
-        f2.SetParLimits(8,0, p0) #weight4
-        f2.SetParameter(9,p2*(1+4*r))#sigma4
-        f2.SetParLimits(9,p2, p2*1e2) #sigma4
+    f2.SetParameter(8,p0*r**5)            #A5
+    f2.SetParLimits(8,0, p0)              #A5
+    f2.SetParameter(9,p2*25)              #sigma5
+    f2.SetParLimits(9,p2*15, p2*30)       #sigma5
 
-        #f2.SetParameter("A_{5}",p0*r)#weight2
-        #f2.SetParLimits("A_{5}",0,p0) #weight2
-        #f2.SetParameter("#sigma_{5}",p2*(1+r))#sigma2
-        #f2.SetParLimits("#sigma_{5}",p2,p2*1e1) #sigma2
-    f2.SetNpx(5000)
-    f2_res = proj.Fit(f2, 'RSQ')
-    if g==1:
-        print("Gaussian: {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}")))
-    elif g==2:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),
-                                                             f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
-    elif g==3:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),
-                                                                           f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
-                                                                           f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
-    elif g==4:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),
-                                                                                         f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
-                                                                                         f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}"),
-                                                                                         f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
-    elif g==5:
-        print("Gaussian: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),
-                                                                                                       f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
-                                                                                                       f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}"),
-                                                                                                       f2.GetParameter("A_{4}"),f2.GetParameter("#sigma_{4}"),
-                                                                                                       f2.GetParameter("#lambda"),f2.GetParameter("#gamma")))
+    ##Number of fit points and Fit. Return function and fit results
+    f2.SetNpx(10000)
+    f2_res = proj.Fit(f2,'RSQ')
+    if nGauss==1:
+        print("1 Gaussian: {:.7f} {:.7f}".format(f2.GetParameter(0),f2.GetParameter(1)))
+    elif nGauss==2:
+        print("2 Gaussians: {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter(0),f2.GetParameter(1),
+                                                             f2.GetParameter(2),f2.GetParameter(3)))
+    elif nGauss==3:
+        print("3 Gaussians: {:.7f} {:.7f} {:.7f} {:.7f} {:.7f} {:.7f}".format(f2.GetParameter(0),f2.GetParameter(1),
+                                                                           f2.GetParameter(2),f2.GetParameter(3),
+                                                                           f2.GetParameter(4),f2.GetParameter(5)))
+    elif nGauss==4:
+        print("4 Gaussians: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter(0),f2.GetParameter(1),
+                                                                                         f2.GetParameter(2),f2.GetParameter(3),
+                                                                                         f2.GetParameter(4),f2.GetParameter(5),
+                                                                                         f2.GetParameter(6),f2.GetParameter(7)))
+    elif nGauss==5:
+        print("5 Gaussians: {:.7f} {:.7f} {:.7f} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f} {:.7e} {:.7f}".format(f2.GetParameter(0),f2.GetParameter(1),
+                                                                                                       f2.GetParameter(2),f2.GetParameter(3),
+                                                                                                       f2.GetParameter(4),f2.GetParameter(5),
+                                                                                                       f2.GetParameter(6),f2.GetParameter(7),
+                                                                                                       f2.GetParameter(8),f2.GetParameter(9)))
 
     #print(f2_res)
 
@@ -1011,38 +979,39 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
         c1.SetLogy()
 
         
-        if g==1:
+        if nGauss==1:
             leg = ROOT.TLegend(0.125,0.75,0.3,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
             leg.AddEntry(proj,"Particle Density")
             leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}}")
-        elif g==2:
+        elif nGauss==2:
             leg = ROOT.TLegend(0.125,0.672,0.32,0.85) #https://root.cern.ch/root/htmldoc/guides/users-guide/Graphics.html
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
-        elif g==3:
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}}")##frac{#lambda}{x^{2} + #gamma^{2}}")
+        elif nGauss==3:
             leg = ROOT.TLegend(0.1,0.7,0.37,0.85)
             leg.AddEntry(proj,"Particle Density")
-            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}")
+            leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}}")#frac{#lambda}{x^{2} + #gamma^{2}}")
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
-        elif g==4:
+        elif nGauss==4:
             leg = ROOT.TLegend(0.1,0.675,0.425,0.85)
             leg.AddEntry(proj,"Particle Density")
             fourGaussL = "A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + "
-            fourGaussL += "A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}} + #frac{#lambda}{x^{2} + #gamma^{2}}"
+            fourGaussL += "A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}} + A_{4} e^{#frac{-x^{2}}{2#sigma_{4}^{2}}}"##frac{#lambda}{x^{2} + #gamma^{2}}"
             leg.AddEntry(f2,fourGaussL)
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + 
-            # A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")elif g==4:
-        elif g==5:
+            # A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")elif nGauss==4:
+        elif nGauss==5:
             leg = ROOT.TLegend(0.1,0.675,0.45,0.85)
             leg.AddEntry(proj,"Particle Density")
             fiveGaussL = "A_{1} e^{#frac{-x^{2}}{2#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{2#sigma_{2}^{2}}} + "
             fiveGaussL += "A_{3} e^{#frac{-x^{2}}{2#sigma_{3}^{2}}} + A_{4} e^{#frac{-x^{2}}{2#sigma_{4}^{2}}} + "
-            fiveGaussL += "#frac{#lambda}{x^{2} + #gamma^{2}}"
+            fiveGaussL += "A_{5} e^{#frac{-x^{2}}{2#sigma_{5}^{2}}}"#"#frac{#lambda}{x^{2} + #gamma^{2}}"
             leg.AddEntry(f2,fiveGaussL)
             #leg.AddEntry(f2,"A_{1} e^{#frac{-x^{2}}{#sigma_{1}^{2}}} + A_{2} e^{#frac{-x^{2}}{#sigma_{2}^{2}}} + 
             # A_{3} e^{#frac{-x^{2}}{#sigma_{3}^{2}}} + #frac{#lambda}{x^{3}} + #gamma")
         #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{2} + #gamma^{2}}") #"A e^{#frac{-x^{2}}{#sigma^{2}}} + #frac{B}{x^{3}} + C"
         #leg.SetHeader("Fits")
+        leg.SetMargin(0.1)
         leg.Draw("E0")
 
         #ta = ROOT.char(6)
@@ -1055,7 +1024,7 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
         #t2.Draw()
         #t3.Draw()
         #t4.Draw()
-        c1.Print(name+"_"+axis+str(g)+"GaussFit"+str(maxim)+".png")
+        c1.Print(name+"_"+axis+str(nGauss)+"GaussFit"+str(maxim)+".png")
 
     #    import numpy as np
     #    import matplotlib.pyplot as plt
@@ -1081,9 +1050,11 @@ def gaussianFit(hist,axis,width,maxim,name,y1,y2,saveFits,density,g,Lorentz):
     #differenceNG = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width')  -  f2.Integral(-maxim,maxim)
     total = proj.Integral(proj.GetXaxis().FindBin(-maxim),proj.GetXaxis().FindBin(maxim),'width') #need better name
     #differencePG = differenceNG/total*100
-    coeffsG = [f2.GetParameter("#lambda"),f2.GetParameter("#gamma"),f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
-                f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}")]#,f2.GetParameter("A_{4}"),f2.GetParameter("#sigma_{4}")]
-    print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f} /".format(differenceNG,total,Gchi2),f2_res.Ndf())#,"\n")#,coeffs)
+    coeffsG = [f2.GetParameter(0),f2.GetParameter(1),f2.GetParameter(2),f2.GetParameter(3),f2.GetParameter(4),f2.GetParameter(5),
+               f2.GetParameter(6),f2.GetParameter(7),f2.GetParameter(8),f2.GetParameter(9)]
+    # = [f2.GetParameter("#lambda"),f2.GetParameter("#gamma"),f2.GetParameter("A_{1}"),f2.GetParameter("#sigma_{1}"),f2.GetParameter("A_{2}"),f2.GetParameter("#sigma_{2}"),
+    #            f2.GetParameter("A_{3}"),f2.GetParameter("#sigma_{3}")]#,f2.GetParameter("A_{4}"),f2.GetParameter("#sigma_{4}")]
+    #print(axis," difference: {:.0f},\t total: {:.0f},\tchi^2: {:.3f} /".format(differenceNG,total,Gchi2),f2_res.Ndf())#,"\n")#,coeffs)
     
     """
     #Now do for Lorentzian
@@ -2362,3 +2333,129 @@ def getTwiss(args,sample,paths):
 
 
     return Twiss,origBX,origBY
+
+
+##WIP: Attempt to fit pencil beam with multiple gaussians with python
+def fitGaussians(Img,Error,path,lim,axis,gauss):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    print(np.shape(Img))
+    if axis in {"y","Y"}:
+        lenX = np.shape(Img)[1]
+        proj = Img[:,round(lenX/2)-1:round(lenX/2)+1]
+        if Error.all() != 1:
+            projErr = Error[:,round(lenX/2)-1:round(lenX/2)+1]
+        else:
+            projErr = None
+        label = "Y"
+        #print(lenX)
+        #print(np.shape(proj))
+        proj = (proj[:,0] + proj[:,1]) / 2
+        if Error.all() != 1:
+            projErr = (projErr[:,0] + projErr[:,1]) / 2
+    elif axis in {"x","X"}:
+        lenX = np.shape(Img)[0]
+        proj = Img[round(lenX/2)-1:round(lenX/2)+1,:]
+        if Error.all() != 1:
+            projErr = Error[round(lenX/2)-1:round(lenX/2)+1,:]
+        else:
+            projErr = None
+        label = "X"
+        #print(lenX)
+        #print(np.shape(proj))
+        proj = (proj[0,:] + proj[1,:]) / 2
+        if Error.all() != 1:
+            projErr = (projErr[0,:] + projErr[1,:]) / 2
+    #print(np.shape(proj))
+    x = np.linspace(-lim,lim,len(proj))
+
+    if Error.all() != 1:
+        plt.errorbar(x,proj,yerr=projErr,ecolor="y",elinewidth=1,fmt='.',markersize=2)
+    else:
+        plt.scatter(x,proj,s=2)
+    plt.yscale("log")
+    plt.ylim(1e-10,3e-2)
+    xlim=20
+    plt.xlim(-xlim,xlim)
+    plt.savefig(path+"proj"+label+".png",dpi=300)
+
+    def func1(x,a1,s1):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2))
+    def func2(x,a1,s1,a2,s2):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2))
+    def func3(x,a1,s1,a2,s2,a3,s3):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2))
+    def func4(x,a1,s1,a2,s2,a3,s3,a4,s4):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2))
+    def func5(x,a1,s1,a2,s2,a3,s3,a4,s4,a5,s5):
+        from numpy import exp as npExp
+        return a1 * npExp(-x**2 / (2*s1**2)) + a2 * npExp(-x**2 / (2*s2**2)) + a3 * npExp(-x**2 / (2*s3**2)) + a4 * npExp(-x**2 / (2*s4**2)) + a5 * npExp(-x**2 / (2*s5**2))
+
+    from scipy.optimize import curve_fit #https://www.datatechnotes.com/2020/09/curve-fitting-with-curve-fit-function-in-python.html
+    from numpy import exp as npExp
+
+    params1, covs1 = curve_fit(func1, x, proj,sigma=projErr)
+    print("params1: ", params1)
+    coeffs = params1
+    print("covariance: ", covs1)
+    yfit1 = params1[0] * npExp(-x**2 / (2*params1[1]**2))
+    plt.plot(x, yfit1, label="1Gaussian")
+
+    if gauss in {2,3,4,5}:
+        params2, _ = curve_fit(func2, x, proj,p0=[params1[0],params1[1],1,10],sigma=projErr)#,bounds=((params1[0]-1e-3,params1[0]+1e-3),(params1[1]-1e-3,params1[1]+1e-3),(0,1e5),(0,1e5)))
+        print("params2: ", params2)
+        coeffs = params2
+        #print("covariance: ", covs2)
+        yfit2 = params2[0] * npExp(-x**2 / (2*params2[1]**2)) + params2[2] * npExp(-x**2 / (2*params2[3]**2))
+        plt.plot(x, yfit2, label="2Gaussian")
+
+    if gauss in {3,4,5}:
+        params3, _ = curve_fit(func3, x, proj,p0=(params1[0],params1[1],1,10,1,30),sigma=projErr)
+        print("params3: ", params3)
+        coeffs = params3
+        #print("covariance: ", covs3)
+        yfit3 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2))
+        plt.plot(x, yfit3, label="3Gaussian")
+
+    if gauss in {4,5}:
+        #a=18
+        #x1=[]
+        #y1=[]
+        #for i in range(a):
+        #    x1.append(x[i])
+        #    x1.append(x[-i])
+        #    y1.append(proj[i])
+        #    y1.append(proj[-i])
+        #x1.remove(-76.0)
+        #y1.remove(1.254665e-05)
+        #print(x1,y1)
+        #plt.scatter(x1,y1)
+        #params4, _ = curve_fit(func2, x1, y1,p0=(params3[4],params3[5],0.1,100))
+        params4, _ = curve_fit(func4, x, proj,p0=(params1[0],params1[1],params3[2],params3[3],1,30,1,50),sigma=projErr,bounds=([0,0,0,0,0,0,0,1],[1,1,1,10,1,60,1,60]))
+        print("params4: ", params4)
+        coeffs = params4
+        #print("covariance: ", covs4)
+        #yfit4 = params3[0] * npExp(-x**2 / (2*params3[1]**2)) + params3[2] * npExp(-x**2 / (2*params3[3]**2)) + params3[4] * npExp(-x**2 / (2*params3[5]**2)) + params4[2]*npExp(-x**2 / (2*params4[3]**2)) #p
+        yfit4 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) #p
+        plt.plot(x, yfit4, label="4Gaussian")
+
+    if gauss == 5:
+        params5, _ = curve_fit(func5, x, proj,sigma=projErr)
+        print("params5: ", params5)
+        coeffs = params5
+        #print("covariance: ", covs5)
+        yfit5 = params4[0] * npExp(-x**2 / (2*params4[1]**2)) + params4[2] * npExp(-x**2 / (2*params4[3]**2)) + params4[4] * npExp(-x**2 / (2*params4[5]**2)) + params4[6]*npExp(-x**2 / (2*params4[7]**2)) + params5[8] * npExp(-x**2 / (2*params5[9]**2))
+        plt.plot(x, yfit5, label="5Gaussian")
+
+    plt.legend()
+    plt.grid()
+    plt.savefig(path+"proj"+label+".png",dpi=600)
+    print(path+"proj"+label+".png")
+    plt.close()
+
+
+    return coeffs
