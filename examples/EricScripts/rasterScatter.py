@@ -10,7 +10,7 @@
 #get pull values
     #python3 rasterScatter.py --reBin 1 --savePics --threshold 10
 #Fit Gaussians to a beamlet, compare distributions at Target:
-    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 1e7 --reBin 1
+    #python3 rasterScatter.py --sim beamlet --Nbeamlet 5e8 --reBin 1 --beamClass pencil --rCut 500 --energy 1300 --saveHist
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 5e8 --reBin 1 --beamClass pencil --gauss2Fit 5
     #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e5 --compTargs --savePics
 #QP Jitter Study:
@@ -55,7 +55,7 @@ parser.add_argument("--statsFile", type=str,   default="EvalStats28July", help="
 #General Beam Setup Options
 parser.add_argument("--t",         type=float, default=0,     help="PBW Thickness [mm], 0=>MagnetPBW, 0.1 = Vacuum, >0.1 => solid Al Xmm thick. Default=0")
 parser.add_argument("--energy",    type=float, default=570,   help="Beam Energy [MeV]. Default=570")
-parser.add_argument("--Nb",        type=int,   default=100,   help="Number of macroparticles per beamlet. Default=10")
+parser.add_argument("--Nb",        type=int,   default=100,   help="Number of macroparticles per beamlet. Default=100")
 parser.add_argument("--nP",        type=float, default=1e3,   help="Numper of beamlets in pulse. Default=1e3")
 parser.add_argument("--rX",        type=float, default=0,     help="X distance from beam axis at BPM94 [mm]. Default=0")
 parser.add_argument("--rY",        type=float, default=0,     help="Y distance from beam axis at BPM94 [mm]. Default=0")
@@ -133,10 +133,10 @@ elif uname()[1] == "mbef-xps-13-9300":
 else:
     csvPWD = input("Path from home to directory you like to save root files to: ")
     scratchPath = csvPWD
-    homePWD = "~"
-    statsPWD = "."
-    miniScatterPath = "/RasterScatter/MiniScatter/build/"
-    oXALPWD = "."#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
+    homePWD = "/home/"
+    statsPWD = "/home/RasterScatter/"
+    miniScatterPath = "/home/RasterScatter/MiniScatter/build/"
+    oXALPWD = "/home/RasterScatter/"#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
 ##Make paths into a dictionary for simple passing
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 
          'oXALPWD':oXALPWD, 'MiniScatterPath':miniScatterPath}

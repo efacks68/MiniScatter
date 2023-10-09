@@ -119,7 +119,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             #print("t!=0 beamFile",beamFile)
             outname = beamFile+"_runW"
         else: #This would get used for a beamlet with real PBW
-            outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"])
+            outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}_r{:.0f}mm".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"],args.rCut)
             #if options['MiniRoot']:
             #    outname+="_miniR"
         #print(mat)
@@ -689,7 +689,7 @@ def simulation(args,mat,beamXAngle,beamYAngle,beamFile,Twiss,options,boxes,paths
 
         ##For fitting scattered beamlets
         if args.gaussFit:
-            from plotFit import converter,gaussianFit,fitGaussians
+            from plotFit import converter,gaussianFit
             print("else GaussFit")
             (twiss_PBW, numPart_PBW, objects_PBW) = miniScatterDriver.getData_tryLoad(simSetup_simple1, tryload=TRYLOAD,getObjects=["tracker_cutoff_xy_PDG2212"])
             (Img, xax, yax) = converter(objects_PBW["tracker_cutoff_xy_PDG2212"],args.saveHist,savename,paths,args,False) #convert from TH2D to numpy map
