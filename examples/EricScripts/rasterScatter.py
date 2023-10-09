@@ -10,7 +10,7 @@
 #get pull values
     #python3 rasterScatter.py --reBin 1 --savePics --threshold 10
 #Fit Gaussians to a beamlet, compare distributions at Target:
-    #python3 rasterScatter.py --sim beamlet --Nbeamlet 5e8 --reBin 1 --beamClass pencil --rCut 500 --energy 1300 --saveHist
+    #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 5e8 --reBin 1 --beamClass pencil --rCut 500 --energy 1300 --saveHist
     #python3 rasterScatter.py --sim beamlet --gaussFit --saveFits --Nbeamlet 5e8 --reBin 1 --beamClass pencil --gauss2Fit 5
     #python3 rasterScatter.py --sim beamlet --Nbeamlet 1e5 --compTargs --savePics
 #QP Jitter Study:

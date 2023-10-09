@@ -1188,6 +1188,7 @@ def rasterImage(savename,position,histogram2D,parts,args,Twiss,options,boxes,pat
 
         #11 Mar Verified the Box is the correct locations, the beam is just displaced when reBinned!
             #But Edges (tight) are correct as well
+        boxBInd=460;boxTInd=540;boxLInd=455;boxRInd=545
         for idx, val in np.ndenumerate(xax):
             if int(val) == round(boxLLxs[i]/rdVal)*rdVal:
                 #print(idx[0])
@@ -1451,10 +1452,8 @@ def converter(hIn,saveHist,name,paths,args,density):
     ##Must add Overflow options!!!
 
     if saveHist: #for rValue calculations
-        from os import uname
-        from os.path import isfile
-        if uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
-            import csv,re
+        import os,csv,re
+        if os.uname()[1] in {"tensor.uio.no","heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
             ##Remove upper directories that may have come with name for appending outname to scratch folder
             #print(name)
             if re.search("/PBW_",name):
@@ -1469,7 +1468,14 @@ def converter(hIn,saveHist,name,paths,args,density):
                 #print("\n",outname,"\n")
                 name = re.sub(".+(?=(Vac_))","",name) #substitutes "" for all preceeding Vac_
               #print("Histogram-removed",name)
-        if not isfile(paths['scratchPath']+"targetCSVs/"+name+".csv"):
+        else:
+            if re.search("/PBW_",name):
+                #print("\n",outname,"\n")
+                name = re.sub(".+(?=(PBW_))","",name) #substitutes "" for all preceeding PBW_
+                #print("Histogram-removed",name)
+            if not os.path.isdir(paths['scratchPath']+"targetCSVs/"):
+                os.mkdir(paths['scratchPath']+"targetCSVs/")
+        if not os.path.isfile(paths['scratchPath']+"targetCSVs/"+name+".csv"):
             with open(paths['scratchPath']+"targetCSVs/"+name+".csv",mode = 'w',newline=None) as hist_file:
                 hist_writer = csv.writer(hist_file,delimiter = ',')
                 hist_writer.writerows(hOut)
@@ -1526,6 +1532,9 @@ def imgCompare(Im,paths,args):
     import numpy as np
     from os import uname
 
+    lenx = np.shape(Im)[0]-1
+    leny = np.shape(Im)[1]-1
+
     ##Find reference file
     if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
         if args.Nb == 100: #do fill in from args
@@ -1569,9 +1578,9 @@ def imgCompare(Im,paths,args):
     elif uname()[1] == "mbef-xps-13-9300":
         Iref = np.genfromtxt(open("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
         refImgName = "oops"
+    else:
+        Iref = np.zeros((leny,lenx))
 
-    lenx = np.shape(Im)[0]-1
-    leny = np.shape(Im)[1]-1
     divSum = np.zeros((leny,lenx))
     ndof = 0 ## of pixels
 
@@ -1788,6 +1797,7 @@ def PMAS(Img,args,parts,xax,yax,name,paths,sample):
     boxLLy = round(-height/2 / 2) * 2 #-80
     #print(len(xax),boxLLx,boxLLy,width,height)
     rdVal=args.reBin*2
+    boxBInd=460;boxTInd=540;boxLInd=455;boxRInd=545
     for idx, val in ndenumerate(xax):
         if int(val) == round(boxLLx/rdVal)*rdVal:
             boxLInd = idx[0] #bc it is rounding
