@@ -14,7 +14,7 @@ def thicknessDependence(args,Twiss,sample,paths):
     zoff        = "*-2" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':True, 'MCS':True, 'engPlot':False,
-                    'mat3Plot':False, 'TwissFits':False, 'PBWT': 2.25 ,'MiniRoot':False}
+                    'mat3Plot':False, 'TwissFits':False, 'PBWT': args.totThick ,'MiniRoot':False}
 
     #Important things
     #ind = 1 #0 is for position distribution sigma, 1 is for angular distribution sigma
@@ -230,7 +230,7 @@ def thicknessDependence(args,Twiss,sample,paths):
 
     plt.tight_layout()
     dt = datetime.now()
-    plt.savefig(thickCsvPWD+name+".png",dpi=200)#+dt.strftime("%H-%M-%S")
-    print("saved",thickCsvPWD+name+".png")#+dt.strftime("%H-%M-%S")
+    plt.savefig(thickCsvPWD+name+"."+args.picFormat,dpi=200)#+dt.strftime("%H-%M-%S")
+    print("saved",thickCsvPWD+name+"."+args.picFormat)#+dt.strftime("%H-%M-%S")
 
     print(datetime.now()-origin)

@@ -12,7 +12,7 @@ def mapRADependence(args,Twiss,sample,paths,origBx,origBY):
     #Constants for running scripts
     physList    = "QGSP_BERT_EMZ" # "QGSP_BERT_EMZ" or "FTFP_BERT_EMZ"
     zoff = "*-10" #[mm] with preappended * to keep covar defined at z=0
-    options     = {'physList':args.physList, 'dependence':"RA", 'zoff':zoff, 'MiniRoot':True  }
+    options     = {'physList':args.physList, 'dependence':"RA", 'zoff':zoff, 'MiniRoot':True, 'PBWT': args.totThick }
 
     #Important things
     if args.t == 0:

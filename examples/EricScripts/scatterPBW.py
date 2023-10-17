@@ -11,7 +11,7 @@ def scatterPBW(args,Twiss,sample,paths,origBx,origBY):
     zoff = "*-1" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':args.physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
-                    'mat3Plot':False,'MiniRoot':True }
+                    'mat3Plot':False,'MiniRoot':True , 'PBWT': args.totThick }
 
     ##Custom settings, if t==0, want standard PBW. If t=0.1, want no PBW, make it Vacuum
     if args.t == 0:

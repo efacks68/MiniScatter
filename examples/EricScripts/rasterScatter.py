@@ -70,6 +70,7 @@ parser.add_argument("--edgeRaster",action="store_true",       help="Only populat
 parser.add_argument("--PBIP",      action="store_true",       default=False,   help="Is PBIP present? Default=False")
 parser.add_argument("--material",  type=str,   default="Al",  choices=("Al","Au","C","Vac"),  help="What material PBW?")
 parser.add_argument("--Nbeamlet",  type=float, default=1e5,   help="For beamlet simulation, how many protons?")
+parser.add_argument("--totThick",  type=float, default=2.25,  help="Total Aluminium thickness of PBW. Other than 2.25mm will get divided in half each side.")
 #Output Options                         Lowering the rCut decreases bin size which increases the jMax...
 parser.add_argument("--rCut",      type=float, default=1e3,  help="Radial cut, defines worldSize and histLims")
 parser.add_argument("--engCut",    type=float, default=0.9,  help="Energy cut, see MiniScatter description")

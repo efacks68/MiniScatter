@@ -102,7 +102,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         m1["keyval"]["al2Thick"]   = 1.25 #[mm]
         #m1["keyval"]["width"]      = 200 #[mm] #(?)
         ##For thickness variation simulations, this modifies the actual PBW to be correct thickness.
-        if args.sim == "thick":
+        if args.sim == "thick" or options['PBWT'] != 2.25:
             m1["keyval"]["al1Thick"]   = options['PBWT']*0.5 #[mm]
             m1["keyval"]["al2Thick"]   = options['PBWT']*0.5 #[mm]
 
@@ -119,7 +119,7 @@ def setup(args,mat,beamFile,Twiss,options,paths):
             #print("t!=0 beamFile",beamFile)
             outname = beamFile+"_runW"
         else: #This would get used for a beamlet with real PBW
-            outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}_r{:.0f}mm".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"],args.rCut)
+            outname = "PBW_{:.0f}MeV_eX{:.2f},eY{:.2f}um_bX{:.2f},bY{:.2f}m_aX{:.2f},aY{:.2f}_N{:.0e}_rCut{:.0f}mm".format(args.energy,Twiss[0],Twiss[3],Twiss[1],Twiss[4],Twiss[2],Twiss[5],baseSimSetup["N"],args.rCut)
             #if options['MiniRoot']:
             #    outname+="_miniR"
         #print(mat)
@@ -157,6 +157,9 @@ def setup(args,mat,beamFile,Twiss,options,paths):
         outname = outname + "_QBBC"
     else:
         outname = outname + options['physList']
+
+    if options['PBWT'] != 2.25:
+        outname = outname + "_PBW{:.2f}mm".format(options['PBWT'])
 
     ##Remove upper directories that may have come with beamFile for appending outname to scratch folder
     import re

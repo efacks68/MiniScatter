@@ -5,9 +5,6 @@ def beamletScatter(args,Twiss,i,paths):
     from datetime import datetime
     origin = datetime.now()
     print(origin)
-    import numpy as np
-    from os import uname
-    from runARasterMaker import runARasterMaker
     from runPBW import runPBW
 
     #print(args,Twiss)
@@ -16,7 +13,7 @@ def beamletScatter(args,Twiss,i,paths):
     zoff        = "*-2" #[mm] with preappended * to keep covar defined at z=0
     options     = {'physList':args.physList, 'dependence':"Twiss", 'zoff':zoff, 'initTree':False,
                     'exitTree':False, 'targetTree':False, 'MCS':False, 'engPlot':False,
-                    'mat3Plot':False, 'TwissFits':False,'MiniRoot':False }
+                    'mat3Plot':False, 'TwissFits':False,'MiniRoot':False, 'PBWT':args.totThick }
 
     #Important things
     if args.t == 0:
