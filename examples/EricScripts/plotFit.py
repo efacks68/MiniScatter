@@ -1476,6 +1476,8 @@ def converter(hIn,saveHist,name,paths,args,density):
             if not os.path.isdir(paths['scratchPath']+"targetCSVs/"):
                 os.mkdir(paths['scratchPath']+"targetCSVs/")
         if not os.path.isfile(paths['scratchPath']+"targetCSVs/"+name+".csv"):
+            if not os.path.isdir(paths['scratchPath']+"targetCSVs/"):
+                os.path.mkdir(paths['scratchPath']+"targetCSVs/")
             with open(paths['scratchPath']+"targetCSVs/"+name+".csv",mode = 'w',newline=None) as hist_file:
                 hist_writer = csv.writer(hist_file,delimiter = ',')
                 hist_writer.writerows(hOut)
@@ -1530,13 +1532,13 @@ def findRoot(savename,paths):
 ##Image Comparison Measurements: returns Rvalue and chi^2 
 def imgCompare(Im,paths,args):
     import numpy as np
-    from os import uname
+    import os
 
     lenx = np.shape(Im)[0]-1
     leny = np.shape(Im)[1]-1
 
     ##Find reference file
-    if uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
+    if os.uname()[1] in {"tensor.uio.no","heplab01.uio.no","heplab04.uio.no","heplab03.uio.no"}:
         if args.Nb == 100: #do fill in from args
             #print("imgCompare Nb 100")
             if args.reBin == 5:
@@ -1574,10 +1576,10 @@ def imgCompare(Im,paths,args):
             #Iref = np.genfromtxt(open(paths['scratchPath']+"Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
             #Iref = np.genfromtxt(open("/scratch2/ericdf/PBWScatter/PBW_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_runW_QBZ_TargetImage.csv"),delimiter=",")
         
-        Iref = np.genfromtxt(open(paths['scratchPath']+refImgName),delimiter=",")
-    elif uname()[1] == "mbef-xps-13-9300":
-        Iref = np.genfromtxt(open("/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/scatterPBWFiles/Vac_570MeV_beta1007,130m_RMamp55,18mm_N2.9e+05_NpB10_NPls1e+03_run_QBZ_TargetImage.csv"),delimiter=",")
-        refImgName = "oops"
+        if os.path.isfile(paths['scratchPath']+"targetCSVs/"+refImgName):
+            Iref = np.genfromtxt(open(paths['scratchPath']+"targetCSVs/"+refImgName),delimiter=",")
+        else:
+            Iref = np.zeros((leny,lenx))
     else:
         Iref = np.zeros((leny,lenx))
 

@@ -112,9 +112,9 @@ args = parser.parse_args()
 ###Where to save CSVs and statistics
 ##This will be specific to the machine, where the CSV and ROOT files should be stored.
 ## Also, where the OpenXAL directory is and where to save pictures & statistics
-if uname()[1] == "tensor.uio.no":
-    scratchPath = "/scratch2/ericdf/PBWScatter/"
-elif uname()[1] in {"heplab01.uio.no", "heplab04.uio.no","heplab03.uio.no"}:
+if uname()[1] == "heplab01.uio.no":
+    scratchPath = "/scratch/ericdf/PBWScatter/"
+elif uname()[1] in {"heplab04.uio.no","heplab03.uio.no"}:
     scratchPath = "/scratch/ericdf/Scratch/PBWScatter/"
     print(scratchPath)
 
