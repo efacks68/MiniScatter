@@ -135,7 +135,7 @@ else:
     csvPWD = input("Path from home to directory from which you'd like to load/save ROOT files: ")
     scratchPath = csvPWD
     homePWD = "/home/"
-    statsPWD = "RasterScatter/"
+    statsPWD = "/RasterScatter/"
     miniScatterPath = "/RasterScatter/MiniScatter/build/"
     oXALPWD = "/RasterScatter/"#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
 ##Make paths into a dictionary for simple passing
