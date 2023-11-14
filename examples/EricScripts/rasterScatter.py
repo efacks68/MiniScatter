@@ -132,12 +132,12 @@ elif uname()[1] == "mbef-xps-13-9300":
     statsPWD = "/home/efackelman/Documents/UiO/Forske/ESSProjects/PBWScattering/Pictures/"
     oXALPWD = homePWD+"Documents/UiO/Forske/ESSProjects/OpenXAL/OXALNotebooks/failureTwiss/"
 else:
-    csvPWD = input("Path from home to directory you like to save root files to: ")
+    csvPWD = input("Path from home to directory from which you'd like to load/save ROOT files: ")
     scratchPath = csvPWD
     homePWD = "/home/"
-    statsPWD = "/home/RasterScatter/"
-    miniScatterPath = "/home/RasterScatter/MiniScatter/build/"
-    oXALPWD = "/home/RasterScatter/"#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
+    statsPWD = "RasterScatter/"
+    miniScatterPath = "/RasterScatter/MiniScatter/build/"
+    oXALPWD = "/RasterScatter/"#input("Path from home to directory with OpenXAL data (if none, type '.'): ")
 ##Make paths into a dictionary for simple passing
 paths = {'scratchPath':scratchPath, 'csvPWD':csvPWD, 'statsPWD':statsPWD, 'homePWD':homePWD, 
          'oXALPWD':oXALPWD, 'MiniScatterPath':miniScatterPath}
