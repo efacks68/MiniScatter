@@ -397,7 +397,7 @@ int main(int argc,char** argv) {
             }
             break;
 
-        case 1300: {//beam energy (flat distribution)
+        case 1300: {//--energyDistFlat ; beam energy (flat distribution)
             std::string edist_str = std::string(optarg);
 
             size_t startPos = 0;
@@ -715,8 +715,8 @@ int main(int argc,char** argv) {
     // Physics
     G4int verbose=0;
     G4VModularPhysicsList* physlist = NULL;
-    if (physListName(0,7) == "EMonly_") {
-      G4String EMlistName = physListName(7,physListName.length()-7);
+    if (physListName.substr(0,7) == "EMonly_") {
+      G4String EMlistName = physListName.substr(7,physListName.length()-7);
       physlist =  new EMonlyPhysicsList(EMlistName);
     }
     else {
@@ -961,8 +961,8 @@ void printHelp(G4double target_thick,
                    << "\t Default/current value = '"
                    << target_material << "'" << G4endl << G4endl;
 
-            G4cout << " --backgroundMaterial <string>" << G4endl
-                   << " \t Background material name" << G4endl
+            G4cout << "--backgroundMaterial <string>" << G4endl
+                   << "\t The name of the background material (world volume) to use." << G4endl
                    << "\t Default/current value = '"
                    << background_material << "'" << G4endl << G4endl;
 
